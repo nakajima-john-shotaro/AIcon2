@@ -24,3 +24,9 @@ jobs:
 
      # Run docker container on the built image
     #  - run: ./run-docker.sh
+
+workflows:
+  version: 2
+  workflows:
+    jobs:
+      - build
