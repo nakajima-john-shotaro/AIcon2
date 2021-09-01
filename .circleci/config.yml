@@ -8,18 +8,22 @@ jobs:
       LANGUAGE: ja_JP:ja
    steps:
      - checkout
-     - run:
-          name: Set locales
-          command: sudo localedef -f UTF-8 -i ja_JP ja_JP.UTF-8
-     - run:
-          name: Check current directory
-          command: pwd
 
-     # Build ddocker image
-    #  - run: cd docker && ./build-docker.sh
+     - run:
+         name: Set locales
+         command: sudo localedef -f UTF-8 -i ja_JP ja_JP.UTF-8
 
-     # Run docker container on the built image
-    #  - run: ./run-docker.sh
+     - run:
+         name: Check current directory
+         command: pwd
+
+     - run: 
+         name: Build ddocker image
+         command: cd docker && ./build-docker.sh
+
+     - run: 
+         name: Run docker container on the built image
+         command: ./run-docker.sh
 
 workflows:
   version: 2
