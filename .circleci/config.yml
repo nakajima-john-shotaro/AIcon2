@@ -18,12 +18,12 @@ jobs:
          command: pwd
 
      - run: 
-         name: Build ddocker image
+         name: Build docker image
          command: cd docker && ./build-docker.sh
 
      - run: 
          name: Run docker container on the built image
-         command: ./run-docker.sh
+         command: cd docker && ./run-docker.sh
 
 workflows:
   version: 2
