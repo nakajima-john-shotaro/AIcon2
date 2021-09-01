@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker exec -it -u root aicon bash
+docker exec -it aicon bash

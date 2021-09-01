@@ -13,7 +13,7 @@ docker run \
   --gpus all \
   --env "DISPLAY=${DISPLAY}" \
   --privileged \
-  --shm-size=40gb \
+  --shm-size=11gb \
   --net=host \
   --user="$(id -u):$(id -g)" \
   --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
