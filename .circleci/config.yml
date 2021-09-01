@@ -23,7 +23,7 @@ jobs:
 
      - run: 
          name: Run docker container on the built image
-         command: cd docker && ./run-docker.sh
+         command: export TERM=xterm && cd docker && ./run-docker.sh
 
 workflows:
   version: 2
