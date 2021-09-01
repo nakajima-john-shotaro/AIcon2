@@ -1,5 +1,5 @@
 #!/bin/bash
-HOST_SD=$(dirname $(dirname $(readlink -f $0)))/shared_dir
+HOST_SD=$(dirname $(dirname $(readlink -f $0)))/aicon
 
 VERSION=0.0.1
 
