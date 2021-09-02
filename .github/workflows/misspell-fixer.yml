@@ -1,3 +1,6 @@
+name: "Spell check workflow"
+on: [ push, pull_request ]
+
 jobs:
   spell-check:
     steps:
