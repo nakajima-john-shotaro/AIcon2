@@ -1,0 +1,10 @@
+jobs:
+  spell-check:
+    steps:
+      - uses: actions/checkout@v2
+      - uses: sobolevn/misspell-fixer-action@master
+        with:
+          options: '-snoV .'
+      - uses: peter-evans/create-pull-request@v2.4.4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
