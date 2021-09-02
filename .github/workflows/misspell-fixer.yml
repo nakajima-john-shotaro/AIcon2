@@ -3,6 +3,7 @@ on: [ push, pull_request ]
 
 jobs:
   spell-check:
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: sobolevn/misspell-fixer-action@master
