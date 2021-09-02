@@ -12,3 +12,5 @@ jobs:
       - uses: peter-evans/create-pull-request@v2.4.4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
