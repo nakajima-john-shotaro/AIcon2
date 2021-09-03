@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="0.0.2"
+VERSION="0.0.1"
 
 IMAGE_NAME="aicon:${VERSION}"
 BUILD_DIR=$(dirname $(readlink -f $0))
