@@ -1,4 +1,11 @@
-from . import backend_import
+import time
+
+import requests
+import chromedriver_binary
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from bs4 import BeautifulSoup
+from googletrans import Translator
 
 
 class Translation(object):
@@ -28,7 +35,7 @@ class Translation(object):
         else:
             self.d_options.add_argument('--headless')
             self.d_options.add_argument('--no-sandbox')
-            driver: webdriver.Chrome = webdriver.Chrome(chrome_options=self.d_options)
+            driver: webdriver.Chrome = webdriver.Chrome(options=self.d_options)
             driver.get("https://www.deepl.com/ja/translator")
             input_selector = driver.find_element_by_css_selector(".lmt__textarea.lmt__source_textarea.lmt__textarea_base_style")
             input_selector.send_keys(text)
@@ -48,10 +55,15 @@ class Translation(object):
 
 
 if __name__ == "__main__":
+    r = requests.get(r"https://ja.wikipedia.org/wiki/%E3%83%A1%E3%82%A4%E3%83%B3%E3%83%9A%E3%83%BC%E3%82%B8")
+    soup = BeautifulSoup(r.text, "html.parser")
+    div_tag = soup.find('div', class_='mainpage-content-text')
+    p_tag = div_tag.find_all('p')[0]
+
     translator_deepl = Translation("deepl")
-    output: str = translator_deepl.translate("AIconはとてもパワフルで効率的な画像生成WEBアプリケーションです。")
-    print(output)
+    output: str = translator_deepl.translate(p_tag.text)
+    print(f"DeepL: {output}")
 
     translator_google = Translation("google")
-    output = translator_google.translate("AIconはとてもパワフルで効率的な画像生成WEBアプリケーションです。")
-    print(output)
+    output = translator_google.translate(p_tag.text)
+    print(f"Google: {output}")

@@ -20,6 +20,4 @@ workflows:
   main:
     jobs:
       - build:
-          context:
-            - build-env-vars
-            - docker-hub-creds
+          context: aicon
