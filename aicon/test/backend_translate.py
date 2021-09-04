@@ -1,19 +1,19 @@
+"""backend_translat.py"""
+
 import time
 
 import requests
-import chromedriver_binary
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 from googletrans import Translator
 
 
-class Translation(object):
+class Translation():
     def __init__(
         self,
         translator: str = "google"
     ) -> None:
-        super().__init__()
 
         if translator in ["google", "deepl"]:
             self.translator: str = translator
@@ -30,8 +30,6 @@ class Translation(object):
                 output_text = self.g_translator.translate(text, src=lang, dest="en").text
             else:
                 output_text = text
-
-            return output_text
         else:
             self.d_options.add_argument('--headless')
             self.d_options.add_argument('--no-sandbox')
@@ -51,7 +49,7 @@ class Translation(object):
 
             driver.close()
 
-            return output_text
+        return output_text
 
 
 if __name__ == "__main__":
