@@ -16,11 +16,12 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build the Docker image
       run: docker build . --file docker/Dockerfile --tag aicon:test --build-arg HOSTNAME=$(hostname)
-    - name: Run the docker container
-      run: docker run --user="$(id -u):$(id -g)" --volume="aicon:/workspace:rw" --name="aicon" aicon:test
     - name: Install dependencies
-      run: docker exec aicon pip install pylint
+      run: |
+        docker run --user="$(id -u):$(id -g)" --volume="aicon:/workspace:rw" --name="aicon" aicon:test
+        docker exec aicon pip install pylint
     - name: Analysing the code with pylint
       run: |
+        docker run --user="$(id -u):$(id -g)" --volume="aicon:/workspace:rw" --name="aicon" aicon:test
         docker exec aicon pylint /workspace/test -v -f colorized -r y
         docker exec aicon pylint /workspace/backend -v -f colorized -r y
