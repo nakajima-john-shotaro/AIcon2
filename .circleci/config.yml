@@ -14,6 +14,14 @@ jobs:
       - run:
           name: "Backend translate test"
           command: python aicon/test/backend_translate.py
+      - run:
+          name: "Install dependency for pylint"
+          command: pip install pylint
+      - run:
+          name: "Analysing the code with pylint"
+          command: |
+            /home/user/.local/bin/pylint /workspace/backend -v -f colorized -r y
+            /home/user/.local/bin/pylint /workspace/test -v -f colorized -r y
 
 workflows:
   version: 2.1
