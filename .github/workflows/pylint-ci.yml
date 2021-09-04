@@ -19,5 +19,5 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
-        pylint test -v -f colorized -r y
-        pylint backend -v -f colorized -r y
+        pylint aicon/test -v -f colorized -r y
+        pylint aicon/backend -v -f colorized -r y

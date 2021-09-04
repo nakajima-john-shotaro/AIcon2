@@ -10,10 +10,10 @@ jobs:
       - checkout
       - run:
           name: "Backend package import test"
-          command: python test/backend_import.py
+          command: python aicon/test/backend_import.py
       - run:
           name: "Backend translate test"
-          command: python test/backend_translate.py
+          command: python aicon/test/backend_translate.py
 
 workflows:
   version: 2.1
