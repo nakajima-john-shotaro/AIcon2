@@ -20,8 +20,8 @@ jobs:
       - run:
           name: "Analysing the code with pylint"
           command: |
-            /home/user/.local/bin/pylint /workspace/backend -v -f colorized -r y
-            /home/user/.local/bin/pylint /workspace/test -v -f colorized -r y
+            /home/user/.local/bin/pylint backend/ -v -f colorized -r y
+            /home/user/.local/bin/pylint test/ -v -f colorized -r y
 
 workflows:
   version: 2.1
