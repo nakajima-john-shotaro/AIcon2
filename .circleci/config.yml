@@ -1,6 +1,6 @@
 version: 2.1
 jobs:
-  backend:
+  build:
     docker:
       - image: magicspell/aicon:0.0.2
         auth:
