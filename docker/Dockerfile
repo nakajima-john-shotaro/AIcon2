@@ -13,19 +13,6 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
     apt-get install -y \
         sudo \
-        wget \
-        curl \
-        unzip \
-        apt-utils \
-        libfontconfig \
-        libappindicator1 \
-        fonts-liberation \
-        libasound2 \
-        libnspr4 \
-        libnss3 \
-        libxss1 \
-        lsb-release \
-        xdg-utils \
         libfreetype6-dev \
         libxft-dev \
         libjpeg62 \
@@ -35,27 +22,6 @@ RUN apt-get update && \
         locales && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-
-RUN mkdir -p /home/root/src && cd $_ && \
-    touch /etc/default/google-chrome && \
-    wget -O /tmp/chromedriver.zip \
-        http://chromedriver.storage.googleapis.com/`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE`/chromedriver_linux64.zip && \
-    unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/ && \
-    apt-get update && \
-    apt-get install -y \
-        libgconf-2-4 \
-        libnss3-dev \
-        libxss1 && \
-    apt-get --fix-broken install && \
-    wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    apt-get install -y ./google-chrome-stable_current_amd64.deb
-
-RUN pip3 install \
-        flask-cors \
-        bs4 \
-        chromedriver-binary \
-        selenium \
-        googletrans==4.0.0-rc1
 
 RUN locale-gen ja_JP.UTF-8
 ENV LANG ja_JP.UTF-8
