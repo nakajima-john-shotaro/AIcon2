@@ -1,6 +1,19 @@
 ## Pull Request Type
 
-- { add | change | fix | hotfix | update | clean | remove | upgrade | revert | style }
+- [ ] add
+- [ ] change
+- [ ] fix 
+- [ ] hotfix
+- [ ] update
+- [ ] clean
+- [ ] upgrade
+- [ ] style
+- [ ] move
+- [ ] remove
+- [ ] chore
+- [ ] docs
+- [ ] reverts
+
 
 ## Description
 
