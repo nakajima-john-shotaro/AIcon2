@@ -16,7 +16,7 @@ from werkzeug.exceptions import HTTPException, BadRequest, Forbidden
 from waitress import serve
 from googletrans import Translator
 
-from .cp import *
+from .constant import *
 
 
 app: Flask = Flask(__name__)
