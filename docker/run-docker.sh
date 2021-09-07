@@ -14,7 +14,6 @@ docker run \
   --env "DISPLAY=${DISPLAY}" \
   --privileged \
   --shm-size=11gb \
-  --net=host \
   -p 8081-8089:8081-8089 \
   --user="$(id -u):$(id -g)" \
   --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
