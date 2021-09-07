@@ -5,7 +5,6 @@ $(function () {
                 return false;
             }
         })
-    console.log('実行')
 });
 
 function reload_window() {
@@ -32,7 +31,7 @@ function start() {
     // 送信するデータ
     send_data = {
         model_name : use_model,
-        text : "cute very very long dog.",
+        text : "cute very very long dog. I'm slave on lab",
         total_iter : parseInt(slider_val),
         size : 256,
         hash : '00000000-0000-0000-0000-000000000000',
@@ -44,7 +43,7 @@ function start() {
 
 function communicate(s_data) {
     $.ajax({
-        url: "http://hayashi.tasakilab:8081/",
+        url: "http://slack.tasakilab:8081/",
         method: "POST",
         data: s_data,
         dataType: "json", //データの受信形式
@@ -54,6 +53,7 @@ function communicate(s_data) {
     })
         .done(function (r_data, textStatus, xhr) {
             console.log("Communication success")
+            console.log(r_data)
             const receive_data = JSON.parse(r_data)
             const got_hash = receive_data.hash
 
