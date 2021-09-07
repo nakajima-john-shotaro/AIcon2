@@ -105,20 +105,20 @@ class AIcon(object):
 
     @app.route("/", methods=["POST"])
     def main(self):
-        recieved_data: Dict[str, Any] = request.get_json()
-        print(recieved_data)
+        received_data: Dict[str, Any] = request.get_json()
+        print(received_data)
 
-        client_hash: str = recieved_data[JSON_HASH]
+        client_hash: str = received_data[JSON_HASH]
 
         if client_hash == P_HASH_INIT:
             client_hash = str(uuid4())
 
             try:
                 self.client_data[client_hash] = {
-                    JSON_MODEL_NAME: recieved_data[JSON_MODEL_NAME],
-                    JSON_TEXT: self.translator(recieved_data[JSON_TEXT]),
-                    JSON_TOTAL_ITER: recieved_data[JSON_TOTAL_ITER],
-                    JSON_SIZE: recieved_data[JSON_SIZE],
+                    JSON_MODEL_NAME: received_data[JSON_MODEL_NAME],
+                    JSON_TEXT: self.translator(received_data[JSON_TEXT]),
+                    JSON_TOTAL_ITER: received_data[JSON_TOTAL_ITER],
+                    JSON_SIZE: received_data[JSON_SIZE],
                     JSON_COMPLETE: False,
                 }
             except KeyError as error_state:
@@ -139,7 +139,7 @@ class AIcon(object):
             return jsonify(res)
 
         if client_hash in self.client_data.keys():
-            self.client_data[client_hash][JSON_ABORT] = recieved_data[JSON_ABORT]
+            self.client_data[client_hash][JSON_ABORT] = received_data[JSON_ABORT]
 
             client_priority: int = self._get_client_priority(client_hash)
             if client_priority == 0:
