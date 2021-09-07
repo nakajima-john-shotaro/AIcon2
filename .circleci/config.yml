@@ -1,28 +1,31 @@
-version: 2
+version: 2.1
 jobs:
- build:
-   machine: true
-   environment:
-      LANG: ja_JP.UTF-8
-      LC_ALL: ja_JP.UTF-8
-      LANGUAGE: ja_JP:ja
-   steps:
-     - checkout
 
-     - run:
-         name: Set locales
-         command: sudo localedef -f UTF-8 -i ja_JP ja_JP.UTF-8
-
-     - run:
-         name: Check current directory
-         command: pwd
-
-     - run: 
-         name: Build docker image
-         command: cd docker && ./build-docker.sh
+  build:
+    docker:
+      - image: magicspell/aicon:0.0.2
+        auth:
+          username: $DOCKERHUB_USER
+          password: $DOCKERHUB_PASSWORD
+    steps:
+      - checkout
+      - run:
+          name: "Backend package import test"
+          command: python aicon/test/backend_import.py
+      - run:
+          name: "Backend translate test"
+          command: python aicon/test/backend_translate.py
+      - run:
+          name: "Install dependency for pylint"
+          command: pip install pylint
+      - run:
+          name: "Analysing the code with pylint"
+          command: |
+            /home/user/.local/bin/pylint aicon/test/ -v -f colorized -r y  --fail-under 5.0
 
 workflows:
-  version: 2
-  workflows:
+  version: 2.1
+  main:
     jobs:
-      - build
+      - build:
+          context: aicon
