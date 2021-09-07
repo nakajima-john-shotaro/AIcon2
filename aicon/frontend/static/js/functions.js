@@ -31,7 +31,7 @@ function start() {
     // 送信するデータ
     send_data = {
         model_name : use_model,
-        text : "cute very very long dog. I'm slave on lab",
+        text : "Hi! I'm John. Nice to meet you!",
         total_iter : parseInt(slider_val),
         size : 256,
         hash : '00000000-0000-0000-0000-000000000000',
@@ -66,7 +66,7 @@ function communicate(s_data) {
             const tmp_data = JSON.parse(s_data);
 
             // 通信継続の確認
-            if (r_data["complete"] == false) {
+            if (!r_data["complete"] ) {
                 wait(3000).done(function () {
                     tmp_data["hash"] = r_data["hash"];
                     communicate(JSON.stringify(tmp_data));
