@@ -41,6 +41,14 @@ function start() {
     communicate(send_json_data)
 }
 
+function wait(msec) {
+    var objDef = new $.Deferred();
+    setTimeout(function () {
+        objDef.resolve(msec);
+    }, msec);
+    return objDef.promise();
+}
+
 function communicate(s_data) {
     $.ajax({
         url: "http://slack.tasakilab:8081/",
@@ -52,16 +60,16 @@ function communicate(s_data) {
         contentType: "application/json; charset=utf-8",
     })
         .done(function (r_data, textStatus, xhr) {
-            console.log("Communication success")
-            console.log(r_data)
-            const receive_data = JSON.parse(r_data)
-            const got_hash = receive_data.hash
+            console.log("Communication success");
+            // console.log(r_data);
+            console.log(s_data);
+            const tmp_data = JSON.parse(s_data);
 
             // 通信継続の確認
-            if (receive_data.complete == false) {
+            if (r_data["complete"] == false) {
                 wait(3000).done(function () {
-                    receive_data["hash"] = got_hash;
-                    communicate(receive_data);
+                    tmp_data["hash"] = r_data["hash"];
+                    communicate(JSON.stringify(tmp_data));
                 });
             }else{
                 console.log("Communication is finished")
