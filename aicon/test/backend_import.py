@@ -1,5 +1,7 @@
 """backend_import.py"""
 
+# pylint: disable=unused-import
+
 import time
 import json
 import urllib
