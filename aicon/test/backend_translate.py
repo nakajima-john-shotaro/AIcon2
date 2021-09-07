@@ -54,9 +54,9 @@ class Translation():
 
 
 if __name__ == "__main__":
-    r = requests.get(r"https://ja.wikipedia.org/wiki/%E3%83%A1%E3%82%A4%E3%83%B3%E3%83%9A%E3%83%BC%E3%82%B8")
+    r = requests.get(r"https://ja.wikipedia.org/w/index.php?title=%E4%BA%BA%E5%B7%A5%E7%9F%A5%E8%83%BD&oldid=85405506")
     soup = BeautifulSoup(r.text, "html.parser")
-    div_tag = soup.find('div', class_='mainpage-content-text')
+    div_tag = soup.find('div', class_='mw-parser-output')
     p_tag = div_tag.find_all('p')[0]
 
     translator_deepl = Translation("deepl")
