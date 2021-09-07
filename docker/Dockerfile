@@ -52,6 +52,7 @@ RUN mkdir -p /home/root/src && cd $_ && \
 
 RUN pip3 install \
         flask-cors \
+        waitress \
         bs4 \
         chromedriver-binary \
         selenium \
