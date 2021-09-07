@@ -6,23 +6,29 @@ import urllib
 import requests
 from uuid import uuid4 
 from queue import Queue
+from pprint import pprint
 
 import chromedriver_binary # pylint: disable=unused-import
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from flask import Flask, Response, jsonify, make_response, abort, request
 from flask_cors import CORS
-from werkzeug.exceptions import HTTPException, BadRequest, Forbidden
+from flask_restful import Api, Resource, reqparse
+from werkzeug.exceptions import HTTPException, BadRequest, Forbidden, InternalServerError
 from waitress import serve
 from googletrans import Translator
 
-from .constant import *
+from constant import *
 
 
 app: Flask = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False
 app.config["JSON_SORT_KEYS"] = False
 CORS(app)
+api = Api(app)
+parser = reqparse.RequestParser()
+
+_client_data: Dict[str, Dict[str, str]] = {}
 
 
 class Translation(object):
@@ -40,40 +46,53 @@ class Translation(object):
             raise ValueError("Expected translator is `google` or `deepl` but got {translator}")
 
     def translate(self, text: str) -> str:
-        if self.translator == "google":
-            lang = self.g_translator.detect(text).lang
+        lang = self.g_translator.detect(text).lang
 
-            if not lang == "en":
+        if not lang == "en":
+            if self.translator == "google":
                 output_text = self.g_translator.translate(text, src=lang, dest="en").text
-            else:
-                output_text = text
-            print(output_text)
+            elif self.translator == "deepl":
+                self.d_options.add_argument('--headless')
+                self.d_options.add_argument('--no-sandbox')
 
-            return output_text
+                driver: webdriver.Chrome = webdriver.Chrome(options=self.d_options)
+                driver.get("https://www.deepl.com/ja/translator")
+
+                input_selector = driver.find_element_by_css_selector(".lmt__textarea.lmt__source_textarea.lmt__textarea_base_style")
+                input_selector.send_keys(text)
+
+                time.sleep(3)
+
+                while True:
+                    output_selector: str = ".lmt__textarea.lmt__target_textarea.lmt__textarea_base_style"
+                    output_text: str = driver.find_element_by_css_selector(output_selector).get_property("value")
+                    if output_text != "":
+                        break
+                    time.sleep(1)
+
+                driver.close()
         else:
-            self.d_options.add_argument('--headless')
-            self.d_options.add_argument('--no-sandbox')
-            driver: webdriver.Chrome = webdriver.Chrome(chrome_options=self.d_options)
-            driver.get("https://www.deepl.com/ja/translator")
-            input_selector = driver.find_element_by_css_selector(".lmt__textarea.lmt__source_textarea.lmt__textarea_base_style")
-            input_selector.send_keys(text)
+            output_text = text
 
-            time.sleep(3)
+        for i, char in enumerate(output_text):
+            list(output_text)[i] = char.translate(str.maketrans({
+                '\u3000': ' ',
+                ' ': ' ',
+                '　': ' ',
+                '\t': '',
+                '\r': '',
+                '\x0c': '',
+                '\x0b': '',
+                '\xa0': '',
+            }))
+        output_text = "".join(output_text)
 
-            while True:
-                output_selector: str = ".lmt__textarea.lmt__target_textarea.lmt__textarea_base_style"
-                output_text: str = driver.find_element_by_css_selector(output_selector).get_property("value")
-                if output_text != "" :
-                    break
-                time.sleep(1)
-            print(output_text)
+        print(output_text)
 
-            driver.close()
-
-            return output_text
+        return output_text
 
 
-class AIcon(object):
+class AIcon(Resource):
     def __init__(
         self,
         translator: str = "deepl",
@@ -82,16 +101,18 @@ class AIcon(object):
 
         self.translator: Translation = Translation(translator)
 
-        self.client_data: Dict[str, Dict[str, str]] = {}
-
         self.base_img_path: str = "../frontend/static/dst_img"
         self.base_gif_path: str = "../frontend/static/dst_gif"
 
     def _get_client_priority(self, client_hash: str) -> int:
-        return list(self.client_data.keys()).index(client_hash)
+        global _client_data
+
+        return list(_client_data.keys()).index(client_hash)
 
     def _set_path(self, client_hash: str) -> None:
-        model_name: str = self.client_data[client_hash][JSON_MODEL_NAME]
+        global _client_data
+
+        model_name: str = _client_data[client_hash][JSON_MODEL_NAME]
 
         img_path: str = os.path.join(self.base_img_path, model_name, client_hash)
         gif_path: str = os.path.join(self.base_gif_path, model_name, client_hash)
@@ -99,14 +120,14 @@ class AIcon(object):
         os.makedirs(img_path, exist_ok=True)
         os.makedirs(gif_path, exist_ok=True)
 
-        self.client_data[client_hash][JSON_IMG_PATH] = img_path
-        self.client_data[client_hash][JSON_GIF_PATH] = gif_path
+        _client_data[client_hash][JSON_IMG_PATH] = img_path
+        _client_data[client_hash][JSON_GIF_PATH] = gif_path
         
+    def post(self):
+        global _client_data
 
-    @app.route("/", methods=["POST"])
-    def main(self):
-        received_data: Dict[str, Any] = request.get_json()
-        print(received_data)
+        received_data: Dict[str, Any] = request.get_json(force=True)
+        pprint(received_data)
 
         client_hash: str = received_data[JSON_HASH]
 
@@ -114,13 +135,15 @@ class AIcon(object):
             client_hash = str(uuid4())
 
             try:
-                self.client_data[client_hash] = {
+                _client_data[client_hash] = {
                     JSON_MODEL_NAME: received_data[JSON_MODEL_NAME],
-                    JSON_TEXT: self.translator(received_data[JSON_TEXT]),
+                    JSON_TEXT: self.translator.translate(received_data[JSON_TEXT]),
                     JSON_TOTAL_ITER: received_data[JSON_TOTAL_ITER],
                     JSON_SIZE: received_data[JSON_SIZE],
+                    JSON_ABORT: received_data[JSON_ABORT],
                     JSON_COMPLETE: False,
                 }
+                pprint(_client_data)
             except KeyError as error_state:
                 abort(400, error_state)
 
@@ -129,7 +152,7 @@ class AIcon(object):
             res: Dict[str, Optional[Union[str, bool]]] = {
                 JSON_HASH: client_hash,
                 JSON_PRIORITY: self._get_client_priority(client_hash),
-                JSON_NUM_CLIENTS: len(self.client_data),
+                JSON_NUM_CLIENTS: len(_client_data),
                 JSON_CURRENT_ITER: "0",
                 JSON_COMPLETE: False,
                 JSON_IMG_PATH: None,
@@ -138,19 +161,19 @@ class AIcon(object):
 
             return jsonify(res)
 
-        if client_hash in self.client_data.keys():
-            self.client_data[client_hash][JSON_ABORT] = received_data[JSON_ABORT]
+        if client_hash in _client_data.keys():
+            _client_data[client_hash][JSON_ABORT] = received_data[JSON_ABORT]
 
             client_priority: int = self._get_client_priority(client_hash)
             if client_priority == 0:
-                client_data: Dict[str, str] = self.client_data[client_hash]
+                client_data: Dict[str, str] = _client_data[client_hash]
 
                 # Do something here
 
                 res: Dict[str, Optional[Union[str, bool]]] = {
                     JSON_HASH: client_hash,
                     JSON_PRIORITY: client_priority,
-                    JSON_NUM_CLIENTS: len(self.client_data),
+                    JSON_NUM_CLIENTS: len(_client_data),
                     JSON_CURRENT_ITER: "0",
                     JSON_COMPLETE: False,
                     JSON_IMG_PATH: None,
@@ -160,7 +183,7 @@ class AIcon(object):
                 res: Dict[str, Optional[Union[str, bool]]] = {
                     JSON_HASH: client_hash,
                     JSON_PRIORITY: client_priority,
-                    JSON_NUM_CLIENTS: len(self.client_data),
+                    JSON_NUM_CLIENTS: len(_client_data),
                     JSON_CURRENT_ITER: "0",
                     JSON_COMPLETE: False,
                     JSON_IMG_PATH: None,
@@ -173,6 +196,7 @@ class AIcon(object):
     
     @app.errorhandler(BadRequest)
     @app.errorhandler(Forbidden)
+    @app.errorhandler(InternalServerError)
     def handle_exception(e: HTTPException):
         """Return JSON instead of HTML for HTTP errors."""
         response: Response = e.get_response()
@@ -188,5 +212,6 @@ class AIcon(object):
 
 if __name__ == "__main__":
     aicon: AIcon = AIcon()
+    api.add_resource(AIcon, '/')
 
     serve(app, host='0.0.0.0', port=8081, threads=1)
