@@ -51,7 +51,7 @@ function wait(msec) {
 
 function communicate(s_data) {
     $.ajax({
-        url: "http://slack.tasakilab:8081/",
+        url: "http://localhost:5050/service",
         method: "POST",
         data: s_data,
         dataType: "json", //データの受信形式
