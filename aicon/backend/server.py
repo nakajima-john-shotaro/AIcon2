@@ -4,8 +4,9 @@ import json
 import datetime # pylint: disable=unused-import
 from typing import Any, Dict, Optional, Union
 from uuid import uuid4
-from multiprocessing import Process, Queue, synchronize, Manager, Lock
-from queue import Empty
+from multiprocessing import Process, Queue, synchronize, Manager
+from threading import Thread, Lock
+from queue import Empty, Full, Queue as Queue_
 from pprint import pprint # pylint: disable=unused-import
 from logging import StreamHandler, Logger, getLogger, INFO
 
@@ -36,8 +37,9 @@ logger: Logger = getLogger()
 logger.addHandler(stream_handler)
 logger.setLevel(INFO)
 
-manager = Manager()
-_client_data: Dict[str, Dict[str, Union[str, Queue]]] = manager.dict()
+_client_data: Dict[str, Dict[str, Union[str, Queue]]] = {}
+_client_data_queue: Queue_ = Queue_(maxsize=1)
+_lock: Lock = Lock()
 
 
 # debag
@@ -106,40 +108,54 @@ class AIconCore:
 class ConnectionHealthChecker:
     def __init__(
         self,
-        lock: Union[synchronize.Lock, synchronize.RLock],
-        interval: float = 5.,
+        interval: float = 1.,
     ) -> None:
-        p: Process = Process(target=self.run, args=(lock, interval), daemon=True)
+        p: Thread = Thread(target=self.run, args=(interval, ), daemon=True)
         p.start()
 
     def run(
-        self, 
-        lock: Union[synchronize.Lock, synchronize.RLock], 
+        self,
         interval: float,
     ) -> None:
-
+        empty_counter: int = 0
         while True:
-            global _client_data
-            print(bool(_client_data))
-            if _client_data:
-                print("うんちぶりぶりっ")
-                for client_uuid, client_data in _client_data.items():
-                    last_connection_time: float = client_data["last_connection_time"]
+            try:
+                _client_data: dict = _client_data_queue.get_nowait()
+                if _client_data:
+                    for client_uuid, client_data in list(_client_data.items()):
+                        last_connection_time: float = client_data["last_connection_time"]
 
-                    print(f"now: {time.time()} last_connection_time: {last_connection_time}")
+                        logger.info(f"[{client_uuid}]: <<Connection Health Checker>> Checking connection health")
 
-                    logger.info(f"[{client_uuid}]: <<Connection Health Checker>> Checking connection health")
+                        if time.time() - last_connection_time > CHC_TIMEOUT:
+                            _lock.acquire()
+                            result = _client_data.pop(client_uuid, None)
+                            _lock.release()
 
-                    if time.time() - last_connection_time > CHC_TIMEOUT:
-                        lock.acquire()
-                        result = _client_data.pop(client_uuid, None)
-                        lock.release()
-
-                        if result is None:
-                            return False
+                            if result is None:
+                                pass
+                            else:
+                                logger.error(f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause the connection has timed out {CHC_TIMEOUT}s")
                         else:
-                            logger.error(f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause the connection has timed out {CHC_TIMEOUT}s")
-            
+                            logger.info(f"[{client_uuid}]: <<Connection Health Checker>> No problem was found")
+                empty_counter = 0
+            except Empty:
+                empty_counter += 1
+                
+                if empty_counter > CHC_EMPTY_TOLERANCE:
+                    try:
+                        for client_uuid, client_data in list(_client_data.items()):
+                            _lock.acquire()
+                            result = _client_data.pop(client_uuid, None)
+                            _lock.release()
+
+                            if result is None:
+                                pass
+                            else:
+                                logger.error(f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause there was no connection for a long time.")
+                    except UnboundLocalError:
+                        pass             
+
             time.sleep(interval)
 
 
@@ -148,7 +164,7 @@ class AIcon(Resource):
         self,
         translator_name: str = "deepl",
     ) -> None:
-        super().__init__()
+        super(AIcon, self).__init__()
 
         self.translator: Translation = Translation(translator_name)
 
@@ -214,6 +230,11 @@ class AIcon(Resource):
                     "last_connection_time": time.time()
                 }
 
+                try:
+                    _client_data_queue.put_nowait(_client_data)
+                except Full:
+                    pass
+
             except KeyError as error_state:
                 logger.fatal(f"[{client_uuid}]: {error_state}")
                 abort(BadRequest, error_state)
@@ -243,6 +264,11 @@ class AIcon(Resource):
             _client_data[client_uuid][JSON_ABORT] = received_data[JSON_ABORT]
             _client_data[client_uuid]["last_connection_time"] = time.time()
 
+            try:
+                _client_data_queue.put_nowait(_client_data)
+            except Full:
+                pass
+
             client_priority = self._get_client_priority(client_uuid)
 
             res: Dict[str, Optional[Union[str, bool]]] = {
@@ -267,12 +293,12 @@ class AIcon(Resource):
                     res[JSON_IMG_PATH] = queued_data[JSON_IMG_PATH]
                     res[JSON_GIF_PATH] = queued_data[JSON_GIF_PATH]
                     res[JSON_COMPLETE] = queued_data[JSON_COMPLETE]
+
+                    if queued_data[JSON_COMPLETE]:
+                        self._remove_client_data(client_uuid)
+                        logger.info(f"[{client_uuid}]: Removed clients data bacause the task is completed")
                 except Empty:
                     logger.warning(f"[{client_uuid}]: Queue is empty")
-
-                if queued_data[JSON_COMPLETE]:
-                    self._remove_client_data(client_uuid)
-                    logger.info(f"[{client_uuid}]: Removed clients data bacause the task is completed")
             else:
                 logger.warning(f"[{client_uuid}]: {len(_client_data)} clients are queued. This client is #{client_priority}. Skipping the task.")
         else:
@@ -305,9 +331,7 @@ class AIcon(Resource):
 if __name__ == "__main__":
     logger.info("Seesion started")
 
-    lock: Union[synchronize.Lock, synchronize.RLock] = Lock()
-
-    chc: ConnectionHealthChecker = ConnectionHealthChecker(lock)
+    chc: ConnectionHealthChecker = ConnectionHealthChecker()
 
     aicon: AIcon = AIcon()
     api.add_resource(AIcon, '/service')
