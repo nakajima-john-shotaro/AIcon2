@@ -1,3 +1,31 @@
+
+
+$(window).on('load resize', function() {
+    var windowWidth = window.innerWidth;
+    var elements = $('#fixed-area');
+    if (windowWidth >= 768) {
+    Stickyfill.add(elements);
+    }else{
+    Stickyfill.remove(elements);
+    } 
+});
+
+$(document).ready(function() {
+    $("#use_model").change(function() {
+        const model = $(this).val();
+        if (model === 'DeepDaze'){
+            $('.carousel').fadeOut('slow');
+            $('#DeepDaze').fadeIn('slow');
+        }else if (model === 'BigSleep') {
+            $('.carousel').fadeOut(100);
+            $('#BigSleep').fadeIn(200);
+        }else if (model === 'DALL-E') {
+            $('.carousel').fadeOut('slow');
+            $('#DALL-E').fadeIn('slow');
+        }
+    })
+});
+
 $(function () {
     $('.cancelEnter')
         .on('keydown', function (e) {
@@ -17,6 +45,9 @@ function get_range_value() {
 }
 
 function start() {
+    $('#img_make_container').fadeIn(1000);
+    const target = $('#img_make_container').get(0).offsetTop;
+    $('body,html').animate({scrollTop:target}, 500, 'swing');
     // 使用するmodel
     const use_model = document.getElementById("use_model").value;
     console.log(use_model)
@@ -51,7 +82,7 @@ function wait(msec) {
 
 function communicate(s_data) {
     $.ajax({
-        url: "http://slack.tasakilab:8081/",
+        url: "http://localhost:5050/service",
         method: "POST",
         data: s_data,
         dataType: "json", //データの受信形式
@@ -65,6 +96,9 @@ function communicate(s_data) {
             console.log(s_data);
             const tmp_data = JSON.parse(s_data);
 
+            $('#result_img').attr("src", r_data["img_path"]).on("load", function (){
+                $('#result_img').fadeIn();
+            });
             // 通信継続の確認
             if (!r_data["complete"] ) {
                 wait(3000).done(function () {
