@@ -14,7 +14,7 @@ docker run \
   --env "DISPLAY=${DISPLAY}" \
   --privileged \
   --shm-size=11gb \
-  --net=host \
+  -p 5050:5050 \
   --user="$(id -u):$(id -g)" \
   --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
   --volume="${HOST_SD}:/workspace:rw" \

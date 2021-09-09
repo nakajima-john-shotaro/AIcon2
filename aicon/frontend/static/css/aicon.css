@@ -1,0 +1,50 @@
+.carousel .carousel-item{
+  width:100%;
+}
+
+input[type="search"] {
+  -webkit-appearance: searchfield;
+}
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: searchfield-cancel-button;
+}
+
+/*左と右を囲う全体のエリア*/
+#wrapper{
+	position: relative;/*position stickyの基点にするため relativeをかける*/
+	display: flex;/*左エリア、右エリア横並び指定*/
+	flex-wrap: wrap;/*ボックスの折り返し可*/
+}
+
+/*左エリア*/
+#fixed-area{
+  /*左固定記述*/
+  position: -webkit-sticky;/*Safari用*/
+  position: sticky;
+  top:0;
+	/*横半分50% 縦を100vhにする*/
+	width: 50%;
+	height: 100vh;
+}
+
+/*右エリア*/
+#scroll_container{
+	/*横半分50%にする*/
+	width:50%;
+}
+
+/*＝＝＝＝＝＝＝＝＝＝＝768px以下の見え方＝＝＝＝＝＝＝＝＝＝＝＝＝*/
+
+@media screen and (max-width:768px){
+#wrapper{
+	display: block;/*display:flex;を解除*/
+}
+#fixed-area{
+ 	position:relative!important;/*position stickyを解除*/
+	width:100%;/*横幅を100%にして1列に見せる*/
+	height: 60vh;/*縦幅を100vh⇒40vh ※任意の高さに設定可能*/
+}
+#scroll_container{
+	width:100%;/*横幅を100%にして1列に見せる*/
+}
+}
