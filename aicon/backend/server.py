@@ -3,10 +3,11 @@ import time
 import json
 import functools
 from typing import Any, Dict, Optional, Union
-from uuid import uuid4 
-from queue import Queue
+from uuid import uuid4
+from multiprocessing import Process, Queue
+from queue import Empty
 from pprint import pprint # pylint: disable=unused-import
-from logging import StreamHandler, Logger, getLogger, INFO, DEBUG
+from logging import StreamHandler, Logger, getLogger, DEBUG
 
 import chromedriver_binary # pylint: disable=unused-import
 from selenium import webdriver
@@ -38,26 +39,7 @@ logger: Logger = getLogger()
 logger.addHandler(stream_handler)
 logger.setLevel(DEBUG)
 
-_client_data: Dict[str, Dict[str, str]] = {}
-
-single_queue: Queue = Queue(maxsize=1)
-
-def multiple_control(q: Queue):
-
-    def _multiple_control(func):
-
-        @functools.wraps(func)
-        def wrapper(*args,**kwargs):
-            q.put(time.time())
-            result = func(*args,**kwargs)
-            q.get()
-            q.task_done()
-
-            return result
-
-        return wrapper
-
-    return _multiple_control
+_client_data: Dict[str, Dict[str, Union[str, Queue]]] = {}
 
 
 class Translation(object):
@@ -117,6 +99,69 @@ class Translation(object):
         return output_text
 
 
+# debag
+class DeepDaze():
+    def __init__(
+        self,
+        client_uuid: str,
+        queue: Queue,
+    ) -> None:
+        self.client_uuid: str = client_uuid
+        self.queue: Queue = queue
+
+    def run(self):
+        for i in range(10):
+            data: Dict[str, str] = {
+                "client_uuid": self.client_uuid,
+                JSON_CURRENT_ITER: str(i),
+                JSON_IMG_PATH: f"/home/aicon/img/{self.client_uuid}/{i}",
+                JSON_GIF_PATH: f"/home/aicon/gif/{self.client_uuid}/{i}",
+                JSON_COMPLETE: False
+            }
+            self.queue.put(data)
+            time.sleep(2)
+        
+        data: Dict[str, str] = {
+            "client_uuid": self.client_uuid,
+            JSON_CURRENT_ITER: "10",
+            JSON_IMG_PATH: f"/home/aicon/img/{self.client_uuid}/{i}",
+            JSON_GIF_PATH: f"/home/aicon/gif/{self.client_uuid}/{i}",
+            JSON_COMPLETE: True
+        }
+        self.queue.put(data)
+
+        logger.info(f"[{self.client_uuid}]: Completed image generation")
+
+
+class AIconCore:
+    def __init__(
+        self,
+        model_name: str,
+        client_uuid: str,
+        args: Any,
+        queue: Queue = Queue(),
+    ) -> None:
+        self.model_name: str = model_name
+        self.client_uuid: str = client_uuid
+
+        p: Process = Process(target=self.run, args=(queue, args, ), daemon=True)
+        p.start()
+
+    def run(self, queue: Queue, args: Any) -> None:
+        logger.info(f"[{self.client_uuid}]: Start image generation with {self.model_name}")
+
+        model = DeepDaze(self.client_uuid, queue)
+        if self.model_name == MODEL_NAME_BID_SLEEP:
+            model.run()
+        elif self.model_name == MODEL_NAME_DEEP_DAZE:
+            model.run()
+        elif self.model_name == MODEL_NAME_DALL_E:
+            model.run()
+        else:
+            logger.fatal(f"[{self.client_uuid}]: Invalid model name `{self.model_name}` requested")
+            abort(BadRequest, f"Invalid model name {self.model_name}")
+
+
 class AIcon(Resource):
     def __init__(
         self,
@@ -148,11 +193,15 @@ class AIcon(Resource):
         _client_data[client_uuid][JSON_IMG_PATH] = img_path
         _client_data[client_uuid][JSON_GIF_PATH] = gif_path
 
-    @multiple_control(single_queue)
-    def generate(self):
-        logger.debug("Heavy process start")
-        time.sleep(10)
-        logger.debug("Heavy process end")
+    def _remove_client_data(self, client_uuid: str) -> bool:
+        global _client_data
+
+        result = _client_data.pop(client_uuid, None)
+
+        if result is None:
+            return False
+        else:
+            return True
         
     def post(self):
         global _client_data
@@ -169,7 +218,9 @@ class AIcon(Resource):
 
             try:
                 translated_text: str = self.translator.translate(received_data[JSON_TEXT])
-                logger.info(f"[{client_uuid}]: Translated received text {received_data[JSON_TEXT]} to {translated_text}")
+                logger.info(f"[{client_uuid}]: Translated text `{received_data[JSON_TEXT]}` to `{translated_text}`")
+
+                queue: Queue = Queue()
 
                 _client_data[client_uuid] = {
                     JSON_MODEL_NAME: received_data[JSON_MODEL_NAME],
@@ -178,7 +229,10 @@ class AIcon(Resource):
                     JSON_SIZE: received_data[JSON_SIZE],
                     JSON_ABORT: received_data[JSON_ABORT],
                     JSON_COMPLETE: False,
+                    "queue": queue,
                 }
+
+                aicon_core: AIconCore = AIconCore(received_data[JSON_MODEL_NAME], client_uuid, translated_text, queue)
 
             except KeyError as error_state:
                 logger.fatal(f"[{client_uuid}]: {error_state}")
@@ -204,14 +258,10 @@ class AIcon(Resource):
             _client_data[client_uuid][JSON_ABORT] = received_data[JSON_ABORT]
 
             client_priority: int = self._get_client_priority(client_uuid)
-            logger.info(f"[{client_uuid}]: {len(_client_data)} clients are queued. The client is #{client_priority}")
-
             if client_priority == 1:
-                logger.info(f"[{client_uuid}]: Starting AIcon-core")
+                logger.info(f"[{client_uuid}]: The client is #{client_priority}. Starting AIcon-core.")
 
-                client_data: Dict[str, str] = _client_data[client_uuid]
-
-                self.generate()
+                client_data: Dict[str, Union[str, Queue]] = _client_data[client_uuid]
 
                 res: Dict[str, Optional[Union[str, bool]]] = {
                     JSON_HASH: client_uuid,
@@ -222,8 +272,22 @@ class AIcon(Resource):
                     JSON_IMG_PATH: None,
                     JSON_GIF_PATH: None,
                 }
+
+                try:
+                    queued_data: Dict[str, str] = client_data["queue"].get(timeout=1.)
+
+                    res[JSON_CURRENT_ITER] = queued_data[JSON_CURRENT_ITER]
+                    res[JSON_IMG_PATH] = queued_data[JSON_IMG_PATH]
+                    res[JSON_GIF_PATH] = queued_data[JSON_GIF_PATH]
+                    res[JSON_COMPLETE] = queued_data[JSON_COMPLETE]
+                except Empty:
+                    logger.warning(f"[{client_uuid}]: Queue is empty")
+
+                if queued_data[JSON_COMPLETE]:
+                    self._remove_client_data(client_uuid)
+                    logger.info(f"[{client_uuid}]: Removed data from clients completed with the task")
             else:
-                logger.warning(f"[{client_uuid}]: Congested. Skipping the task.")
+                logger.warning(f"[{client_uuid}]: {len(_client_data)} clients are queued. The client is #{client_priority}. Skipping the task.")
 
                 res: Dict[str, Optional[Union[str, bool]]] = {
                     JSON_HASH: client_uuid,
