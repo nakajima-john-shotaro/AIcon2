@@ -1,13 +1,13 @@
 import os
 import time
 import json
-import functools
+import datetime
 from typing import Any, Dict, Optional, Union
 from uuid import uuid4
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, synchronize, Manager, Lock
 from queue import Empty
 from pprint import pprint # pylint: disable=unused-import
-from logging import StreamHandler, Logger, getLogger, DEBUG
+from logging import StreamHandler, Logger, getLogger, INFO
 
 import chromedriver_binary # pylint: disable=unused-import
 from selenium import webdriver
@@ -33,13 +33,14 @@ CORS(app)
 api: Api = Api(app)
 
 stream_handler: StreamHandler = StreamHandler()
-stream_handler.setLevel(DEBUG)
+stream_handler.setLevel(INFO)
 stream_handler.setFormatter(CustomFormatter())
 logger: Logger = getLogger()
 logger.addHandler(stream_handler)
-logger.setLevel(DEBUG)
+logger.setLevel(INFO)
 
-_client_data: Dict[str, Dict[str, Union[str, Queue]]] = {}
+manager = Manager()
+_client_data: Dict[str, Dict[str, Union[str, Queue]]] = manager.dict()
 
 
 class Translation(object):
@@ -100,7 +101,7 @@ class Translation(object):
 
 
 # debag
-class DeepDaze():
+class DummyModel():
     def __init__(
         self,
         client_uuid: str,
@@ -150,7 +151,7 @@ class AIconCore:
     def run(self, queue: Queue, args: Any) -> None:
         logger.info(f"[{self.client_uuid}]: Start image generation with {self.model_name}")
 
-        model = DeepDaze(self.client_uuid, queue)
+        model = DummyModel(self.client_uuid, queue)
         if self.model_name == MODEL_NAME_BID_SLEEP:
             model.run()
         elif self.model_name == MODEL_NAME_DEEP_DAZE:
@@ -162,14 +163,54 @@ class AIconCore:
             abort(BadRequest, f"Invalid model name {self.model_name}")
 
 
+class ConnectionHealthChecker:
+    def __init__(
+        self,
+        lock: Union[synchronize.Lock, synchronize.RLock],
+        interval: float = 5.,
+    ) -> None:
+        p: Process = Process(target=self.run, args=(lock, interval), daemon=True)
+        p.start()
+
+    def run(
+        self, 
+        lock: Union[synchronize.Lock, synchronize.RLock], 
+        interval: float,
+    ) -> None:
+
+        while True:
+            global _client_data
+            print(bool(_client_data))
+            if _client_data:
+                print("うんちぶりぶりっ")
+                for client_uuid, client_data in _client_data.items():
+                    last_connection_time: float = client_data["last_connection_time"]
+
+                    print(f"now: {time.time()} last_connection_time: {last_connection_time}")
+
+                    logger.info(f"[{client_uuid}]: <<Connection Health Checker>> Checking connection health")
+
+                    if time.time() - last_connection_time > CHC_TIMEOUT:
+                        lock.acquire()
+                        result = _client_data.pop(client_uuid, None)
+                        lock.release()
+
+                        if result is None:
+                            return False
+                        else:
+                            logger.error(f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause the connection has timed out {CHC_TIMEOUT}s")
+            
+            time.sleep(interval)
+
+
 class AIcon(Resource):
     def __init__(
         self,
-        translator: str = "deepl",
+        translator_name: str = "deepl",
     ) -> None:
         super().__init__()
 
-        self.translator: Translation = Translation(translator)
+        self.translator: Translation = Translation(translator_name)
 
         self.base_img_path: str = "../frontend/static/dst_img"
         self.base_gif_path: str = "../frontend/static/dst_gif"
@@ -207,12 +248,12 @@ class AIcon(Resource):
         global _client_data
 
         received_data: Dict[str, Any] = request.get_json(force=True)
-        logger.info(f"[N/A]: Requested from {request.remote_addr} | {request.method} {str(request.url_rule)} {request.environ.get('SERVER_PROTOCOL')} {request.environ.get('HTTP_CONNECTION')}")
+        logger.info(f"Requested from {request.remote_addr} | {request.method} {str(request.url_rule)} {request.environ.get('SERVER_PROTOCOL')} {request.environ.get('HTTP_CONNECTION')}")
 
         client_uuid: str = received_data[JSON_HASH]
 
         if client_uuid == P_HASH_INIT:
-            client_uuid = str(uuid4())
+            client_uuid: str = str(uuid4())
 
             logger.info(f"[{P_HASH_INIT}]: Connection requested from a non-registered client. UUID {client_uuid} is assined.")
 
@@ -230,9 +271,8 @@ class AIcon(Resource):
                     JSON_ABORT: received_data[JSON_ABORT],
                     JSON_COMPLETE: False,
                     "queue": queue,
+                    "last_connection_time": time.time()
                 }
-
-                aicon_core: AIconCore = AIconCore(received_data[JSON_MODEL_NAME], client_uuid, translated_text, queue)
 
             except KeyError as error_state:
                 logger.fatal(f"[{client_uuid}]: {error_state}")
@@ -240,9 +280,14 @@ class AIcon(Resource):
 
             self._set_path(client_uuid)
 
+            client_priority: int = self._get_client_priority(client_uuid)
+
+            if client_priority == 1:
+                aicon_core: AIconCore = AIconCore(received_data[JSON_MODEL_NAME], client_uuid, translated_text, queue)
+
             res: Dict[str, Optional[Union[str, bool]]] = {
                 JSON_HASH: client_uuid,
-                JSON_PRIORITY: self._get_client_priority(client_uuid),
+                JSON_PRIORITY: client_priority,
                 JSON_NUM_CLIENTS: len(_client_data),
                 JSON_CURRENT_ITER: "0",
                 JSON_COMPLETE: False,
@@ -256,22 +301,24 @@ class AIcon(Resource):
             logger.info(f"[{client_uuid}]: Connection requested from a registered client")
 
             _client_data[client_uuid][JSON_ABORT] = received_data[JSON_ABORT]
+            _client_data[client_uuid]["last_connection_time"] = time.time()
 
-            client_priority: int = self._get_client_priority(client_uuid)
+            client_priority = self._get_client_priority(client_uuid)
+
+            res: Dict[str, Optional[Union[str, bool]]] = {
+                JSON_HASH: client_uuid,
+                JSON_PRIORITY: client_priority,
+                JSON_NUM_CLIENTS: len(_client_data),
+                JSON_CURRENT_ITER: "0",
+                JSON_COMPLETE: False,
+                JSON_IMG_PATH: None,
+                JSON_GIF_PATH: None,
+            }
+    
             if client_priority == 1:
-                logger.info(f"[{client_uuid}]: The client is #{client_priority}. Starting AIcon-core.")
+                logger.info(f"[{client_uuid}]: This client is #{client_priority}.")
 
                 client_data: Dict[str, Union[str, Queue]] = _client_data[client_uuid]
-
-                res: Dict[str, Optional[Union[str, bool]]] = {
-                    JSON_HASH: client_uuid,
-                    JSON_PRIORITY: client_priority,
-                    JSON_NUM_CLIENTS: len(_client_data),
-                    JSON_CURRENT_ITER: "0",
-                    JSON_COMPLETE: False,
-                    JSON_IMG_PATH: None,
-                    JSON_GIF_PATH: None,
-                }
 
                 try:
                     queued_data: Dict[str, str] = client_data["queue"].get(timeout=1.)
@@ -285,19 +332,9 @@ class AIcon(Resource):
 
                 if queued_data[JSON_COMPLETE]:
                     self._remove_client_data(client_uuid)
-                    logger.info(f"[{client_uuid}]: Removed data from clients completed with the task")
+                    logger.info(f"[{client_uuid}]: Removed clients data bacause the task is completed")
             else:
-                logger.warning(f"[{client_uuid}]: {len(_client_data)} clients are queued. The client is #{client_priority}. Skipping the task.")
-
-                res: Dict[str, Optional[Union[str, bool]]] = {
-                    JSON_HASH: client_uuid,
-                    JSON_PRIORITY: client_priority,
-                    JSON_NUM_CLIENTS: len(_client_data),
-                    JSON_CURRENT_ITER: "0",
-                    JSON_COMPLETE: False,
-                    JSON_IMG_PATH: None,
-                    JSON_GIF_PATH: None,
-                }
+                logger.warning(f"[{client_uuid}]: {len(_client_data)} clients are queued. This client is #{client_priority}. Skipping the task.")
         else:
             logger.fatal(f"[{client_uuid}]: Invalid UUID")
             abort(Forbidden, f"Invalid UUID: {client_uuid}")
@@ -327,6 +364,10 @@ class AIcon(Resource):
 
 if __name__ == "__main__":
     logger.info("Seesion started")
+
+    lock: Union[synchronize.Lock, synchronize.RLock] = Lock()
+
+    chc: ConnectionHealthChecker = ConnectionHealthChecker(lock)
 
     aicon: AIcon = AIcon()
     api.add_resource(AIcon, '/service')

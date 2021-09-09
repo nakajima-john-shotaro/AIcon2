@@ -21,6 +21,8 @@ MODEL_NAME_DALL_E: str = "DALL-E"
 
 P_HASH_INIT: str = "00000000-0000-0000-0000-000000000000"
 
+CHC_TIMEOUT: int = 7.0
+
 
 class CustomFormatter(logging.Formatter):
 
