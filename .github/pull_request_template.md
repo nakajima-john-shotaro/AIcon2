@@ -1,23 +1,18 @@
 ## Pull Request Type
 
-- [ ] add
-- [ ] change
-- [ ] fix 
-- [ ] hotfix
-- [ ] update
-- [ ] clean
-- [ ] upgrade
-- [ ] style
-- [ ] move
-- [ ] remove
-- [ ] chore
-- [ ] docs
-- [ ] reverts
-
+- [ ] :bug: `fix` : (bug fix for the user, not a fix to a build script)
+- [ ] :adhesive_bandage: `change` : (simple fix for a non-critical issue)
+- [ ] :sparkles: `feat` : (new feature for the user, not a new feature for build script)
+- [ ] :memo: `docs` : (changes to the documentation)
+- [ ] :recycle: `refactor` : (refactoring production code, eg. renaming a variable)
+- [ ] :pencil2: `style` : (formatting, missing semi colons, etc; no production code change)
+- [ ] :rotating_light: `test` : (adding missing tests, refactoring tests; no production code change)
+- [ ] :package: `chore` : (updating grunt tasks etc; no production code change)
+- [ ] :rewind: `reverts` : (canceling commits or pull requests)
 
 ## Description
 
-Pease write description here.
+Please write description here.
 
 ## Pre-Review Checklist for the Pull Request Author
 
