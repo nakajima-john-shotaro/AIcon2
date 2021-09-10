@@ -2,9 +2,10 @@ import os
 import time
 import json
 import datetime # pylint: disable=unused-import
+import multiprocessing
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
-from multiprocessing import Process, Queue, synchronize, Manager
+from multiprocessing import Process, Queue
 from threading import Thread, Lock
 from queue import Empty, Full, Queue as Queue_
 from pprint import pprint # pylint: disable=unused-import
@@ -17,6 +18,7 @@ from werkzeug.exceptions import HTTPException, BadRequest, Forbidden, InternalSe
 from waitress import serve
 
 from translation import Translation
+from models.deep_daze.deep_daze import Imagine
 from constant import *
 
 
@@ -98,12 +100,53 @@ class AIconCore:
         logger.info(f"[{self.client_uuid}]: Start image generation with {self.model_name}")
 
         model = DummyModel(self.client_uuid)
+        imagine = Imagine(
+            text=client_data[JSON_TEXT],
+            img=None,
+            lr=1e-5,
+            num_layers=16,
+            batch_size=1,
+            gradient_accumulate_every=4,
+            epochs=10,
+            iterations=1000,
+            image_width=int(client_data[JSON_SIZE]),
+            save_every=1,
+            save_progress=True,
+            seed=42,
+            open_folder=False,
+            save_date_time=False,
+            start_image_path=None,
+            start_image_train_iters=50,
+            theta_initial=None,
+            theta_hidden=None,
+            start_image_lr=3e-4,
+            lower_bound_cutout=0.1,
+            upper_bound_cutout=1.0,
+            saturate_bound=False,
+            create_story=False,
+            story_start_words=5,
+            story_words_per_epoch=5,
+            story_separator=None,
+            averaging_weight=0.3,
+            gauss_sampling=False,
+            gauss_mean=0.6,
+            gauss_std=0.2,
+            do_cutout=True,
+            center_bias=False,
+            center_focus=2,
+            jit=False,
+            hidden_size=256,
+            model_name="ViT-B/32",
+            optimizer="AdamP",
+            save_gif=False,
+            save_video=False,
+        )
         if self.model_name == MODEL_NAME_BID_SLEEP:
-            model.run(client_data)
+            imagine()
         elif self.model_name == MODEL_NAME_DEEP_DAZE:
-            model.run(client_data)
+            imagine()
         elif self.model_name == MODEL_NAME_DALL_E:
-            model.run(client_data)
+            imagine()
         else:
             logger.fatal(f"[{self.client_uuid}]: Invalid model name `{self.model_name}` requested")
             abort(BadRequest, f"Invalid model name {self.model_name}")
@@ -368,10 +411,12 @@ class AIcon(Resource):
 if __name__ == "__main__":
     logger.info("Seesion started")
 
-    pm: PriorityMonitor = PriorityMonitor()
-    chc: ConnectionHealthChecker = ConnectionHealthChecker()
+    multiprocessing.set_start_method("spawn")
 
-    aicon: AIcon = AIcon()
+    PriorityMonitor()
+    ConnectionHealthChecker()
+
+    AIcon()
     api.add_resource(AIcon, '/service')
 
-    serve(app, host='0.0.0.0', port=5050, threads=10)
+    serve(app, host='0.0.0.0', port=5050, threads=30)
