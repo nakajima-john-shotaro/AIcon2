@@ -1,13 +1,41 @@
 .carousel .carousel-item{
-  width:100%;
+	width:100%;
 }
 
 input[type="search"] {
-  -webkit-appearance: searchfield;
+	-webkit-appearance: searchfield;
 }
 input[type="search"]::-webkit-search-cancel-button {
-  -webkit-appearance: searchfield-cancel-button;
+	-webkit-appearance: searchfield-cancel-button;
 }
+
+body {
+	user-select: none;
+}
+/* 静的付与済み */
+.Model_Area {
+	padding: 5px;
+	border: solid 1px;
+	width: 95%;
+	border-radius: 10px;
+	cursor: pointer;
+	cursor: hand;
+	margin: 0 auto;
+}
+
+.Model_Area:hover{
+	border: solid 2px;
+}
+
+
+
+/* 背景色を付与 */
+.add_Color {
+	box-shadow: 0 1px 10px rgba(0, 170, 248, 0.993), 0 0 50px rgba(128, 128, 128, 0.1) ;
+	/* background-color: #ff0000; */
+}
+
+
 
 /*左と右を囲う全体のエリア*/
 #wrapper{
@@ -42,7 +70,7 @@ input[type="search"]::-webkit-search-cancel-button {
 #fixed-area{
  	position:relative!important;/*position stickyを解除*/
 	width:100%;/*横幅を100%にして1列に見せる*/
-	height: 60vh;/*縦幅を100vh⇒40vh ※任意の高さに設定可能*/
+		height: 60vh;/*縦幅を100vh⇒40vh ※任意の高さに設定可能*/
 }
 #scroll_container{
 	width:100%;/*横幅を100%にして1列に見せる*/
