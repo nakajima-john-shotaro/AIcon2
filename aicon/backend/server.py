@@ -73,8 +73,8 @@ class DummyModel():
         data: Dict[str, str] = {
             "client_uuid": self.client_uuid,
             JSON_CURRENT_ITER: str(total_iteration),
-            JSON_IMG_PATH: f"../static/dst_img/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{total_iteration:06d}.png",
-            JSON_GIF_PATH: f"../static/dst_gif/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{total_iteration:06d}.png",
+            JSON_IMG_PATH: f"../static/dst_img/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{total_iteration-1:06d}.png",
+            JSON_GIF_PATH: f"../static/dst_gif/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{total_iteration-1:06d}.png",
             JSON_COMPLETE: True
         }
         queue.put(data)
