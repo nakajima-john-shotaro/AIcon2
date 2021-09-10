@@ -47,29 +47,29 @@
         <div id="fixed-area">
           <div class="container">
             <div class="col s1"></div>
-            <div class="carousel col s10" id="DeepDaze_example">
-              <p class="carousel-item center"><img src="https://lorempixel.com/250/250/nature/1" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/2" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/3" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/4" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/5" alt="Can't load image."></p>
+            <div class="carousel col s10 gallery" id="DeepDaze_example">
+              <div class="carousel-item" id="img1"><img src="https://lorempixel.com/250/250/nature/1" alt="Can't load image."></div>
+              <div class="carousel-item" id="img2"><img src="https://lorempixel.com/250/250/nature/2" alt="Can't load image."></div>
+              <div class="carousel-item" id="img3"><img src="https://lorempixel.com/250/250/nature/3" alt="Can't load image."></div>
+              <div class="carousel-item" id="img4"><img src="https://lorempixel.com/250/250/nature/4" alt="Can't load image."></div>
+              <div class="carousel-item" id="img5"><img src="https://lorempixel.com/250/250/nature/5" alt="Can't load image."></div>
             </div>
-            <div class="carousel col s10" id="BigSleep_example" hidden>
-              <p class="carousel-item center"><img src="https://lorempixel.com/250/250/cats/1" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/cats/2" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/cats/3" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/cats/4" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/cats/5" alt="Can't load image."></p>
+            <!-- <div class="carousel col s10 gallery" id="BigSleep_example">
+              <div class="carousel-item"><img src="https://lorempixel.com/250/250/cats/1" alt="Can't load image."></div>
+              <div class="carousel-item"><img src="https://lorempixel.com/250/250/cats/2" alt="Can't load image."></div>
+              <div class="carousel-item"><img src="https://lorempixel.com/250/250/cats/3" alt="Can't load image."></div>
+              <div class="carousel-item"><img src="https://lorempixel.com/250/250/cats/4" alt="Can't load image."></div>
+              <div class="carousel-item"><img src="https://lorempixel.com/250/250/cats/5" alt="Can't load image."></div>
             </div>
-            <div class="carousel col s10" id="DALL-E_example" hidden>
-              <p class="carousel-item center"><img src="https://lorempixel.com/250/250/nature/1" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/2" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/3" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/4" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/5" alt="Can't load image."></p>
+            <div class="carousel col s10 gallery" id="DALL-E_example">
+              <div class="carousel-item"><img src="https://lorempixel.com/250/250/sports/1" alt="Can't load image."></div>
+              <div class="carousel-item"><img src="https://lorempixel.com/250/250/sports/2" alt="Can't load image."></div>
+              <div class="carousel-item"><img src="https://lorempixel.com/250/250/sports/3" alt="Can't load image."></div>
+              <div class="carousel-item"><img src="https://lorempixel.com/250/250/sports/4" alt="Can't load image."></div>
+              <div class="carousel-item"><img src="https://lorempixel.com/250/250/sports/5" alt="Can't load image."></div>
               <div class="col s1"></div>
-            </div>
-          </div>
+            </div> -->
+          </div><!-- /container -->
           <!-- <a class="waves-effect waves-light btn-large" id="action">
             <i class="material-icons left">done_all</i>
             Check
@@ -111,16 +111,18 @@
             </div>
           </div>
 
-          <div class="row center">
-            <div class="col 2"></div>
-            <form  class="col s12">
-              <i class="material-icons prefix">mode_edit</i>
-              <div class="input-field inline">
-                <input id="textarea" class="materialize-textarea cancelEnter" type="search"></input>
-                <label for="textarea">Input Text</label>
+          <div class="row">
+            <div class="col s3"></div>
+            <form class="col s6">
+              <div class="row">
+                <div class="input-field col s12">
+                  <i class="material-icons prefix">mode_edit</i>
+                  <input id="textarea" class="materialize-textarea cancelEnter" type="search"></input>
+                  <label for="textarea">Input Text</label>
                 </div>
+              </div>
             </form>
-            <div class="col 2"></div>
+            <div class="col s3"></div>
           </div>
 
           <div class="row">
@@ -149,7 +151,7 @@
               <i class="material-icons left">play_arrow</i>
               Start
             </a>
-            <a class="waves-effect waves-light btn-large" onclick="reload_window()">
+            <a class="waves-effect waves-light btn-large" id="reload">
               <i class="material-icons left">refresh</i>
               Reload
             </a>

@@ -1,3 +1,5 @@
+// $('#BigSleep_example').hide()
+// $('#DALL-E_example').hide()
 // materializeが原因で脳筋手法に出ます
 // 今後はもっと汎用性のあるものを作ります…
 var DeepDaze_button_active = false;
@@ -11,7 +13,7 @@ $("#DeepDaze").click(function(){
     }
     else if (DeepDaze_button_active ^ BigSleep_button_active){
         if (DeepDaze_button_active) {
-        document.getElementById("DeepDaze").classList.remove("add_Color");
+            document.getElementById("DeepDaze").classList.remove("add_Color");
         DeepDaze_button_active = false;
         BigSleep_button_active = false;
         }
@@ -20,7 +22,7 @@ $("#DeepDaze").click(function(){
         document.getElementById("BigSleep").classList.remove("add_Color");
         DeepDaze_button_active = true;
         BigSleep_button_active = false;
-        }
+    }
     }
 });
 
@@ -31,21 +33,71 @@ $("#BigSleep").click(function(){
         DeepDaze_button_active = false;
         BigSleep_button_active = true;
 }
-    else if (DeepDaze_button_active ^ BigSleep_button_active){
+else if (DeepDaze_button_active ^ BigSleep_button_active){
         if (BigSleep_button_active) {
-        document.getElementById("BigSleep").classList.remove("add_Color");
+            document.getElementById("BigSleep").classList.remove("add_Color");
         DeepDaze_button_active = false;
         BigSleep_button_active = false;
-        }
-        else if (DeepDaze_button_active) {
+    }
+    else if (DeepDaze_button_active) {
         document.getElementById("BigSleep").classList.add("add_Color");
         document.getElementById("DeepDaze").classList.remove("add_Color");
         DeepDaze_button_active = false;
         BigSleep_button_active = true;
-        }
     }
+}
 });
 
+
+var model_list = ['DeepDaze', 'BiGSleep', 'DALL-E'];
+
+
+$('.Model_Area').click( function() {
+    let img_id_list = [];
+    $(".carousel-item").each(function() {
+        img_id_list.push('#'+$(this).attr('id'));
+    });
+    console.log(img_id_list)
+
+    if (DeepDaze_button_active) {
+        console.log("DeepDaze")
+        // $('.gallery').fadeOut("slow", function() {
+            for (let i = 0; i < img_id_list.length; i++){
+                $(img_id_list[i]).attr('src',"https://lorempixel.com/250/250/nature/"+ (i+1))
+            };
+            $(document).ready(function(){
+                $('.carousel').carousel();
+            });
+        // });
+    }
+    else if (BigSleep_button_active) {
+        console.log("BigSleep")
+        for (let i = 0; i < img_id_list.length; i++){
+            let tmp = img_id_list[i];
+            $(tmp).attr('src',"https://lorempixel.com/250/250/cats/"+(i+1))
+            console.log(img_id_list[i])
+            console.log($(img_id_list[i]).attr('src'))
+        };
+        $(document).ready(function(){
+            $('.carousel').carousel();
+        });
+    }
+        let src = $(img_id_list[1]).attr('src');
+        console.log(src);
+
+    // if (DeepDaze_button_active) {
+    //     console.log("DeepDaze")
+    //     $('.gallery').fadeOut("slow", function() {
+    //         $('#DeepDaze_example').fadeIn('slow');
+    //     });
+    // }
+    // else if (BigSleep_button_active) {
+    //     console.log("BigSleep")
+    //     $('.gallery').fadeOut("slow", function(){
+    //         $('#BigSleep_example').fadeIn('slow');
+    //     });
+    // }
+});
 
 $(window).on('load resize', function() {
     var windowWidth = window.innerWidth;
@@ -87,6 +139,11 @@ $(function () {
 $(window).load(function(){
 	$('html,body').animate({ scrollTop: 0 }, '1');
 });
+$('#reload').on('click',function(){
+    location.reload();
+	$('html,body').animate({ scrollTop: 0 }, '1');
+});
+
 
 function get_range_value() {
     const slider = document.getElementById("slider")
