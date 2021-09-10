@@ -22,6 +22,7 @@ jobs:
           name: "Analysing the code with pylint"
           command: |
             /home/user/.local/bin/pylint aicon/test/ -v -f colorized -r y  --fail-under 5.0
+            /home/user/.local/bin/pylint aicon/backend/ -v -f colorized -r y  --fail-under -10.0
 
 workflows:
   version: 2.1
