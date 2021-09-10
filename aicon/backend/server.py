@@ -44,35 +44,40 @@ _lock: Lock = Lock()
 
 
 # debag
+import cv2
+import numpy
 class DummyModel():
     def __init__(
         self,
         client_uuid: str,
-        queue: Queue,
     ) -> None:
         self.client_uuid: str = client_uuid
-        self.queue: Queue = queue
 
-    def run(self):
-        for i in range(10):
+    def run(self, client_data: Dict[str, Union[str, Queue]]):
+        queue: Queue = client_data["queue"]
+        total_iteration: int = int(client_data[JSON_TOTAL_ITER])
+        for i in range(total_iteration):
+            img: numpy.ndarray = numpy.zeros((client_data[JSON_SIZE], client_data[JSON_SIZE]))
+            cv2.putText(img, f"{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png", (0, 128), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.imwrite(f"../frontend/static/dst_img/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png", img)
             data: Dict[str, str] = {
                 "client_uuid": self.client_uuid,
                 JSON_CURRENT_ITER: str(i),
-                JSON_IMG_PATH: f"/home/aicon/img/{self.client_uuid}/{i}",
-                JSON_GIF_PATH: f"/home/aicon/gif/{self.client_uuid}/{i}",
+                JSON_IMG_PATH: f"../static/dst_img/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png",
+                JSON_GIF_PATH: f"../static/dst_gif/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png",
                 JSON_COMPLETE: False
             }
-            self.queue.put(data)
+            queue.put(data)
             time.sleep(2)
         
         data: Dict[str, str] = {
             "client_uuid": self.client_uuid,
-            JSON_CURRENT_ITER: "10",
+            JSON_CURRENT_ITER: str(total_iteration),
             JSON_IMG_PATH: f"/home/aicon/img/{self.client_uuid}/{i}",
             JSON_GIF_PATH: f"/home/aicon/gif/{self.client_uuid}/{i}",
             JSON_COMPLETE: True
         }
-        self.queue.put(data)
+        queue.put(data)
 
         logger.info(f"[{self.client_uuid}]: Completed image generation")
 
@@ -80,27 +85,25 @@ class DummyModel():
 class AIconCore:
     def __init__(
         self,
-        model_name: str,
+        client_data: Dict[str, Union[str, Queue]],
         client_uuid: str,
-        args: Any,
-        queue: Queue = Queue(),
     ) -> None:
-        self.model_name: str = model_name
+        self.model_name: str = client_data[JSON_MODEL_NAME]
         self.client_uuid: str = client_uuid
 
-        p: Process = Process(target=self.run, args=(queue, args, ), daemon=True)
+        p: Process = Process(target=self.run, args=(client_data, ), daemon=True)
         p.start()
 
-    def run(self, queue: Queue, args: Any) -> None:
+    def run(self, client_data: Any) -> None:
         logger.info(f"[{self.client_uuid}]: Start image generation with {self.model_name}")
 
-        model = DummyModel(self.client_uuid, queue)
+        model = DummyModel(self.client_uuid)
         if self.model_name == MODEL_NAME_BID_SLEEP:
-            model.run()
+            model.run(client_data)
         elif self.model_name == MODEL_NAME_DEEP_DAZE:
-            model.run()
+            model.run(client_data)
         elif self.model_name == MODEL_NAME_DALL_E:
-            model.run()
+            model.run(client_data)
         else:
             logger.fatal(f"[{self.client_uuid}]: Invalid model name `{self.model_name}` requested")
             abort(BadRequest, f"Invalid model name {self.model_name}")
@@ -180,7 +183,7 @@ class PriorityMonitor:
                     for client_uuid, client_data in _client_data.items():
                         if client_data[JSON_PRIORITY] == 1:
                             if client_uuid not in started_clients:
-                                _: AIconCore = AIconCore(client_data[JSON_MODEL_NAME], client_uuid, client_data[JSON_TEXT], client_data["queue"])
+                                _: AIconCore = AIconCore(client_data, client_uuid)
                                 started_clients.append(client_uuid)
             except Empty:
                 pass
