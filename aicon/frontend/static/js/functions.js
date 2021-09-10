@@ -1,3 +1,49 @@
+// materializeが原因で脳筋手法に出ます
+var DeepDaze_button_active = false;
+var BigSleep_button_active = false;
+$("#DeepDaze").click(function(){
+    if (!(DeepDaze_button_active ^ BigSleep_button_active)){
+        document.getElementById("DeepDaze").classList.add("add_Color");
+        document.getElementById("BigSleep").classList.remove("add_Color");
+        DeepDaze_button_active = true;
+        BigSleep_button_active = false;
+    }
+    else if (DeepDaze_button_active ^ BigSleep_button_active){
+        if (DeepDaze_button_active) {
+        document.getElementById("DeepDaze").classList.remove("add_Color");
+        DeepDaze_button_active = false;
+        BigSleep_button_active = false;
+        }
+        else if (BigSleep_button_active) {
+        document.getElementById("DeepDaze").classList.add("add_Color");
+        document.getElementById("BigSleep").classList.remove("add_Color");
+        DeepDaze_button_active = true;
+        BigSleep_button_active = false;
+        }
+    }
+});
+
+$("#BigSleep").click(function(){
+if (!(DeepDaze_button_active ^ BigSleep_button_active)){
+    document.getElementById("BigSleep").classList.add("add_Color");
+    document.getElementById("DeepDaze").classList.remove("add_Color");
+    DeepDaze_button_active = false;
+    BigSleep_button_active = true;
+}
+else if (DeepDaze_button_active ^ BigSleep_button_active){
+    if (BigSleep_button_active) {
+    document.getElementById("BigSleep").classList.remove("add_Color");
+    DeepDaze_button_active = false;
+    BigSleep_button_active = false;
+    }
+    else if (DeepDaze_button_active) {
+    document.getElementById("BigSleep").classList.add("add_Color");
+    document.getElementById("DeepDaze").classList.remove("add_Color");
+    DeepDaze_button_active = false;
+    BigSleep_button_active = true;
+    }
+}
+});
 
 
 $(window).on('load resize', function() {
@@ -7,7 +53,7 @@ $(window).on('load resize', function() {
     Stickyfill.add(elements);
     }else{
     Stickyfill.remove(elements);
-    } 
+    }
 });
 
 $(document).ready(function() {
@@ -15,13 +61,13 @@ $(document).ready(function() {
         const model = $(this).val();
         if (model === 'DeepDaze'){
             $('.carousel').fadeOut('slow');
-            $('#DeepDaze').fadeIn('slow');
+            $('#DeepDaze_example').fadeIn('slow');
         }else if (model === 'BigSleep') {
             $('.carousel').fadeOut(100);
-            $('#BigSleep').fadeIn(200);
+            $('#BigSleep_example').fadeIn(200);
         }else if (model === 'DALL-E') {
             $('.carousel').fadeOut('slow');
-            $('#DALL-E').fadeIn('slow');
+            $('#DALL-E_example').fadeIn('slow');
         }
     })
 });
@@ -34,6 +80,12 @@ $(function () {
             }
         })
 });
+
+
+// function check_model() {
+
+//     console.log(document.querySelector('.model_button').dataset["value"])
+// }
 
 function reload_window() {
     window.location.reload();
