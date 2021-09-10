@@ -2,7 +2,7 @@ import os
 import time
 import json
 import datetime # pylint: disable=unused-import
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 from multiprocessing import Process, Queue, synchronize, Manager
 from threading import Thread, Lock
@@ -38,7 +38,8 @@ logger.addHandler(stream_handler)
 logger.setLevel(INFO)
 
 _client_data: Dict[str, Dict[str, Union[str, Queue]]] = {}
-_client_data_queue: Queue_ = Queue_(maxsize=1)
+_client_data_queue_chc: Queue_ = Queue_(maxsize=1)
+_client_data_queue_pm: Queue_ = Queue_(maxsize=1)
 _lock: Lock = Lock()
 
 
@@ -120,7 +121,7 @@ class ConnectionHealthChecker:
         empty_counter: int = 0
         while True:
             try:
-                _client_data: dict = _client_data_queue.get_nowait()
+                _client_data: dict = _client_data_queue_chc.get_nowait()
                 if _client_data:
                     for client_uuid, client_data in list(_client_data.items()):
                         last_connection_time: float = client_data["last_connection_time"]
@@ -155,6 +156,34 @@ class ConnectionHealthChecker:
                                 logger.error(f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause there was no connection for a long time.")
                     except UnboundLocalError:
                         pass             
+
+            time.sleep(interval)
+
+
+class PriorityMonitor:
+    def __init__(
+        self,
+        interval: float = 2.,
+    ) -> None:
+        p: Thread = Thread(target=self.run, args=(interval, ), daemon=True)
+        p.start()
+
+    def run(
+        self,
+        interval: float,
+    ) -> None:
+        started_clients: List[str] = []
+        while True:
+            try:
+                _client_data: dict = _client_data_queue_pm.get_nowait()
+                if _client_data:
+                    for client_uuid, client_data in _client_data.items():
+                        if client_data[JSON_PRIORITY] == 1:
+                            if client_uuid not in started_clients:
+                                _: AIconCore = AIconCore(client_data[JSON_MODEL_NAME], client_uuid, client_data[JSON_TEXT], client_data["queue"])
+                                started_clients.append(client_uuid)
+            except Empty:
+                pass
 
             time.sleep(interval)
 
@@ -227,11 +256,15 @@ class AIcon(Resource):
                     JSON_ABORT: received_data[JSON_ABORT],
                     JSON_COMPLETE: False,
                     "queue": queue,
-                    "last_connection_time": time.time()
+                    "last_connection_time": time.time(),
                 }
 
+                client_priority: int = self._get_client_priority(client_uuid)
+                _client_data[client_uuid][JSON_PRIORITY] = client_priority
+
                 try:
-                    _client_data_queue.put_nowait(_client_data)
+                    _client_data_queue_chc.put_nowait(_client_data)
+                    _client_data_queue_pm.put_nowait(_client_data)
                 except Full:
                     pass
 
@@ -240,11 +273,6 @@ class AIcon(Resource):
                 abort(BadRequest, error_state)
 
             self._set_path(client_uuid)
-
-            client_priority: int = self._get_client_priority(client_uuid)
-
-            if client_priority == 1:
-                aicon_core: AIconCore = AIconCore(received_data[JSON_MODEL_NAME], client_uuid, translated_text, queue)
 
             res: Dict[str, Optional[Union[str, bool]]] = {
                 JSON_HASH: client_uuid,
@@ -261,15 +289,16 @@ class AIcon(Resource):
         if client_uuid in _client_data.keys():
             logger.info(f"[{client_uuid}]: Connection requested from a registered client")
 
+            client_priority = self._get_client_priority(client_uuid)
+
             _client_data[client_uuid][JSON_ABORT] = received_data[JSON_ABORT]
+            _client_data[client_uuid][JSON_PRIORITY] = client_priority
             _client_data[client_uuid]["last_connection_time"] = time.time()
 
             try:
-                _client_data_queue.put_nowait(_client_data)
+                _client_data_queue_chc.put_nowait(_client_data)
             except Full:
                 pass
-
-            client_priority = self._get_client_priority(client_uuid)
 
             res: Dict[str, Optional[Union[str, bool]]] = {
                 JSON_HASH: client_uuid,
@@ -283,6 +312,11 @@ class AIcon(Resource):
     
             if client_priority == 1:
                 logger.info(f"[{client_uuid}]: This client is #{client_priority}.")
+
+                try:
+                    _client_data_queue_pm.put_nowait(_client_data)
+                except Full:
+                    pass
 
                 client_data: Dict[str, Union[str, Queue]] = _client_data[client_uuid]
 
@@ -331,6 +365,7 @@ class AIcon(Resource):
 if __name__ == "__main__":
     logger.info("Seesion started")
 
+    pm: PriorityMonitor = PriorityMonitor()
     chc: ConnectionHealthChecker = ConnectionHealthChecker()
 
     aicon: AIcon = AIcon()
