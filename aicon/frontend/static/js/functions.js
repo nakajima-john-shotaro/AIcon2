@@ -1,4 +1,5 @@
 // materializeが原因で脳筋手法に出ます
+// 今後はもっと汎用性のあるものを作ります…
 var DeepDaze_button_active = false;
 var BigSleep_button_active = false;
 $("#DeepDaze").click(function(){
@@ -24,25 +25,25 @@ $("#DeepDaze").click(function(){
 });
 
 $("#BigSleep").click(function(){
-if (!(DeepDaze_button_active ^ BigSleep_button_active)){
-    document.getElementById("BigSleep").classList.add("add_Color");
-    document.getElementById("DeepDaze").classList.remove("add_Color");
-    DeepDaze_button_active = false;
-    BigSleep_button_active = true;
+    if (!(DeepDaze_button_active ^ BigSleep_button_active)){
+        document.getElementById("BigSleep").classList.add("add_Color");
+        document.getElementById("DeepDaze").classList.remove("add_Color");
+        DeepDaze_button_active = false;
+        BigSleep_button_active = true;
 }
-else if (DeepDaze_button_active ^ BigSleep_button_active){
-    if (BigSleep_button_active) {
-    document.getElementById("BigSleep").classList.remove("add_Color");
-    DeepDaze_button_active = false;
-    BigSleep_button_active = false;
+    else if (DeepDaze_button_active ^ BigSleep_button_active){
+        if (BigSleep_button_active) {
+        document.getElementById("BigSleep").classList.remove("add_Color");
+        DeepDaze_button_active = false;
+        BigSleep_button_active = false;
+        }
+        else if (DeepDaze_button_active) {
+        document.getElementById("BigSleep").classList.add("add_Color");
+        document.getElementById("DeepDaze").classList.remove("add_Color");
+        DeepDaze_button_active = false;
+        BigSleep_button_active = true;
+        }
     }
-    else if (DeepDaze_button_active) {
-    document.getElementById("BigSleep").classList.add("add_Color");
-    document.getElementById("DeepDaze").classList.remove("add_Color");
-    DeepDaze_button_active = false;
-    BigSleep_button_active = true;
-    }
-}
 });
 
 
@@ -56,21 +57,23 @@ $(window).on('load resize', function() {
     }
 });
 
-$(document).ready(function() {
-    $("#use_model").change(function() {
-        const model = $(this).val();
-        if (model === 'DeepDaze'){
-            $('.carousel').fadeOut('slow');
-            $('#DeepDaze_example').fadeIn('slow');
-        }else if (model === 'BigSleep') {
-            $('.carousel').fadeOut(100);
-            $('#BigSleep_example').fadeIn(200);
-        }else if (model === 'DALL-E') {
-            $('.carousel').fadeOut('slow');
-            $('#DALL-E_example').fadeIn('slow');
-        }
-    })
-});
+
+// 後から直す
+// $(document).ready(function() {
+//     $("#use_model").change(function() {
+//         const model = $(this).val();
+//         if (model === 'DeepDaze'){
+//             $('.carousel').fadeOut('slow');
+//             $('#DeepDaze_example').fadeIn('slow');
+//         }else if (model === 'BigSleep') {
+//             $('.carousel').fadeOut(100);
+//             $('#BigSleep_example').fadeIn(200);
+//         }else if (model === 'DALL-E') {
+//             $('.carousel').fadeOut('slow');
+//             $('#DALL-E_example').fadeIn('slow');
+//         }
+//     })
+// });
 
 $(function () {
     $('.cancelEnter')
@@ -81,40 +84,52 @@ $(function () {
         })
 });
 
-
-// function check_model() {
-
-//     console.log(document.querySelector('.model_button').dataset["value"])
-// }
-
-function reload_window() {
-    window.location.reload();
-}
+$(window).load(function(){
+	$('html,body').animate({ scrollTop: 0 }, '1');
+});
 
 function get_range_value() {
     const slider = document.getElementById("slider")
     return slider.value;
 }
 
+function select_check() {
+    let use_model = "";
+    if (DeepDaze_button_active === true) {
+        use_model = "DeepDaze";
+    }
+    else if (BigSleep_button_active === true) {
+        use_model = "BigSleep";
+    }
+    else {
+        use_model = "";
+        console.log("使用するモデルを選択してください");
+    }
+    return use_model;
+}
+
 function start() {
+    // 使用するモデルの選択
+    const use_model = select_check();
+    if (use_model === "") {
+        return;
+    }
+
     $('#img_make_container').fadeIn(1000);
     const target = $('#img_make_container').get(0).offsetTop;
     $('body,html').animate({scrollTop:target}, 500, 'swing');
-    // 使用するmodel
-    const use_model = document.getElementById("use_model").value;
-    console.log(use_model)
     // スライダーの値を取得
     const slider_val = get_range_value()
-    
-    // 表示するやつ（※後で削除する）
-    // document.getElementById("info").textContent = use_model;
-    // const val = document.getElementById("output")
-    // val.innerText = slider_val
+
+    // 入力された文字を取得
+    var input_text = $('#textarea').val();
+    console.log(input_text);
+    console.log("↑入力された文字列");
 
     // 送信するデータ
     send_data = {
         model_name : use_model,
-        text : "Hi! I'm John. Nice to meet you!",
+        text : input_text,
         total_iter : parseInt(slider_val),
         size : 256,
         hash : '00000000-0000-0000-0000-000000000000',
