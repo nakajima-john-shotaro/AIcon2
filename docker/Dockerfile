@@ -57,7 +57,13 @@ RUN pip3 install \
         bs4 \
         chromedriver-binary \
         selenium \
-        googletrans==4.0.0-rc1
+        googletrans==4.0.0-rc1 \
+        siren_pytorch \
+        torch_optimizer \
+        boto3 \
+        ftfy \
+        regex \
+        imageio
 
 RUN locale-gen ja_JP.UTF-8
 ENV LANG ja_JP.UTF-8
