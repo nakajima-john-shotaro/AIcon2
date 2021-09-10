@@ -58,7 +58,7 @@ class DummyModel():
         total_iteration: int = int(client_data[JSON_TOTAL_ITER])
         for i in range(total_iteration):
             img: numpy.ndarray = numpy.zeros((client_data[JSON_SIZE], client_data[JSON_SIZE]))
-            cv2.putText(img, f"{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png", (0, 128), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.putText(img, f"{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png", (0, 128), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1, cv2.LINE_AA)
             cv2.imwrite(f"../frontend/static/dst_img/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png", img)
             data: Dict[str, str] = {
                 "client_uuid": self.client_uuid,
@@ -73,8 +73,8 @@ class DummyModel():
         data: Dict[str, str] = {
             "client_uuid": self.client_uuid,
             JSON_CURRENT_ITER: str(total_iteration),
-            JSON_IMG_PATH: f"/home/aicon/img/{self.client_uuid}/{i}",
-            JSON_GIF_PATH: f"/home/aicon/gif/{self.client_uuid}/{i}",
+            JSON_IMG_PATH: f"../static/dst_img/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{total_iteration:06d}.png",
+            JSON_GIF_PATH: f"../static/dst_gif/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{total_iteration:06d}.png",
             JSON_COMPLETE: True
         }
         queue.put(data)
