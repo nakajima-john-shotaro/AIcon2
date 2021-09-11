@@ -13,6 +13,8 @@ from logging import StreamHandler, Logger, getLogger, INFO
 from flask import Flask, Response, jsonify, render_template, abort, request
 from flask_cors import CORS
 from flask_restful import Api, Resource, reqparse
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.exceptions import HTTPException, BadRequest, Forbidden, InternalServerError
 from waitress import serve
 
@@ -27,6 +29,8 @@ app: Flask = Flask(
 )
 app.config["JSON_AS_ASCII"] = False
 app.config["JSON_SORT_KEYS"] = False
+app.config['RATELIMIT_HEADERS_ENABLED'] = True
+limiter = Limiter(app, key_func=get_remote_address, default_limits=["100 per minute"])
 CORS(app)
 api: Api = Api(app)
 
@@ -106,7 +110,7 @@ class AIconCore:
             model.run(client_data)
         else:
             logger.fatal(f"[{self.client_uuid}]: Invalid model name `{self.model_name}` requested")
-            abort(BadRequest, f"Invalid model name {self.model_name}")
+            abort(400, f"Invalid model name {self.model_name}")
 
 
 class ConnectionHealthChecker:
@@ -260,6 +264,7 @@ class AIcon(Resource):
                     JSON_COMPLETE: False,
                     "queue": queue,
                     "last_connection_time": time.time(),
+                    "_queue_empty_counter": 0,
                 }
 
                 client_priority: int = self._get_client_priority(client_uuid)
@@ -273,7 +278,7 @@ class AIcon(Resource):
 
             except KeyError as error_state:
                 logger.fatal(f"[{client_uuid}]: {error_state}")
-                abort(BadRequest, error_state)
+                abort(400, error_state)
 
             self._set_path(client_uuid)
 
@@ -326,21 +331,30 @@ class AIcon(Resource):
                 try:
                     queued_data: Dict[str, str] = client_data["queue"].get(timeout=1.)
 
+                    _client_data[client_uuid]["_queue_empty_counter"] = 0
+
                     res[JSON_CURRENT_ITER] = queued_data[JSON_CURRENT_ITER]
                     res[JSON_IMG_PATH] = queued_data[JSON_IMG_PATH]
                     res[JSON_GIF_PATH] = queued_data[JSON_GIF_PATH]
                     res[JSON_COMPLETE] = queued_data[JSON_COMPLETE]
 
                     if queued_data[JSON_COMPLETE]:
-                        self._remove_client_data(client_uuid)
-                        logger.info(f"[{client_uuid}]: Removed clients data bacause the task is completed")
+                        if self._remove_client_data(client_uuid):
+                            logger.info(f"[{client_uuid}]: The task is successfully completed. Removed the client data.")
+                        else:
+                            logger.warn(f"[{client_uuid}]: The task is successfully completed. But failed to remove the client data.")
                 except Empty:
+                    _client_data[client_uuid]["_queue_empty_counter"] += 1
                     logger.warning(f"[{client_uuid}]: Queue is empty")
+
+                    if _client_data[client_uuid]["_queue_empty_counter"] > MAIN_EMPTY_TOLERANCE:
+                        logger.error(f"[{client_uuid}]: No data has been sent for a long time, AIcon Core may have crashed")
+                        abort(500, "Server crashed")
             else:
                 logger.warning(f"[{client_uuid}]: {len(_client_data)} clients are queued. This client is #{client_priority}. Skipping the task.")
         else:
             logger.fatal(f"[{client_uuid}]: Invalid UUID")
-            abort(Forbidden, f"Invalid UUID: {client_uuid}")
+            abort(403, f"Invalid UUID: {client_uuid}")
 
         return jsonify(res)
     
