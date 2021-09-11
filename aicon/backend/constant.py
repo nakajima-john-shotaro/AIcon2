@@ -24,6 +24,8 @@ P_HASH_INIT: str = "00000000-0000-0000-0000-000000000000"
 CHC_TIMEOUT: float = 7.0
 CHC_EMPTY_TOLERANCE: int = 5
 
+MAIN_EMPTY_TOLERANCE: int = 10
+
 
 class CustomFormatter(logging.Formatter):
 
