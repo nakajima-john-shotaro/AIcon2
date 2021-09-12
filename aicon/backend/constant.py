@@ -52,3 +52,23 @@ class CustomFormatter(logging.Formatter):
         formatter = logging.Formatter(log_fmt)
 
         return formatter.format(record)
+
+
+class AIconBaseException(Exception):
+    def __init__(self, arg="") -> None:
+        self.arg = arg
+
+
+class AIconRuntimeError(AIconBaseException):
+    def __str__(self):
+        return f"{self.arg}"
+
+
+class AIconValueError(AIconBaseException):
+    def __str__(self):
+        return f"{self.arg}"
+
+
+class AIconTypeError(AIconBaseException):
+    def __str__(self):
+        return f"{self.arg}"
