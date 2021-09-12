@@ -293,11 +293,13 @@ class Imagine(nn.Module):
         self.create_story: bool = create_story
         self.words: Optional[str] = None
         self.separator: Optional[str] = str(story_separator) if story_separator is not None else None
+
         if self.separator is not None and text is not None:
             #exit if text is just the separator
             if str(text).replace(' ','').replace(self.separator,'') == '':
                 logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Text only consists of the separator `{self.separator}`")
-                raise 
+                raise AIconValueError(f"Text only consists of the separator `{self.separator}`")
+
             #adds a space to each separator and removes double spaces that might be generated
             text = text.replace(self.separator,self.separator+' ').replace('  ',' ').strip()
 
@@ -306,26 +308,31 @@ class Imagine(nn.Module):
         self.words_per_epoch: int = story_words_per_epoch
 
         if create_story:
-            assert text is not None,  "We need text input to create a story..."
+            if text is None:
+                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> No text is input. Cannot create story.")
+                raise AIconValueError(f"No text is input. Cannot create story.")
+
             # overwrite epochs to match story length
-            num_words = len(self.all_words)
-            self.epochs = 1 + (num_words - self.num_start_words) / self.words_per_epoch
+            num_words: int = len(self.all_words)
+            self.epochs: float = 1 + (num_words - self.num_start_words) / self.words_per_epoch
+
             # add one epoch if not divisible
-            self.epochs = int(self.epochs) if int(self.epochs) == self.epochs else int(self.epochs) + 1
+            self.epochs: int = int(self.epochs) if int(self.epochs) == self.epochs else int(self.epochs) + 1
             if self.separator is not None:
                 if self.separator not in text:
-                    print("Separator '"+self.separator+"' will be ignored since not in text!")
+                    logger.warning(f"[{self.client_uuid}]: <<AIcon Core>> Separator `{self.separator}` will be ignored since not in text")
                     self.separator = None
                 else:
                     self.epochs = len(list(filter(None,text.split(self.separator))))
-            print("Running for", self.epochs, "epochs" + (" (split with '"+self.separator+"' as the separator)" if self.separator is not None else ""))
+            if self.separator is not None:
+                logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Running for {self.epochs} epochs (split with `{self.separator}`  as the separator)")
         else: 
             self.epochs = epochs
 
-        # jit models only compatible with version 1.7.1
-        if "1.7.1" not in torch.__version__:
-            if jit == True:
-                print("Setting jit to False because torch version is not 1.7.1.")
+        # jit models only compatible with version CORE_COMPATIBLE_PYTORCH_VERSION
+        if CORE_COMPATIBLE_PYTORCH_VERSION not in torch.__version__:
+            if jit:
+                logger.warning(f"[{self.client_uuid}]: <<AIcon Core>> Setting jit to False because torch version is not {CORE_COMPATIBLE_PYTORCH_VERSION}")
             jit = False
 
         # Load CLIP
