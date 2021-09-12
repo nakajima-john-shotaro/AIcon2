@@ -1,6 +1,11 @@
 """constant.py"""
 
 import logging
+from logging import (
+    StreamHandler, Logger, Formatter, 
+    getLogger, DEBUG, INFO, WARNING, ERROR, CRITICAL
+)
+
 
 JSON_MODEL_NAME: str = "model_name"
 JSON_TEXT: str = "text"
@@ -8,6 +13,7 @@ JSON_CURRENT_ITER: str = "current_iter"
 JSON_TOTAL_ITER: str = "total_iter"
 JSON_SIZE: str = "size"
 JSON_HASH: str = "hash"
+JSON_SEED: str = "seed"
 JSON_COMPLETE: str = "complete"
 JSON_ABORT: str = "abort"
 JSON_PRIORITY: str = "priority"
@@ -16,7 +22,7 @@ JSON_IMG_PATH: str = "img_path"
 JSON_GIF_PATH: str = "gif_path" # will be deprecated
 JSON_MP4_PATH: str = "mp4_path"
 
-MODEL_NAME_BID_SLEEP: str = "BigSleep"
+MODEL_NAME_BIG_SLEEP: str = "BigSleep"
 MODEL_NAME_DEEP_DAZE: str = "DeepDaze"
 MODEL_NAME_DALL_E: str = "DALL-E"
 
@@ -34,7 +40,7 @@ CHC_LAST_CONNECTION_TIME: str = "last_connection_time"
 
 
 
-class CustomFormatter(logging.Formatter):
+class CustomFormatter(Formatter):
 
     gray = "\x1b[38;1m"
     blue = "\x1b[34;1m"
@@ -44,21 +50,29 @@ class CustomFormatter(logging.Formatter):
     red_underlined = "\x1b[31;1;4m"
     reset = "\x1b[0m"
 
-    format = "[%(levelname)s] [%(asctime)s]: %(message)s (%(filename)s:L%(lineno)d)"
+    format = "[%(levelname)-8s] [%(asctime)s]: %(message)s (%(filename)s:L%(lineno)d)"
 
     FORMATS = {
-        logging.DEBUG: blue + format + reset,
-        logging.INFO: gray + format + reset,
-        logging.WARNING: yellow + format + reset,
-        logging.ERROR: red + format + reset,
-        logging.CRITICAL: red_underlined + format + reset
+        DEBUG: blue + format + reset,
+        INFO: gray + format + reset,
+        WARNING: yellow + format + reset,
+        ERROR: red + format + reset,
+        CRITICAL: red_underlined + format + reset
     }
 
     def format(self, record):
         log_fmt = self.FORMATS.get(record.levelno)
-        formatter = logging.Formatter(log_fmt)
+        formatter = Formatter(log_fmt)
 
         return formatter.format(record)
+
+
+stream_handler: StreamHandler = StreamHandler()
+stream_handler.setLevel(INFO)
+stream_handler.setFormatter(CustomFormatter())
+logger: Logger = getLogger("aicon")
+logger.addHandler(stream_handler)
+logger.setLevel(INFO)
 
 
 class AIconBaseException(Exception):
@@ -87,5 +101,10 @@ class AIconOutOfMemoryError(AIconBaseException):
 
 
 class AIconFileNotFoundError(AIconBaseException):
+    def __str__(self):
+        return f"{self.arg}"
+
+
+class AIconAbortedError(AIconBaseException):
     def __str__(self):
         return f"{self.arg}"
