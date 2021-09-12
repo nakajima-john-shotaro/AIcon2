@@ -1,18 +1,27 @@
+import hashlib
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
+import urllib
+import warnings
 from collections import OrderedDict
-from typing import Tuple, Union
+from logging import INFO, Logger, StreamHandler, getLogger
+from pathlib import Path
+from typing import List, Tuple, Union
 
 import torch
 import torch.nn.functional as F
+from constant import CustomFormatter
 from torch import nn
-from pathlib import Path
-
-import hashlib
-import os
-import urllib
-import warnings
-from typing import Union, List
 from torchvision.transforms import Compose, Normalize
-from tqdm import tqdm
+
+stream_handler: StreamHandler = StreamHandler()
+stream_handler.setLevel(INFO)
+stream_handler.setFormatter(CustomFormatter())
+logger: Logger = getLogger()
+logger.addHandler(stream_handler)
+logger.setLevel(INFO)
 
 _MODELS = {
     "RN50": "https://openaipublic.azureedge.net/clip/models/afeb0e10f9e5a86da6080e35cf09123aca3b358a0c3e3b6c78a7b63bc04b6762/RN50.pt",
@@ -38,19 +47,12 @@ def _download(url: str, root: str = os.path.expanduser("~/.cache/clip")):
             warnings.warn(f"{download_target} exists, but the SHA256 checksum does not match; re-downloading the file")
 
     with urllib.request.urlopen(url) as source, open(download_target, "wb") as output:
-        with tqdm(
-            total=int(source.info().get("Content-Length")),
-            unit='iB',
-            unit_scale=True,
-            desc=f"Downloading {filename}",
-        ) as loop:
-            while True:
-                buffer = source.read(524288)
-                if not buffer:
-                    break
+        while True:
+            buffer = source.read(524288)
+            if not buffer:
+                break
 
-                output.write(buffer)
-                loop.update(len(buffer))
+            output.write(buffer)
 
     if hashlib.sha256(open(download_target, "rb").read()).hexdigest() != expected_sha256:
         raise RuntimeError(f"Model has been downloaded but the SHA256 checksum does not not match")
@@ -100,7 +102,7 @@ def load(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_a
 
     try:
         # loading JIT archive
-        model = torch.jit.load(model_path, map_location=device if jit else "cpu").eval()
+        model: nn.Module = torch.jit.load(model_path, map_location=device if jit else "cpu").eval()
         state_dict = None
     except RuntimeError:
         # loading saved state dict
@@ -745,4 +747,5 @@ class SimpleTokenizer(object):
         text = ''.join([self.decoder[token] for token in tokens])
         text = bytearray([self.byte_decoder[c] for c in text]).decode('utf-8', errors="replace").replace('</w>', ' ')
         return text
+
 _tokenizer = SimpleTokenizer()
