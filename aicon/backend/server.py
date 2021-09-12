@@ -70,7 +70,7 @@ class DummyModel():
                 "client_uuid": self.client_uuid,
                 JSON_CURRENT_ITER: str(i),
                 JSON_IMG_PATH: f"../static/dst_img/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png",
-                JSON_GIF_PATH: f"../static/dst_gif/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png",
+                JSON_MP4_PATH: f"../static/dst_gif/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png",
                 JSON_COMPLETE: False
             }
             queue.put(data)
@@ -80,7 +80,7 @@ class DummyModel():
             "client_uuid": self.client_uuid,
             JSON_CURRENT_ITER: str(total_iteration),
             JSON_IMG_PATH: f"../static/dst_img/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{total_iteration-1:06d}.png",
-            JSON_GIF_PATH: f"../static/dst_gif/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{total_iteration-1:06d}.png",
+            JSON_MP4_PATH: f"../static/dst_gif/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{total_iteration-1:06d}.png",
             JSON_COMPLETE: True
         }
         queue.put(data)
@@ -247,7 +247,7 @@ class AIcon(Resource):
         self.translator: Translation = Translation(translator_name)
 
         self.base_img_path: str = "../frontend/static/dst_img"
-        self.base_gif_path: str = "../frontend/static/dst_gif"
+        self.base_mp4_path: str = "../frontend/static/dst_gif"
 
     def _get_client_priority(self, client_uuid: str) -> int:
         global _client_data
@@ -260,13 +260,13 @@ class AIcon(Resource):
         model_name: str = _client_data[client_uuid][JSON_MODEL_NAME]
 
         img_path: str = os.path.join(self.base_img_path, model_name, client_uuid)
-        gif_path: str = os.path.join(self.base_gif_path, model_name, client_uuid)
+        mp4_path: str = os.path.join(self.base_mp4_path, model_name, client_uuid)
 
         os.makedirs(img_path, exist_ok=True)
-        os.makedirs(gif_path, exist_ok=True)
+        os.makedirs(mp4_path, exist_ok=True)
 
         _client_data[client_uuid][JSON_IMG_PATH] = img_path
-        _client_data[client_uuid][JSON_GIF_PATH] = gif_path
+        _client_data[client_uuid][JSON_MP4_PATH] = mp4_path
 
     def _remove_client_data(self, client_uuid: str) -> bool:
         global _client_data
@@ -331,7 +331,7 @@ class AIcon(Resource):
                 JSON_CURRENT_ITER: "0",
                 JSON_COMPLETE: False,
                 JSON_IMG_PATH: None,
-                JSON_GIF_PATH: None,
+                JSON_MP4_PATH: None,
             }
 
             return jsonify(res)
@@ -357,7 +357,7 @@ class AIcon(Resource):
                 JSON_CURRENT_ITER: "0",
                 JSON_COMPLETE: False,
                 JSON_IMG_PATH: None,
-                JSON_GIF_PATH: None,
+                JSON_MP4_PATH: None,
             }
     
             if client_priority == 1:
@@ -377,7 +377,7 @@ class AIcon(Resource):
 
                     res[JSON_CURRENT_ITER] = queued_data[JSON_CURRENT_ITER]
                     res[JSON_IMG_PATH] = queued_data[JSON_IMG_PATH]
-                    res[JSON_GIF_PATH] = queued_data[JSON_GIF_PATH]
+                    res[JSON_MP4_PATH] = queued_data[JSON_MP4_PATH]
                     res[JSON_COMPLETE] = queued_data[JSON_COMPLETE]
 
                     if queued_data[JSON_COMPLETE]:

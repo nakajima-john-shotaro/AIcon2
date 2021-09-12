@@ -13,7 +13,8 @@ JSON_ABORT: str = "abort"
 JSON_PRIORITY: str = "priority"
 JSON_NUM_CLIENTS: str = "num_clients"
 JSON_IMG_PATH: str = "img_path"
-JSON_GIF_PATH: str = "git_path"
+JSON_GIF_PATH: str = "gif_path" # will be deprecated
+JSON_MP4_PATH: str = "mp4_path"
 
 MODEL_NAME_BID_SLEEP: str = "BigSleep"
 MODEL_NAME_DEEP_DAZE: str = "DeepDaze"

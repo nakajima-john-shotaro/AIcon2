@@ -16,7 +16,7 @@ import torch
 import torch.nn.functional as F
 import torchvision.transforms as T
 from constant import *
-from imageio import imread, mimsave, get_writer
+from imageio import get_writer, imread, mimsave
 from PIL import Image
 from siren_pytorch import SirenNet, SirenWrapper
 from torch import nn
@@ -58,6 +58,7 @@ def rand_cutout(image: torch.Tensor, size: int, center_bias: bool = False, cente
         std = center / center_focus
         offset_x = int(random.gauss(mu=center, sigma=std))
         offset_y = int(random.gauss(mu=center, sigma=std))
+
         # resample uniformly if over boundaries
         offset_x = random.randint(min_offset, max_offset) if (offset_x > max_offset or offset_x < min_offset) else offset_x
         offset_y = random.randint(min_offset, max_offset) if (offset_y > max_offset or offset_y < min_offset) else offset_y
@@ -279,7 +280,9 @@ class Imagine(nn.Module):
         self.client_data: Dict[str, Union[str, Queue]] = client_data
 
         self.dst_img_path: str = self.client_data[JSON_IMG_PATH]
-        self.dst_gif_path: str = self.client_data[JSON_GIF_PATH]
+        self.dst_mp4_path: str = self.client_data[JSON_MP4_PATH]
+
+        self.writer = get_writer(self.path, fps=20)
 
         if exists(seed):
             self.seed: int = seed
@@ -556,9 +559,6 @@ class Imagine(nn.Module):
         if self.save_video:
             mimsave(f'{self.textpath}.mp4', images)
             print(f'Generated image generation animation at ./{self.textpath}.mp4')
-        if self.save_gif:
-            mimsave(f'{self.textpath}.gif', images)
-            print(f'Generated image generation animation at ./{self.textpath}.gif')
 
     def forward(self):
         if exists(self.start_image):
