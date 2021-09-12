@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Any, Dict, Iterator, List, Optional, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from torchvision.transforms.transforms import Compose
 
@@ -16,7 +16,7 @@ import torch
 import torch.nn.functional as F
 import torchvision.transforms as T
 from constant import *
-from imageio import imread, mimsave
+from imageio import imread, mimsave, get_writer
 from PIL import Image
 from siren_pytorch import SirenNet, SirenWrapper
 from torch import nn
@@ -180,7 +180,7 @@ class DeepDaze(nn.Module):
             sizes = torch.randint(int(lower), int(upper), (self.batch_size,))
         return sizes
 
-    def forward(self, text_embed, return_loss=True, dry_run=False):
+    def forward(self, text_embed, return_loss=True, dry_run=False) -> Union[torch.Tensor, Tuple[torch.Tensor, ...]]:
         out = self.model()
         out = norm_siren_output(out)
 
@@ -252,7 +252,6 @@ class Imagine(nn.Module):
             save_every: int = 100,
             epochs: int = 1,
             save_progress: bool = True,
-            save_date_time: bool = False,
             start_image_path: Optional[str] = None,
             start_image_train_iters: int = 10,
             start_image_lr: float = 3e-4,
@@ -278,6 +277,9 @@ class Imagine(nn.Module):
 
         self.client_uuid: str = client_uuid
         self.client_data: Dict[str, Union[str, Queue]] = client_data
+
+        self.dst_img_path: str = self.client_data[JSON_IMG_PATH]
+        self.dst_gif_path: str = self.client_data[JSON_GIF_PATH]
 
         if exists(seed):
             self.seed: int = seed
@@ -327,7 +329,7 @@ class Imagine(nn.Module):
                 else:
                     self.epochs = len(list(filter(None,text.split(self.separator))))
             if self.separator is not None:
-                logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Running for {self.epochs} epochs (split with `{self.separator}`  as the separator)")
+                logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Running for {self.epochs} epochs (split with `{self.separator}` as the separator)")
         else: 
             self.epochs = epochs
 
@@ -391,12 +393,11 @@ class Imagine(nn.Module):
 
         self.gradient_accumulate_every: int = gradient_accumulate_every
         self.save_every: int = save_every
-        self.save_date_time: bool = save_date_time
         self.save_progress: bool = save_progress
         self.text: Optional[str] = text
         self.image: Optional[str] = img
         self.textpath: str = create_text_path(self.perceptor.context_length, text=text, img=img, encoding=clip_encoding, separator=story_separator)
-        self.filename: Path = self.image_output_path()
+        self.filename: Path = self.get_output_img_path()
         
         # create coding to optimize for
         self.clip_encoding: torch.Tensor = self.create_clip_encoding(text=text, img=img, encoding=clip_encoding)
@@ -429,7 +430,7 @@ class Imagine(nn.Module):
         if encoding is not None:
             encoding = encoding.to(self.device)
         elif self.create_story:
-            encoding = self.update_story_encoding(epoch=0, iteration=1)
+            encoding = self.update_story_encoding()
         elif text is not None and img is not None:
             encoding = (self.create_text_encoding(text) + self.create_img_encoding(img)) / 2
         elif text is not None:
@@ -465,7 +466,7 @@ class Imagine(nn.Module):
             if self.separator in str(word):
                 return c + 1
 
-    def update_story_encoding(self, epoch: int, iteration: int) -> torch.Tensor:
+    def update_story_encoding(self) -> torch.Tensor:
         if self.separator is not None:
             self.words: str = " ".join(self.all_words[:self.index_of_first_separator()])
             #removes separator from epoch-text
@@ -491,41 +492,34 @@ class Imagine(nn.Module):
 
         # get new encoding
         logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Now thinking of `{self.words}`")
-        sequence_number: int = self.get_img_sequence_number(epoch, iteration)
-
-        # save new words to disc
-        with open("story_transitions.txt", "a") as f:
-            f.write(f"{epoch}, {sequence_number}, {self.words}\n")
-        
         encoding: torch.Tensor = self.create_text_encoding(self.words)
 
         return encoding
 
-    def image_output_path(self, sequence_number=None):
+    def get_output_img_path(self, sequence_number: int = None):
         """
         Returns underscore separated Path.
-        A current timestamp is prepended if `self.save_date_time` is set.
         Sequence number left padded with 6 zeroes is appended if `save_every` is set.
         :rtype: Path
         """
-        output_path = self.textpath
-        if sequence_number:
-            sequence_number_left_padded = str(sequence_number).zfill(6)
-            output_path = f"{output_path}.{sequence_number_left_padded}"
-        if self.save_date_time:
-            current_time = datetime.now().strftime("%y%m%d-%H%M%S_%f")
-            output_path = f"{current_time}_{output_path}"
+        output_path: str = self.textpath
+        if sequence_number is not None:
+            output_path = os.path.join(self.dst_img_path, f"{output_path}.{sequence_number:06d}")
+
         return Path(f"{output_path}.png")
 
     def train_step(self, epoch, iteration):
-        total_loss = 0
+        total_loss: float = 0.
 
         for _ in range(self.gradient_accumulate_every):
             with autocast(enabled=True):
+                out: torch.Tensor
+                loss: torch.Tensor
                 out, loss = self.model(self.clip_encoding)
             loss = loss / self.gradient_accumulate_every
             total_loss += loss
-            self.scaler.scale(loss).backward()    
+            self.scaler.scale(loss).backward()
+   
         out = out.cpu().float().clamp(0., 1.)
         self.scaler.step(self.optimizer)
         self.scaler.update()
@@ -548,13 +542,10 @@ class Imagine(nn.Module):
 
         if img is None:
             img = self.model(self.clip_encoding, return_loss=False).cpu().float().clamp(0., 1.)
-        self.filename = self.image_output_path(sequence_number=sequence_number)
+        self.filename = self.get_output_img_path(sequence_number=sequence_number)
         
         pil_img = T.ToPILImage()(img.squeeze())
         pil_img.save(self.filename)
-        pil_img.save(f"{self.textpath}.png")
-
-        tqdm.write(f'image updated at "./{str(self.filename)}"')
 
     def generate_gif(self):
         images = []
@@ -576,7 +567,7 @@ class Imagine(nn.Module):
             pbar = trange(self.start_image_train_iters, desc='iteration')
             try:
                 for _ in pbar:
-                    loss = self.model.model(self.start_image)
+                    loss: torch.Tensor = self.model.model(self.start_image)
                     loss.backward()
                     pbar.set_description(f'loss: {loss.item():.2f}')
 
@@ -603,7 +594,7 @@ class Imagine(nn.Module):
 
                 # Update clip_encoding per epoch if we are creating a story
                 if self.create_story:
-                    self.clip_encoding = self.update_story_encoding(epoch, i)
+                    self.clip_encoding = self.update_story_encoding()
         except KeyboardInterrupt:
             print('interrupted by keyboard, gracefully exiting')
             return
