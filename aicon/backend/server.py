@@ -20,7 +20,7 @@ from werkzeug.exceptions import HTTPException, BadRequest, Forbidden, InternalSe
 from waitress import serve
 
 from translation import Translation
-from models.deep_daze.deep_daze import Imagine
+from models.deep_daze import deep_daze
 from constant import *
 
 
@@ -103,8 +103,7 @@ class AIconCore:
     def run(self, client_data: Any) -> None:
         logger.info(f"[{self.client_uuid}]: Start image generation with {self.model_name}")
 
-        model = DummyModel(self.client_uuid)
-        imagine = Imagine(
+        imagine = deep_daze.Imagine(
             text=client_data[JSON_TEXT],
             img=None,
             lr=1e-5,
