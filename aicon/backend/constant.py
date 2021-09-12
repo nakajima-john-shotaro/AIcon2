@@ -20,14 +20,19 @@ MODEL_NAME_BID_SLEEP: str = "BigSleep"
 MODEL_NAME_DEEP_DAZE: str = "DeepDaze"
 MODEL_NAME_DALL_E: str = "DALL-E"
 
-P_HASH_INIT: str = "00000000-0000-0000-0000-000000000000"
+IF_HASH_INIT: str = "00000000-0000-0000-0000-000000000000"
+IF_QUEUE_EMPTY_COUNTER: str = "queue_empty_counter"
+IF_EMPTY_TOLERANCE: int = 10
+
+CORE_COMPATIBLE_PYTORCH_VERSION: str = "1.7.1"
+CORE_C2I_QUEUE: str = "c2i_queue"
+CORE_I2C_QUEUE: str = "i2c_queue"
 
 CHC_TIMEOUT: float = 7.0
 CHC_EMPTY_TOLERANCE: int = 5
+CHC_LAST_CONNECTION_TIME: str = "last_connection_time"
 
-MAIN_EMPTY_TOLERANCE: int = 10
 
-CORE_COMPATIBLE_PYTORCH_VERSION: str = "1.7.1"
 
 class CustomFormatter(logging.Formatter):
 
