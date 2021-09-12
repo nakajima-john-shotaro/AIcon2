@@ -29,12 +29,6 @@ from tqdm import tqdm, trange
 
 from .clip import load, tokenize
 
-stream_handler: StreamHandler = StreamHandler()
-stream_handler.setLevel(INFO)
-stream_handler.setFormatter(CustomFormatter())
-logger: Logger = getLogger()
-logger.addHandler(stream_handler)
-logger.setLevel(INFO)
 
 # Helpers
 
@@ -233,13 +227,9 @@ class DeepDaze(nn.Module):
 class Imagine(nn.Module):
     def __init__(
             self,
-            *,
             client_uuid: str,
             client_data: Dict[str, Union[str, Queue]],
-            text: Optional[str] = None,
             img: Optional[str] = None,
-            seed: Optional[int] = None,
-            image_width: int = 256,
             lr: float = 0.0001,
             batch_size: int = 12,
             gradient_accumulate_every: int = 7,
@@ -280,7 +270,9 @@ class Imagine(nn.Module):
 
         self.writer: imageio.core.Format.Writer = get_writer(self.dst_mp4_path, fps=10)
 
+        text: str = self.client_data[JSON_TEXT]
         seed: int = self.client_data[JSON_SEED]
+        image_width: int = int(self.client_data[JSON_SIZE])
         iterations: int = self.client_data[JSON_TOTAL_ITER]
 
         self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
@@ -593,11 +585,24 @@ class Imagine(nn.Module):
 
                     _, loss = self.train_step(epoch, iteration)
 
+                    self.put_data[JSON_CURRENT_ITER] = str(sequence_number)
+                    self.put_data[JSON_IMG_PATH] = self.filename
+
+                    self.c2i_queue.put_nowait(self.put_data)
+
                 # Update clip_encoding per epoch if we are creating a story
                 if self.create_story:
                     self.clip_encoding = self.update_story_encoding()
         except KeyboardInterrupt as e:
             logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Keyboard Interrunpted")
             raise e
+        finally:
+            self.save_image(epoch, iteration)
 
-        self.save_image(epoch, iteration) # one final save at end
+            self.put_data[JSON_CURRENT_ITER] = str(sequence_number)
+            self.put_data[JSON_IMG_PATH] = self.filename
+            self.put_data[JSON_COMPLETE] = True
+
+            self.c2i_queue.put_nowait(self.put_data)
+
+            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Completed imagination")
