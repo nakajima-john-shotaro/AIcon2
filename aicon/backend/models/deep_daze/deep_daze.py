@@ -1,27 +1,35 @@
 import os
-import subprocess
 import sys
+from typing import Dict, Optional, Union
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 import random
 from datetime import datetime
+from logging import INFO, Logger, StreamHandler, getLogger
+from multiprocessing import Queue
 from pathlib import Path
 
+import numpy as np
 import torch
 import torch.nn.functional as F
+import torchvision.transforms as T
+from constant import *
+from imageio import imread, mimsave
+from PIL import Image
 from siren_pytorch import SirenNet, SirenWrapper
 from torch import nn
 from torch.cuda.amp import GradScaler, autocast
-from torch_optimizer import DiffGrad, AdamP
-import numpy as np
-
-from PIL import Image
-from imageio import imread, mimsave
-import torchvision.transforms as T
-
-
-from tqdm import trange, tqdm
+from torch_optimizer import AdamP, DiffGrad
+from tqdm import tqdm, trange
 
 from .clip import load, tokenize
 
+stream_handler: StreamHandler = StreamHandler()
+stream_handler.setLevel(INFO)
+stream_handler.setFormatter(CustomFormatter())
+logger: Logger = getLogger()
+logger.addHandler(stream_handler)
+logger.setLevel(INFO)
 
 # Helpers
 
@@ -61,38 +69,12 @@ def create_clip_img_transform(image_width):
     clip_mean = [0.48145466, 0.4578275, 0.40821073]
     clip_std = [0.26862954, 0.26130258, 0.27577711]
     transform = T.Compose([
-                    #T.ToPILImage(),
-                    T.Resize(image_width),
-                    T.CenterCrop((image_width, image_width)),
-                    T.ToTensor(),
-                    T.Normalize(mean=clip_mean, std=clip_std)
-            ])
+        T.Resize(image_width),
+        T.CenterCrop((image_width, image_width)),
+        T.ToTensor(),
+        T.Normalize(mean=clip_mean, std=clip_std)
+    ])
     return transform
-
-
-def open_folder(path):
-    if os.path.isfile(path):
-        path = os.path.dirname(path)
-
-    if not os.path.isdir(path):
-        return
-
-    cmd_list = None
-    if sys.platform == 'darwin':
-        cmd_list = ['open', '--', path]
-    elif sys.platform == 'linux2' or sys.platform == 'linux':
-        cmd_list = ['xdg-open', path]
-    elif sys.platform in ['win32', 'win64']:
-        cmd_list = ['explorer', path.replace('/', '\\')]
-    if cmd_list is None:
-        return
-
-    try:
-        subprocess.check_call(cmd_list)
-    except subprocess.CalledProcessError:
-        pass
-    except OSError:
-        pass
 
 
 def norm_siren_output(img):
@@ -247,72 +229,82 @@ class Imagine(nn.Module):
     def __init__(
             self,
             *,
-            text=None,
-            img=None,
+            client_uuid: str,
+            client_data: Dict[str, Union[str, Queue]],
+            text: Optional[str] = None,
+            img: Optional[str] = None,
             clip_encoding=None,
-            lr=1e-5,
-            batch_size=4,
-            gradient_accumulate_every=4,
-            save_every=100,
-            image_width=512,
-            num_layers=16,
-            epochs=20,
-            iterations=1050,
-            save_progress=True,
-            seed=None,
-            open_folder=True,
-            save_date_time=False,
-            start_image_path=None,
-            start_image_train_iters=10,
-            start_image_lr=3e-4,
-            theta_initial=None,
-            theta_hidden=None,
-            model_name="ViT-B/32",
-            lower_bound_cutout=0.1, # should be smaller than 0.8
-            upper_bound_cutout=1.0,
-            saturate_bound=False,
-            averaging_weight=0.3,
+            lr: float = 0.0001,
+            batch_size: int = 12,
+            gradient_accumulate_every: int = 7,
+            image_width: int = 256,
+            iterations: int = 1000,
+            num_layers: int = 16,
+            hidden_size: int = 256,
+            center_bias: bool = True,
+            center_focus: int = 2,
+            seed: Optional[int] = None,
+            model_name: str = "ViT-B/32",
+            optimizer: str = "AdamP",
+            jit: bool = True,
+            save_every: int = 100,
+            epochs: int = 1,
+            save_progress: bool = True,
+            save_date_time: bool = False,
+            start_image_path: Optional[str] = None,
+            start_image_train_iters: int = 10,
+            start_image_lr: float = 3e-4,
+            theta_initial: Optional[float] = None,
+            theta_hidden: Optional[float] = None,
+            lower_bound_cutout: float = 0.1,
+            upper_bound_cutout: float = 1.0,
+            saturate_bound: bool = False,
+            averaging_weight: bool = 0.3,
 
-            create_story=False,
-            story_start_words=5,
-            story_words_per_epoch=5,
-            story_separator=None,
-            gauss_sampling=False,
-            gauss_mean=0.6,
-            gauss_std=0.2,
-            do_cutout=True,
-            center_bias=False,
-            center_focus=2,
-            optimizer="AdamP",
-            jit=True,
-            hidden_size=256,
-            save_gif=False,
-            save_video=False,
-    ):
-
+            create_story: bool = False,
+            story_start_words: int = 5,
+            story_words_per_epoch: int = 5,
+            story_separator: Optional[str] = None,
+            gauss_sampling: bool = False,
+            gauss_mean: float = 0.6,
+            gauss_std: float = 0.2,
+            do_cutout: bool = True,
+            save_gif: bool = False,
+            save_video: bool = False,
+    ): 
         super().__init__()
 
+        self.client_uuid: str = client_uuid
+        self.client_data: Dict[str, Union[str, Queue]] = client_data
+
         if exists(seed):
-            tqdm.write(f'setting seed: {seed}')
+            self.seed: int = seed
+            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Seed is manually set to {self.seed}")
             torch.manual_seed(seed)
             torch.cuda.manual_seed(seed)
             random.seed(seed)
             torch.backends.cudnn.deterministic = True
+        else:
+            self.seed = random.randint(-sys.maxint - 1, sys.minsize)
+            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> No seed is specified. It will automatically be set to {self.seed}")
+            torch.backends.cudnn.benchmark = True
             
         # fields for story creation:
-        self.create_story = create_story
-        self.words = None
-        self.separator = str(story_separator) if story_separator is not None else None
+        self.create_story: bool = create_story
+        self.words: Optional[str] = None
+        self.separator: Optional[str] = str(story_separator) if story_separator is not None else None
         if self.separator is not None and text is not None:
             #exit if text is just the separator
             if str(text).replace(' ','').replace(self.separator,'') == '':
-                print('Exiting because the text only consists of the separator! Needs words or phrases that are separated by the separator.')
-                exit()
+                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Text only consists of the separator `{self.separator}`")
+                raise 
             #adds a space to each separator and removes double spaces that might be generated
             text = text.replace(self.separator,self.separator+' ').replace('  ',' ').strip()
-        self.all_words = text.split(" ") if text is not None else None
-        self.num_start_words = story_start_words
-        self.words_per_epoch = story_words_per_epoch
+
+        self.all_words: Optional[str] = text.split(" ") if text is not None else None
+        self.num_start_words: int = story_start_words
+        self.words_per_epoch: int = story_words_per_epoch
+
         if create_story:
             assert text is not None,  "We need text input to create a story..."
             # overwrite epochs to match story length
@@ -385,7 +377,6 @@ class Imagine(nn.Module):
         self.gradient_accumulate_every = gradient_accumulate_every
         self.save_every = save_every
         self.save_date_time = save_date_time
-        self.open_folder = open_folder
         self.save_progress = save_progress
         self.text = text
         self.image = img
@@ -572,10 +563,6 @@ class Imagine(nn.Module):
 
         with torch.no_grad():
             self.model(self.clip_encoding, dry_run=True) # do one warmup step due to potential issue with CLIP and CUDA
-
-        if self.open_folder:
-            open_folder('./')
-            self.open_folder = False
 
         try:
             for epoch in trange(self.epochs, desc='epochs'):
