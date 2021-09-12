@@ -28,7 +28,7 @@ MODEL_NAME_DALL_E: str = "DALL-E"
 
 IF_HASH_INIT: str = "00000000-0000-0000-0000-000000000000"
 IF_QUEUE_EMPTY_COUNTER: str = "queue_empty_counter"
-IF_EMPTY_TOLERANCE: int = 10
+IF_EMPTY_TOLERANCE: int = 15
 
 CORE_COMPATIBLE_PYTORCH_VERSION: str = "1.7.1"
 CORE_C2I_QUEUE: str = "c2i_queue"
@@ -69,10 +69,8 @@ class CustomFormatter(Formatter):
 def get_logger(name: str = "aicon", level: int = INFO):
     logger: Logger = getLogger(name)
     logger.propagate = False
-    print("\nCalled get_logger\n")
 
     if not logger.hasHandlers():
-        print("\nExpect called once\n")
         stream_handler: StreamHandler = StreamHandler()
         stream_handler.setLevel(level)
         stream_handler.setFormatter(CustomFormatter())
