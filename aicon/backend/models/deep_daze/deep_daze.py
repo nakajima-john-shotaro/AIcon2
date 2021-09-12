@@ -1,6 +1,7 @@
 import os
 import sys
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+import imageio
 
 from torchvision.transforms.transforms import Compose
 
@@ -10,13 +11,14 @@ from datetime import datetime
 from logging import INFO, Logger, StreamHandler, getLogger
 from multiprocessing import Queue
 from pathlib import Path
+from queue import Empty, Full
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision.transforms as T
 from constant import *
-from imageio import get_writer, imread, mimsave
+from imageio import get_writer
 from PIL import Image
 from siren_pytorch import SirenNet, SirenWrapper
 from torch import nn
@@ -262,7 +264,6 @@ class Imagine(nn.Module):
             upper_bound_cutout: float = 1.0,
             saturate_bound: bool = False,
             averaging_weight: bool = 0.3,
-
             create_story: bool = False,
             story_start_words: int = 5,
             story_words_per_epoch: int = 5,
@@ -271,8 +272,6 @@ class Imagine(nn.Module):
             gauss_mean: float = 0.6,
             gauss_std: float = 0.2,
             do_cutout: bool = True,
-            save_gif: bool = False,
-            save_video: bool = False,
     ): 
         super().__init__()
 
@@ -282,7 +281,14 @@ class Imagine(nn.Module):
         self.dst_img_path: str = self.client_data[JSON_IMG_PATH]
         self.dst_mp4_path: str = self.client_data[JSON_MP4_PATH]
 
-        self.writer = get_writer(self.path, fps=20)
+        self.writer: imageio.core.Format.Writer = get_writer(self.dst_mp4_path, fps=10)
+
+        self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
+        self.i2c_queue: Queue = self.client_data[CORE_I2C_QUEUE]
+
+        self.put_data: Dict[str, Union[str, bool, int]] = {
+            
+        }
 
         if exists(seed):
             self.seed: int = seed
@@ -422,9 +428,6 @@ class Imagine(nn.Module):
             ])
             image_tensor: torch.Tensor = start_img_transform(image).unsqueeze(0).to(self.device)
             self.start_image: torch.Tensor = image_tensor
-
-        self.save_gif: bool = save_gif
-        self.save_video: bool = save_video
             
     def create_clip_encoding(self, text: Optional[str] = None, img: Optional[str] = None, encoding: Optional[torch.Tensor] = None) -> torch.Tensor:
         self.text: Optional[str] = text
@@ -528,8 +531,7 @@ class Imagine(nn.Module):
         self.scaler.update()
         self.optimizer.zero_grad()
 
-        if (iteration % self.save_every == 0) and self.save_progress:
-            self.save_image(epoch, iteration, img=out)
+        self.save_image(epoch, iteration, img=out)
 
         return out, total_loss
     
@@ -540,57 +542,46 @@ class Imagine(nn.Module):
         return sequence_number
 
     @torch.no_grad()
-    def save_image(self, epoch, iteration, img=None):
-        sequence_number = self.get_img_sequence_number(epoch, iteration)
+    def save_image(self, epoch: int, iteration: int, img: Optional[torch.Tensor] = None) -> None:
+        sequence_number: int = self.get_img_sequence_number(epoch, iteration)
 
         if img is None:
             img = self.model(self.clip_encoding, return_loss=False).cpu().float().clamp(0., 1.)
+
         self.filename = self.get_output_img_path(sequence_number=sequence_number)
         
-        pil_img = T.ToPILImage()(img.squeeze())
+        pil_img: Image = T.ToPILImage()(img.squeeze())
         pil_img.save(self.filename)
 
-    def generate_gif(self):
-        images = []
-        for file_name in sorted(os.listdir('./')):
-            if file_name.startswith(self.textpath) and file_name != f'{self.textpath}.jpg':
-                images.append(imread(os.path.join('./', file_name)))
-
-        if self.save_video:
-            mimsave(f'{self.textpath}.mp4', images)
-            print(f'Generated image generation animation at ./{self.textpath}.mp4')
+        self.writer.append_data(np.uint8(np.array(pil_img).transpose([1, 2, 0]) * 255.))
 
     def forward(self):
         if exists(self.start_image):
-            tqdm.write('Preparing with initial image...')
-            optim = DiffGrad(self.model.model.parameters(), lr = self.start_image_lr)
-            pbar = trange(self.start_image_train_iters, desc='iteration')
+            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Preparing with the initial image. This may take tens of seconds")
+            optim = DiffGrad(self.model.model.parameters(), lr=self.start_image_lr)
             try:
-                for _ in pbar:
+                for _ in range(self.start_image_train_iters):
                     loss: torch.Tensor = self.model.model(self.start_image)
                     loss.backward()
-                    pbar.set_description(f'loss: {loss.item():.2f}')
 
                     optim.step()
                     optim.zero_grad()
-            except KeyboardInterrupt:
-                print('interrupted by keyboard, gracefully exiting')
-                return exit()
+            except KeyboardInterrupt as e:
+                logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Keyboard Interrunpted")
+                raise e
 
             del self.start_image
             del optim
 
-        tqdm.write(f'Imagining "{self.textpath}" from the depths of my weights...')
+        logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Imagining `{self.textpath}` from the depths of the weights")
 
         with torch.no_grad():
             self.model(self.clip_encoding, dry_run=True) # do one warmup step due to potential issue with CLIP and CUDA
 
         try:
-            for epoch in trange(self.epochs, desc='epochs'):
-                pbar = trange(self.iterations, desc='iteration')
-                for i in pbar:
+            for epoch in range(self.epochs):
+                for i in range(self.iterations):
                     _, loss = self.train_step(epoch, i)
-                    pbar.set_description(f'loss: {loss.item():.2f}')
 
                 # Update clip_encoding per epoch if we are creating a story
                 if self.create_story:
@@ -600,6 +591,3 @@ class Imagine(nn.Module):
             return
 
         self.save_image(epoch, i) # one final save at end
-
-        if (self.save_gif or self.save_video) and self.save_progress:
-            self.generate_gif()
