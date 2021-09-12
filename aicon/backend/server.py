@@ -36,12 +36,7 @@ limiter = Limiter(app, key_func=get_remote_address, default_limits=["100 per min
 CORS(app)
 api: Api = Api(app)
 
-stream_handler: StreamHandler = StreamHandler()
-stream_handler.setLevel(INFO)
-stream_handler.setFormatter(CustomFormatter())
-logger: Logger = getLogger()
-logger.addHandler(stream_handler)
-logger.setLevel(INFO)
+# logger: Logger = getLogger("aicon")
 
 _client_data: Dict[str, Dict[str, Union[str, Queue]]] = {}
 _client_data_queue_chc: Queue_ = Queue_(maxsize=1)
@@ -103,56 +98,14 @@ class AIconCore:
     def run(self, client_data: Any) -> None:
         logger.info(f"[{self.client_uuid}]: Start image generation with {self.model_name}")
 
-        imagine = deep_daze.Imagine(
-            text=client_data[JSON_TEXT],
-            img=None,
-            lr=1e-5,
-            num_layers=16,
-            batch_size=1,
-            gradient_accumulate_every=4,
-            epochs=10,
-            iterations=1000,
-            image_width=int(client_data[JSON_SIZE]),
-            save_every=1,
-            save_progress=True,
-            seed=42,
-            open_folder=False,
-            save_date_time=False,
-            start_image_path=None,
-            start_image_train_iters=50,
-            theta_initial=None,
-            theta_hidden=None,
-            start_image_lr=3e-4,
-            lower_bound_cutout=0.1,
-            upper_bound_cutout=1.0,
-            saturate_bound=False,
-            create_story=False,
-            story_start_words=5,
-            story_words_per_epoch=5,
-            story_separator=None,
-            averaging_weight=0.3,
-            gauss_sampling=False,
-            gauss_mean=0.6,
-            gauss_std=0.2,
-            do_cutout=True,
-            center_bias=False,
-            center_focus=2,
-            jit=False,
-            hidden_size=256,
-            model_name="ViT-B/32",
-            optimizer="AdamP",
-            save_gif=False,
-            save_video=False,
-        )
-        if self.model_name == MODEL_NAME_BID_SLEEP:
-            imagine()
+        if self.model_name == MODEL_NAME_BIG_SLEEP:
+            raise ValueError
+
         elif self.model_name == MODEL_NAME_DEEP_DAZE:
-            imagine()
+            deep_daze.Imagine(self.client_uuid, client_data)()
+
         elif self.model_name == MODEL_NAME_DALL_E:
-            imagine()
-        else:
-            logger.fatal(f"[{self.client_uuid}]: Invalid model name `{self.model_name}` requested")
-            abort(400, f"Invalid model name {self.model_name}")
+            raise ValueError
 
 
 class ConnectionHealthChecker:
@@ -281,15 +234,15 @@ class AIconInterface(Resource):
     def post(self):
         global _client_data
 
-        received_data: Dict[str, Any] = request.get_json(force=True)
+        received_data: Dict[str, Union[str, bool]] = request.get_json(force=True)
         logger.info(f"<<AIcon Interface>> Requested from {request.remote_addr} | {request.method} {str(request.url_rule)} {request.environ.get('SERVER_PROTOCOL')} {request.environ.get('HTTP_CONNECTION')}")
 
         client_uuid: str = received_data[JSON_HASH]
 
         if client_uuid == IF_HASH_INIT:
-            client_uuid: str = str(uuid4())
+            client_uuid = str(uuid4())
 
-            logger.info(f"[{IF_HASH_INIT}]: <<AIcon Interface>> Connection requested from a non-registered client. UUID {client_uuid} is assined.")
+            logger.info(f"[{IF_HASH_INIT}]: <<AIcon Interface>> Connection requested from an anonymous client. UUID {client_uuid} is assined.")
 
             try:
                 translated_text: str = self.translator.translate(received_data[JSON_TEXT])
@@ -298,12 +251,15 @@ class AIconInterface(Resource):
                 c2i_queue: Queue = Queue()
                 i2c_queue: Queue = Queue()
 
+                if received_data[JSON_MODEL_NAME] not in [MODEL_NAME_BIG_SLEEP, MODEL_NAME_DEEP_DAZE, MODEL_NAME_DALL_E]:
+                    logger.fatal(f"[{client_uuid}]: <<AIcon Interface>> Invalid model name `{received_data[JSON_MODEL_NAME]}` requested")
+                    abort(400, f"Invalid model name {received_data[JSON_MODEL_NAME]}")
+
                 _client_data[client_uuid] = {
                     JSON_MODEL_NAME: received_data[JSON_MODEL_NAME],
                     JSON_TEXT: translated_text,
                     JSON_TOTAL_ITER: received_data[JSON_TOTAL_ITER],
                     JSON_SIZE: received_data[JSON_SIZE],
-                    JSON_ABORT: received_data[JSON_ABORT],
                     JSON_COMPLETE: False,
                     CORE_C2I_QUEUE: c2i_queue,
                     CORE_I2C_QUEUE: i2c_queue,
@@ -343,7 +299,11 @@ class AIconInterface(Resource):
 
             client_priority = self._get_client_priority(client_uuid)
 
-            _client_data[client_uuid][JSON_ABORT] = received_data[JSON_ABORT]
+            put_data: Dict[str, bool] = {
+                JSON_ABORT: received_data[JSON_ABORT],
+            }
+            _client_data[client_uuid][CORE_I2C_QUEUE].put_nowait(put_data)
+
             _client_data[client_uuid][JSON_PRIORITY] = client_priority
             _client_data[client_uuid][CHC_LAST_CONNECTION_TIME] = time.time()
 
@@ -373,16 +333,16 @@ class AIconInterface(Resource):
                 client_data: Dict[str, Union[str, Queue]] = _client_data[client_uuid]
 
                 try:
-                    queued_data: Dict[str, str] = client_data[CORE_C2I_QUEUE].get(timeout=1.)
+                    get_data: Dict[str, str] = client_data[CORE_C2I_QUEUE].get(timeout=1.)
 
                     _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] = 0
 
-                    res[JSON_CURRENT_ITER] = queued_data[JSON_CURRENT_ITER]
-                    res[JSON_IMG_PATH] = queued_data[JSON_IMG_PATH]
-                    res[JSON_MP4_PATH] = queued_data[JSON_MP4_PATH]
-                    res[JSON_COMPLETE] = queued_data[JSON_COMPLETE]
+                    res[JSON_CURRENT_ITER] = get_data[JSON_CURRENT_ITER]
+                    res[JSON_IMG_PATH] = get_data[JSON_IMG_PATH]
+                    res[JSON_MP4_PATH] = get_data[JSON_MP4_PATH]
+                    res[JSON_COMPLETE] = get_data[JSON_COMPLETE]
 
-                    if queued_data[JSON_COMPLETE]:
+                    if get_data[JSON_COMPLETE]:
                         if self._remove_client_data(client_uuid):
                             logger.info(f"[{client_uuid}]: <<AIcon Interface>> The task is successfully completed. Removed the client data.")
                         else:
