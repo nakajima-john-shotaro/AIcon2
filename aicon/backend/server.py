@@ -60,14 +60,14 @@ class DummyModel():
         self.client_uuid: str = client_uuid
 
     def run(self, client_data: Dict[str, Union[str, Queue]]):
-        queue: Queue = client_data["queue"]
+        queue: Queue = client_data[CORE_C2I_QUEUE]
         total_iteration: int = int(client_data[JSON_TOTAL_ITER])
         for i in range(total_iteration):
             img: numpy.ndarray = numpy.zeros((client_data[JSON_SIZE], client_data[JSON_SIZE]))
             cv2.putText(img, f"{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png", (0, 128), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1, cv2.LINE_AA)
             cv2.imwrite(f"../frontend/static/dst_img/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png", img)
             data: Dict[str, str] = {
-                "client_uuid": self.client_uuid,
+                JSON_HASH: self.client_uuid,
                 JSON_CURRENT_ITER: str(i),
                 JSON_IMG_PATH: f"../static/dst_img/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png",
                 JSON_MP4_PATH: f"../static/dst_gif/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png",
@@ -77,7 +77,7 @@ class DummyModel():
             time.sleep(2)
         
         data: Dict[str, str] = {
-            "client_uuid": self.client_uuid,
+            JSON_HASH: self.client_uuid,
             JSON_CURRENT_ITER: str(total_iteration),
             JSON_IMG_PATH: f"../static/dst_img/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{total_iteration-1:06d}.png",
             JSON_MP4_PATH: f"../static/dst_gif/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{total_iteration-1:06d}.png",
@@ -173,7 +173,7 @@ class ConnectionHealthChecker:
                 _client_data: dict = _client_data_queue_chc.get_nowait()
                 if _client_data:
                     for client_uuid, client_data in list(_client_data.items()):
-                        last_connection_time: float = client_data["last_connection_time"]
+                        last_connection_time: float = client_data[CHC_LAST_CONNECTION_TIME]
 
                         logger.info(f"[{client_uuid}]: <<Connection Health Checker>> Checking connection health")
 
@@ -237,12 +237,12 @@ class PriorityMonitor:
             time.sleep(interval)
 
 
-class AIcon(Resource):
+class AIconInterface(Resource):
     def __init__(
         self,
         translator_name: str = "deepl",
     ) -> None:
-        super(AIcon, self).__init__()
+        super().__init__()
 
         self.translator: Translation = Translation(translator_name)
 
@@ -282,20 +282,21 @@ class AIcon(Resource):
         global _client_data
 
         received_data: Dict[str, Any] = request.get_json(force=True)
-        logger.info(f"Requested from {request.remote_addr} | {request.method} {str(request.url_rule)} {request.environ.get('SERVER_PROTOCOL')} {request.environ.get('HTTP_CONNECTION')}")
+        logger.info(f"<<AIcon Interface>> Requested from {request.remote_addr} | {request.method} {str(request.url_rule)} {request.environ.get('SERVER_PROTOCOL')} {request.environ.get('HTTP_CONNECTION')}")
 
         client_uuid: str = received_data[JSON_HASH]
 
-        if client_uuid == P_HASH_INIT:
+        if client_uuid == IF_HASH_INIT:
             client_uuid: str = str(uuid4())
 
-            logger.info(f"[{P_HASH_INIT}]: Connection requested from a non-registered client. UUID {client_uuid} is assined.")
+            logger.info(f"[{IF_HASH_INIT}]: <<AIcon Interface>> Connection requested from a non-registered client. UUID {client_uuid} is assined.")
 
             try:
                 translated_text: str = self.translator.translate(received_data[JSON_TEXT])
-                logger.info(f"[{client_uuid}]: Translated text `{received_data[JSON_TEXT]}` to `{translated_text}`")
+                logger.info(f"[{client_uuid}]: <<AIcon Interface>> Translated text `{received_data[JSON_TEXT]}` to `{translated_text}`")
 
-                queue: Queue = Queue()
+                c2i_queue: Queue = Queue()
+                i2c_queue: Queue = Queue()
 
                 _client_data[client_uuid] = {
                     JSON_MODEL_NAME: received_data[JSON_MODEL_NAME],
@@ -304,9 +305,10 @@ class AIcon(Resource):
                     JSON_SIZE: received_data[JSON_SIZE],
                     JSON_ABORT: received_data[JSON_ABORT],
                     JSON_COMPLETE: False,
-                    "queue": queue,
-                    "last_connection_time": time.time(),
-                    "_queue_empty_counter": 0,
+                    CORE_C2I_QUEUE: c2i_queue,
+                    CORE_I2C_QUEUE: i2c_queue,
+                    CHC_LAST_CONNECTION_TIME: time.time(),
+                    IF_QUEUE_EMPTY_COUNTER: 0,
                 }
 
                 client_priority: int = self._get_client_priority(client_uuid)
@@ -319,7 +321,7 @@ class AIcon(Resource):
                     pass
 
             except KeyError as error_state:
-                logger.fatal(f"[{client_uuid}]: {error_state}")
+                logger.fatal(f"[{client_uuid}]: <<AIcon Interface>> {error_state}")
                 abort(400, error_state)
 
             self._set_path(client_uuid)
@@ -337,13 +339,13 @@ class AIcon(Resource):
             return jsonify(res)
 
         if client_uuid in _client_data.keys():
-            logger.info(f"[{client_uuid}]: Connection requested from a registered client")
+            logger.info(f"[{client_uuid}]: <<AIcon Interface>> Connection requested from a registered client")
 
             client_priority = self._get_client_priority(client_uuid)
 
             _client_data[client_uuid][JSON_ABORT] = received_data[JSON_ABORT]
             _client_data[client_uuid][JSON_PRIORITY] = client_priority
-            _client_data[client_uuid]["last_connection_time"] = time.time()
+            _client_data[client_uuid][CHC_LAST_CONNECTION_TIME] = time.time()
 
             try:
                 _client_data_queue_chc.put_nowait(_client_data)
@@ -361,7 +363,7 @@ class AIcon(Resource):
             }
     
             if client_priority == 1:
-                logger.info(f"[{client_uuid}]: This client is #{client_priority}.")
+                logger.info(f"[{client_uuid}]: <<AIcon Interface>> This client is #{client_priority}.")
 
                 try:
                     _client_data_queue_pm.put_nowait(_client_data)
@@ -371,9 +373,9 @@ class AIcon(Resource):
                 client_data: Dict[str, Union[str, Queue]] = _client_data[client_uuid]
 
                 try:
-                    queued_data: Dict[str, str] = client_data["queue"].get(timeout=1.)
+                    queued_data: Dict[str, str] = client_data[CORE_C2I_QUEUE].get(timeout=1.)
 
-                    _client_data[client_uuid]["_queue_empty_counter"] = 0
+                    _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] = 0
 
                     res[JSON_CURRENT_ITER] = queued_data[JSON_CURRENT_ITER]
                     res[JSON_IMG_PATH] = queued_data[JSON_IMG_PATH]
@@ -382,20 +384,23 @@ class AIcon(Resource):
 
                     if queued_data[JSON_COMPLETE]:
                         if self._remove_client_data(client_uuid):
-                            logger.info(f"[{client_uuid}]: The task is successfully completed. Removed the client data.")
+                            logger.info(f"[{client_uuid}]: <<AIcon Interface>> The task is successfully completed. Removed the client data.")
                         else:
-                            logger.warn(f"[{client_uuid}]: The task is successfully completed. But failed to remove the client data.")
-                except Empty:
-                    _client_data[client_uuid]["_queue_empty_counter"] += 1
-                    logger.warning(f"[{client_uuid}]: Queue is empty")
+                            logger.warn(f"[{client_uuid}]: <<AIcon Interface>> The task is successfully completed. But failed to remove the client data.")
 
-                    if _client_data[client_uuid]["_queue_empty_counter"] > MAIN_EMPTY_TOLERANCE:
-                        logger.error(f"[{client_uuid}]: No data has been sent for a long time, AIcon Core may have crashed")
+                except Empty:
+                    _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] += 1
+                    logger.warning(f"[{client_uuid}]: <<AIcon Interface>> Queue is empty")
+
+                    if _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] > IF_EMPTY_TOLERANCE:
+                        logger.error(f"[{client_uuid}]: <<AIcon Interface>> No data has been sent for a long time, AIcon Core may have crashed")
                         abort(500, "Server crashed")
+
             else:
-                logger.warning(f"[{client_uuid}]: {len(_client_data)} clients are queued. This client is #{client_priority}. Skipping the task.")
+                logger.warning(f"[{client_uuid}]: <<AIcon Interface>> {len(_client_data)} clients are queued. This client is #{client_priority}. Skipping the task.")
+
         else:
-            logger.fatal(f"[{client_uuid}]: Invalid UUID")
+            logger.fatal(f"[{client_uuid}]: <<AIcon Interface>> Invalid UUID")
             abort(403, f"Invalid UUID: {client_uuid}")
 
         return jsonify(res)
@@ -422,14 +427,14 @@ class AIcon(Resource):
 
 
 if __name__ == "__main__":
-    logger.info("Seesion started")
+    logger.info("<<AIcon>> Seesion started")
 
     multiprocessing.set_start_method("spawn")
 
     PriorityMonitor()
     ConnectionHealthChecker()
 
-    AIcon()
-    api.add_resource(AIcon, '/service')
+    AIconInterface()
+    api.add_resource(AIconInterface, '/service')
 
     serve(app, host='0.0.0.0', port=5050, threads=30)
