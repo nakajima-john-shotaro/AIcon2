@@ -546,7 +546,7 @@ class Imagine(nn.Module):
         pil_img: Image = T.ToPILImage()(img.squeeze())
         pil_img.save(self.filename)
 
-        self.writer.append_data(np.uint8(np.array(pil_img).transpose([1, 2, 0]) * 255.))
+        self.writer.append_data(np.uint8(np.array(pil_img) * 255.))
 
     def forward(self):
         if exists(self.start_image):
@@ -587,7 +587,7 @@ class Imagine(nn.Module):
                     _, loss = self.train_step(epoch, iteration)
 
                     self.put_data[JSON_CURRENT_ITER] = str(sequence_number)
-                    self.put_data[JSON_IMG_PATH] = self.filename
+                    self.put_data[JSON_IMG_PATH] = str(self.filename)
 
                     self.c2i_queue.put_nowait(self.put_data)
 
@@ -611,7 +611,7 @@ class Imagine(nn.Module):
             self.save_image(epoch, iteration)
 
             self.put_data[JSON_CURRENT_ITER] = str(sequence_number)
-            self.put_data[JSON_IMG_PATH] = self.filename
+            self.put_data[JSON_IMG_PATH] = str(self.filename)
             self.put_data[JSON_COMPLETE] = True
 
             self.c2i_queue.put_nowait(self.put_data)
