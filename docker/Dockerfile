@@ -63,7 +63,8 @@ RUN pip3 install \
         boto3 \
         ftfy \
         regex \
-        imageio
+        imageio \
+        imageio_ffmpeg
 
 RUN locale-gen ja_JP.UTF-8
 ENV LANG ja_JP.UTF-8
