@@ -408,6 +408,7 @@ class Imagine(nn.Module):
         if exists(start_image_path):
             file: Path = Path(start_image_path)
             if not file.exists():
+                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> File does not exist at given starting image path {start_image_path}")
                 raise AIconFileNotFoundError(f"File does not exist at given starting image path {start_image_path}")
             image: Image = Image.open(str(file))
             start_img_transform: Compose = T.Compose([
@@ -448,10 +449,10 @@ class Imagine(nn.Module):
     
     def create_img_encoding(self, img: str) -> torch.Tensor:
         img: Image = Image.open(img)
-        normed_img = self.clip_transform(img).unsqueeze(0).to(self.device)
+        normed_img: torch.Tensor = self.clip_transform(img).unsqueeze(0).to(self.device)
 
         with torch.no_grad():
-            img_encoding = self.perceptor.encode_image(normed_img).detach()
+            img_encoding: torch.Tensor = self.perceptor.encode_image(normed_img).detach()
 
         return img_encoding
     
@@ -476,7 +477,7 @@ class Imagine(nn.Module):
                 self.all_words = self.all_words[self.num_start_words:]
             else:
                 # add words_per_epoch new words
-                count = 0
+                count: int = 0
                 while count < self.words_per_epoch and len(self.all_words) > 0:
                     new_word = self.all_words[0]
                     self.words = " ".join(self.words.split(" ") + [new_word])
@@ -487,14 +488,17 @@ class Imagine(nn.Module):
                 while len(self.words) > self.perceptor.context_length:
                     # remove first word
                     self.words = " ".join(self.words.split(" ")[1:])
+
         # get new encoding
-        print("Now thinking of: ", '"', self.words, '"')
-        sequence_number = self.get_img_sequence_number(epoch, iteration)
+        logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Now thinking of `{self.words}`")
+        sequence_number: int = self.get_img_sequence_number(epoch, iteration)
+
         # save new words to disc
         with open("story_transitions.txt", "a") as f:
             f.write(f"{epoch}, {sequence_number}, {self.words}\n")
         
-        encoding = self.create_text_encoding(self.words)
+        encoding: torch.Tensor = self.create_text_encoding(self.words)
+
         return encoding
 
     def image_output_path(self, sequence_number=None):
@@ -532,9 +536,10 @@ class Imagine(nn.Module):
 
         return out, total_loss
     
-    def get_img_sequence_number(self, epoch, iteration):
-        current_total_iterations = epoch * self.iterations + iteration
-        sequence_number = current_total_iterations // self.save_every
+    def get_img_sequence_number(self, epoch: int, iteration: int) -> int:
+        current_total_iterations: int = epoch * self.iterations + iteration
+        sequence_number: int = current_total_iterations // self.save_every
+
         return sequence_number
 
     @torch.no_grad()
