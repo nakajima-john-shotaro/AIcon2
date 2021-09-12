@@ -6,15 +6,16 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 import urllib
 import warnings
 from collections import OrderedDict
-from logging import INFO, Logger, StreamHandler, getLogger
 from pathlib import Path
 from typing import List, Tuple, Union
 
 import torch
 import torch.nn.functional as F
-from constant import CustomFormatter
+from constant import *
 from torch import nn
 from torchvision.transforms import Compose, Normalize
+
+logger: Logger = get_logger()
 
 
 _MODELS = {

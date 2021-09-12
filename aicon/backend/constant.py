@@ -39,7 +39,6 @@ CHC_EMPTY_TOLERANCE: int = 5
 CHC_LAST_CONNECTION_TIME: str = "last_connection_time"
 
 
-
 class CustomFormatter(Formatter):
 
     gray = "\x1b[38;1m"
@@ -67,12 +66,21 @@ class CustomFormatter(Formatter):
         return formatter.format(record)
 
 
-stream_handler: StreamHandler = StreamHandler()
-stream_handler.setLevel(INFO)
-stream_handler.setFormatter(CustomFormatter())
-logger: Logger = getLogger("aicon")
-logger.addHandler(stream_handler)
-logger.setLevel(INFO)
+def get_logger(name: str = "aicon", level: int = INFO):
+    logger: Logger = getLogger(name)
+    logger.propagate = False
+    print("\nCalled get_logger\n")
+
+    if not logger.hasHandlers():
+        print("\nExpect called once\n")
+        stream_handler: StreamHandler = StreamHandler()
+        stream_handler.setLevel(level)
+        stream_handler.setFormatter(CustomFormatter())
+
+        logger.addHandler(stream_handler)
+        logger.setLevel(level)
+
+    return logger
 
 
 class AIconBaseException(Exception):

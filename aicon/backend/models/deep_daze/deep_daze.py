@@ -1,17 +1,15 @@
 import os
 import sys
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
-import imageio
 
+import imageio
 from torchvision.transforms.transforms import Compose
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 import random
-from datetime import datetime
-from logging import INFO, Logger, StreamHandler, getLogger
 from multiprocessing import Queue
 from pathlib import Path
-from queue import Empty, Full
+from queue import Empty
 
 import numpy as np
 import torch
@@ -29,6 +27,7 @@ from tqdm import tqdm, trange
 
 from .clip import load, tokenize
 
+logger: Logger = get_logger()
 
 # Helpers
 
@@ -271,6 +270,8 @@ class Imagine(nn.Module):
         self.writer: imageio.core.Format.Writer = get_writer(self.dst_mp4_path, fps=10)
 
         text: str = self.client_data[JSON_TEXT]
+        # For debug
+        self.client_data[JSON_SEED] = 42
         seed: int = self.client_data[JSON_SEED]
         image_width: int = int(self.client_data[JSON_SIZE])
         iterations: int = self.client_data[JSON_TOTAL_ITER]
@@ -593,9 +594,11 @@ class Imagine(nn.Module):
                 # Update clip_encoding per epoch if we are creating a story
                 if self.create_story:
                     self.clip_encoding = self.update_story_encoding()
+
         except KeyboardInterrupt as e:
             logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Keyboard Interrunpted")
             raise e
+
         finally:
             self.save_image(epoch, iteration)
 

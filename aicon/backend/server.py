@@ -9,11 +9,10 @@ from multiprocessing import Process, Queue
 from threading import Thread, Lock
 from queue import Empty, Full, Queue as Queue_
 from pprint import pprint # pylint: disable=unused-import
-from logging import StreamHandler, Logger, getLogger, INFO
 
 from flask import Flask, Response, jsonify, render_template, abort, request
 from flask_cors import CORS
-from flask_restful import Api, Resource, reqparse
+from flask_restful import Api, Resource
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.exceptions import HTTPException, BadRequest, Forbidden, InternalServerError
@@ -36,51 +35,12 @@ limiter = Limiter(app, key_func=get_remote_address, default_limits=["100 per min
 CORS(app)
 api: Api = Api(app)
 
-# logger: Logger = getLogger("aicon")
+logger: Logger = get_logger()
 
 _client_data: Dict[str, Dict[str, Union[str, Queue]]] = {}
 _client_data_queue_chc: Queue_ = Queue_(maxsize=1)
 _client_data_queue_pm: Queue_ = Queue_(maxsize=1)
 _lock: Lock = Lock()
-
-
-# debag
-import cv2
-import numpy
-class DummyModel():
-    def __init__(
-        self,
-        client_uuid: str,
-    ) -> None:
-        self.client_uuid: str = client_uuid
-
-    def run(self, client_data: Dict[str, Union[str, Queue]]):
-        queue: Queue = client_data[CORE_C2I_QUEUE]
-        total_iteration: int = int(client_data[JSON_TOTAL_ITER])
-        for i in range(total_iteration):
-            img: numpy.ndarray = numpy.zeros((client_data[JSON_SIZE], client_data[JSON_SIZE]))
-            cv2.putText(img, f"{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png", (0, 128), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1, cv2.LINE_AA)
-            cv2.imwrite(f"../frontend/static/dst_img/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png", img)
-            data: Dict[str, str] = {
-                JSON_HASH: self.client_uuid,
-                JSON_CURRENT_ITER: str(i),
-                JSON_IMG_PATH: f"../static/dst_img/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png",
-                JSON_MP4_PATH: f"../static/dst_gif/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{i:06d}.png",
-                JSON_COMPLETE: False
-            }
-            queue.put(data)
-            time.sleep(2)
-        
-        data: Dict[str, str] = {
-            JSON_HASH: self.client_uuid,
-            JSON_CURRENT_ITER: str(total_iteration),
-            JSON_IMG_PATH: f"../static/dst_img/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{total_iteration-1:06d}.png",
-            JSON_MP4_PATH: f"../static/dst_gif/{client_data[JSON_MODEL_NAME]}/{self.client_uuid}/{total_iteration-1:06d}.png",
-            JSON_COMPLETE: True
-        }
-        queue.put(data)
-
-        logger.info(f"[{self.client_uuid}]: Completed image generation")
 
 
 class AIconCore:
