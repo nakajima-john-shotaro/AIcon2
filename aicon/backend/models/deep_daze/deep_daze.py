@@ -1,6 +1,8 @@
 import os
 import sys
-from typing import Dict, Optional, Union
+from typing import Any, Dict, Iterator, List, Optional, Union
+
+from torchvision.transforms.transforms import Compose
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 import random
@@ -19,6 +21,7 @@ from PIL import Image
 from siren_pytorch import SirenNet, SirenWrapper
 from torch import nn
 from torch.cuda.amp import GradScaler, autocast
+from torch.nn.parameter import Parameter
 from torch_optimizer import AdamP, DiffGrad
 from tqdm import tqdm, trange
 
@@ -33,19 +36,19 @@ logger.setLevel(INFO)
 
 # Helpers
 
-def exists(val):
+def exists(val: Any) -> bool:
     return val is not None
 
 
-def default(val, d):
+def default(val: Any, d: Any) -> Any:
     return val if exists(val) else d
 
 
-def interpolate(image, size):
+def interpolate(image: torch.Tensor, size: int) -> torch.Tensor:
     return F.interpolate(image, (size, size), mode='bilinear', align_corners=False)
 
 
-def rand_cutout(image, size, center_bias=False, center_focus=2):
+def rand_cutout(image: torch.Tensor, size: int, center_bias: bool = False, center_focus: int = 2) -> torch.Tensor:
     width = image.shape[-1]
     min_offset = 0
     max_offset = width - size
@@ -62,18 +65,20 @@ def rand_cutout(image, size, center_bias=False, center_focus=2):
         offset_x = random.randint(min_offset, max_offset)
         offset_y = random.randint(min_offset, max_offset)
     cutout = image[:, :, offset_x:offset_x + size, offset_y:offset_y + size]
+
     return cutout
 
 
-def create_clip_img_transform(image_width):
-    clip_mean = [0.48145466, 0.4578275, 0.40821073]
-    clip_std = [0.26862954, 0.26130258, 0.27577711]
-    transform = T.Compose([
+def create_clip_img_transform(image_width: int) -> Compose:
+    clip_mean: List[float] = [0.48145466, 0.4578275, 0.40821073]
+    clip_std: List[float] = [0.26862954, 0.26130258, 0.27577711]
+    transform: Compose = T.Compose([
         T.Resize(image_width),
         T.CenterCrop((image_width, image_width)),
         T.ToTensor(),
         T.Normalize(mean=clip_mean, std=clip_std)
     ])
+
     return transform
 
 
@@ -81,19 +86,16 @@ def norm_siren_output(img):
     return ((img + 1) * 0.5).clamp(0.0, 1.0)
 
 
-def create_text_path(context_length, text=None, img=None, encoding=None, separator=None):
+def create_text_path(context_length: int, text: Optional[str] = None, img: Optional[str] = None, separator: Optional[str] = None) -> str:
     if text is not None:
         if separator is not None and separator in text:
-            #Reduces filename to first epoch text
             text = text[:text.index(separator, )]
         input_name = text.replace(" ", "_")[:context_length]
     elif img is not None:
-        if isinstance(img, str):
-            input_name = "".join(img.replace(" ", "_").split(".")[:-1])
-        else:
-            input_name = "PIL_img"
+        input_name = "".join(img.replace(" ", "_").split(".")[:-1])
     else:
         input_name = "your_encoding"
+
     return input_name
 
 
@@ -336,82 +338,93 @@ class Imagine(nn.Module):
             jit = False
 
         # Load CLIP
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         clip_perceptor, norm = load(model_name, jit=jit, device=self.device)
-        self.perceptor = clip_perceptor.eval()
+        self.perceptor: nn.Module = clip_perceptor.eval()
+
         for param in self.perceptor.parameters():
             param.requires_grad = False
+
         if jit == False:
-            input_res = clip_perceptor.visual.input_resolution
+            input_res: int = clip_perceptor.visual.input_resolution
         else:
             input_res = clip_perceptor.input_resolution.item()
         self.clip_transform = create_clip_img_transform(input_res)
         
-        self.iterations = iterations
-        self.image_width = image_width
-        total_batches = self.epochs * self.iterations * batch_size * gradient_accumulate_every
-        model = DeepDaze(
-                self.perceptor,
-                norm,
-                input_res,
-                total_batches,
-                batch_size=batch_size,
-                image_width=image_width,
-                num_layers=num_layers,
-                theta_initial=theta_initial,
-                theta_hidden=theta_hidden,
-                lower_bound_cutout=lower_bound_cutout,
-                upper_bound_cutout=upper_bound_cutout,
-                saturate_bound=saturate_bound,
-                gauss_sampling=gauss_sampling,
-                gauss_mean=gauss_mean,
-                gauss_std=gauss_std,
-                do_cutout=do_cutout,
-                center_bias=center_bias,
-                center_focus=center_focus,
-                hidden_size=hidden_size,
-                averaging_weight=averaging_weight,
-            ).to(self.device)
-        self.model = model
-        self.scaler = GradScaler()
-        siren_params = model.model.parameters()
+        self.iterations: int = iterations
+        self.image_width: int = image_width
+        total_batches: int = self.epochs * self.iterations * batch_size * gradient_accumulate_every
+
+        model: nn.Module = DeepDaze(
+            self.perceptor,
+            norm,
+            input_res,
+            total_batches,
+            batch_size=batch_size,
+            image_width=image_width,
+            num_layers=num_layers,
+            theta_initial=theta_initial,
+            theta_hidden=theta_hidden,
+            lower_bound_cutout=lower_bound_cutout,
+            upper_bound_cutout=upper_bound_cutout,
+            saturate_bound=saturate_bound,
+            gauss_sampling=gauss_sampling,
+            gauss_mean=gauss_mean,
+            gauss_std=gauss_std,
+            do_cutout=do_cutout,
+            center_bias=center_bias,
+            center_focus=center_focus,
+            hidden_size=hidden_size,
+            averaging_weight=averaging_weight,
+        ).to(self.device)
+
+        self.model: nn.Module = model
+        self.scaler: GradScaler = GradScaler()
+        siren_params: Iterator[Parameter] = model.model.parameters()
+
         if optimizer == "AdamP":
-            self.optimizer = AdamP(siren_params, lr)
+            self.optimizer: Union[AdamP, torch.optim.Adam, DiffGrad] = AdamP(siren_params, lr)
         elif optimizer == "Adam":
             self.optimizer = torch.optim.Adam(siren_params, lr)
         elif optimizer == "DiffGrad":
             self.optimizer = DiffGrad(siren_params, lr)
-        self.gradient_accumulate_every = gradient_accumulate_every
-        self.save_every = save_every
-        self.save_date_time = save_date_time
-        self.save_progress = save_progress
-        self.text = text
-        self.image = img
-        self.textpath = create_text_path(self.perceptor.context_length, text=text, img=img, encoding=clip_encoding, separator=story_separator)
-        self.filename = self.image_output_path()
+
+        self.gradient_accumulate_every: int = gradient_accumulate_every
+        self.save_every: int = save_every
+        self.save_date_time: bool = save_date_time
+        self.save_progress: bool = save_progress
+        self.text: Optional[str] = text
+        self.image: Optional[str] = img
+        self.textpath: str = create_text_path(self.perceptor.context_length, text=text, img=img, encoding=clip_encoding, separator=story_separator)
+        self.filename: Path = self.image_output_path()
         
         # create coding to optimize for
-        self.clip_encoding = self.create_clip_encoding(text=text, img=img, encoding=clip_encoding)
+        self.clip_encoding: torch.Tensor = self.create_clip_encoding(text=text, img=img, encoding=clip_encoding)
 
-        self.start_image = None
-        self.start_image_train_iters = start_image_train_iters
-        self.start_image_lr = start_image_lr
+        self.start_image: Optional[torch.Tensor] = None
+        self.start_image_train_iters: int = start_image_train_iters
+        self.start_image_lr: float = start_image_lr
+
         if exists(start_image_path):
-            file = Path(start_image_path)
-            assert file.exists(), f'file does not exist at given starting image path {self.start_image_path}'
-            image = Image.open(str(file))
-            start_img_transform = T.Compose([T.Resize(image_width),
-                                             T.CenterCrop((image_width, image_width)),
-                                             T.ToTensor()])
-            image_tensor = start_img_transform(image).unsqueeze(0).to(self.device)
-            self.start_image = image_tensor
+            file: Path = Path(start_image_path)
+            if not file.exists():
+                raise AIconFileNotFoundError(f"File does not exist at given starting image path {start_image_path}")
+            image: Image = Image.open(str(file))
+            start_img_transform: Compose = T.Compose([
+                T.Resize(image_width),
+                T.CenterCrop((image_width, image_width)),
+                T.ToTensor()
+            ])
+            image_tensor: torch.Tensor = start_img_transform(image).unsqueeze(0).to(self.device)
+            self.start_image: torch.Tensor = image_tensor
 
-        self.save_gif = save_gif
-        self.save_video = save_video
+        self.save_gif: bool = save_gif
+        self.save_video: bool = save_video
             
-    def create_clip_encoding(self, text=None, img=None, encoding=None):
-        self.text = text
-        self.img = img
+    def create_clip_encoding(self, text: Optional[str] = None, img: Optional[str] = None, encoding: Optional[torch.Tensor] = None) -> torch.Tensor:
+        self.text: Optional[str] = text
+        self.img: Optional[str] = img
+
         if encoding is not None:
             encoding = encoding.to(self.device)
         elif self.create_story:
@@ -422,36 +435,40 @@ class Imagine(nn.Module):
             encoding = self.create_text_encoding(text)
         elif img is not None:
             encoding = self.create_img_encoding(img)
+
         return encoding
 
-    def create_text_encoding(self, text):
+    def create_text_encoding(self, text: str) -> torch.Tensor:
         tokenized_text = tokenize(text).to(self.device)
+
         with torch.no_grad():
-            text_encoding = self.perceptor.encode_text(tokenized_text).detach()
+            text_encoding: torch.Tensor = self.perceptor.encode_text(tokenized_text).detach()
+
         return text_encoding
     
-    def create_img_encoding(self, img):
-        if isinstance(img, str):
-            img = Image.open(img)
+    def create_img_encoding(self, img: str) -> torch.Tensor:
+        img: Image = Image.open(img)
         normed_img = self.clip_transform(img).unsqueeze(0).to(self.device)
+
         with torch.no_grad():
             img_encoding = self.perceptor.encode_image(normed_img).detach()
+
         return img_encoding
     
-    def set_clip_encoding(self, text=None, img=None, encoding=None):
-        encoding = self.create_clip_encoding(text=text, img=img, encoding=encoding)
-        self.clip_encoding = encoding.to(self.device)
+    def set_clip_encoding(self, text: Optional[str] = None, img: Optional[str] = None, encoding: Optional[torch.Tensor] = None) -> torch.Tensor:
+        encoding: torch.Tensor = self.create_clip_encoding(text=text, img=img, encoding=encoding)
+        self.clip_encoding: torch.Tensor = encoding.to(self.device)
     
     def index_of_first_separator(self) -> int:
         for c, word in enumerate(self.all_words):
             if self.separator in str(word):
-                return c +1
+                return c + 1
 
-    def update_story_encoding(self, epoch, iteration):
+    def update_story_encoding(self, epoch: int, iteration: int) -> torch.Tensor:
         if self.separator is not None:
-            self.words = " ".join(self.all_words[:self.index_of_first_separator()])
+            self.words: str = " ".join(self.all_words[:self.index_of_first_separator()])
             #removes separator from epoch-text
-            self.words = self.words.replace(self.separator,'')
+            self.words = self.words.replace(self.separator, '')
             self.all_words = self.all_words[self.index_of_first_separator():]
         else:
             if self.words is None:
@@ -465,6 +482,7 @@ class Imagine(nn.Module):
                     self.words = " ".join(self.words.split(" ") + [new_word])
                     self.all_words = self.all_words[1:]
                     count += 1
+
                 # remove words until it fits in context length
                 while len(self.words) > self.perceptor.context_length:
                     # remove first word
