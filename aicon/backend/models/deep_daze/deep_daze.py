@@ -599,6 +599,14 @@ class Imagine(nn.Module):
             logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Keyboard Interrunpted")
             raise e
 
+        except RuntimeError as e:
+            if 'out of memory' in str(e):
+                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Ran out of gpu memory")
+                torch.cuda.empty_cache()
+                raise AIconOutOfMemoryError(str(e))
+            else:
+                raise AIconRuntimeError(str(e))
+
         finally:
             self.save_image(epoch, iteration)
 
