@@ -238,23 +238,19 @@ class Imagine(nn.Module):
             client_data: Dict[str, Union[str, Queue]],
             text: Optional[str] = None,
             img: Optional[str] = None,
-            clip_encoding=None,
+            seed: Optional[int] = None,
+            image_width: int = 256,
             lr: float = 0.0001,
             batch_size: int = 12,
             gradient_accumulate_every: int = 7,
-            image_width: int = 256,
-            iterations: int = 1000,
             num_layers: int = 16,
             hidden_size: int = 256,
-            center_bias: bool = True,
-            center_focus: int = 2,
-            seed: Optional[int] = None,
             model_name: str = "ViT-B/32",
             optimizer: str = "AdamP",
+            center_bias: bool = True,
+            center_focus: int = 2,
             jit: bool = True,
-            save_every: int = 100,
             epochs: int = 1,
-            save_progress: bool = True,
             start_image_path: Optional[str] = None,
             start_image_train_iters: int = 10,
             start_image_lr: float = 3e-4,
@@ -272,6 +268,7 @@ class Imagine(nn.Module):
             gauss_mean: float = 0.6,
             gauss_std: float = 0.2,
             do_cutout: bool = True,
+            clip_encoding=None,
     ): 
         super().__init__()
 
@@ -279,15 +276,22 @@ class Imagine(nn.Module):
         self.client_data: Dict[str, Union[str, Queue]] = client_data
 
         self.dst_img_path: str = self.client_data[JSON_IMG_PATH]
-        self.dst_mp4_path: str = self.client_data[JSON_MP4_PATH]
+        self.dst_mp4_path: str = os.path.join(self.client_data[JSON_MP4_PATH], "timelapse.mp4")
 
         self.writer: imageio.core.Format.Writer = get_writer(self.dst_mp4_path, fps=10)
+
+        seed: int = self.client_data[JSON_SEED]
+        iterations: int = self.client_data[JSON_TOTAL_ITER]
 
         self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
         self.i2c_queue: Queue = self.client_data[CORE_I2C_QUEUE]
 
-        self.put_data: Dict[str, Union[str, bool, int]] = {
-            
+        self.put_data: Dict[str, Optional[Union[str, bool]]] = {
+            JSON_HASH: self.client_uuid,
+            JSON_CURRENT_ITER: "0",
+            JSON_IMG_PATH: None,
+            JSON_MP4_PATH: None,
+            JSON_COMPLETE: False
         }
 
         if exists(seed):
@@ -401,8 +405,6 @@ class Imagine(nn.Module):
             self.optimizer = DiffGrad(siren_params, lr)
 
         self.gradient_accumulate_every: int = gradient_accumulate_every
-        self.save_every: int = save_every
-        self.save_progress: bool = save_progress
         self.text: Optional[str] = text
         self.image: Optional[str] = img
         self.textpath: str = create_text_path(self.perceptor.context_length, text=text, img=img, encoding=clip_encoding, separator=story_separator)
@@ -505,7 +507,6 @@ class Imagine(nn.Module):
     def get_output_img_path(self, sequence_number: int = None):
         """
         Returns underscore separated Path.
-        Sequence number left padded with 6 zeroes is appended if `save_every` is set.
         :rtype: Path
         """
         output_path: str = self.textpath
@@ -536,8 +537,7 @@ class Imagine(nn.Module):
         return out, total_loss
     
     def get_img_sequence_number(self, epoch: int, iteration: int) -> int:
-        current_total_iterations: int = epoch * self.iterations + iteration
-        sequence_number: int = current_total_iterations // self.save_every
+        sequence_number: int = epoch * self.iterations + iteration
 
         return sequence_number
 
@@ -567,7 +567,7 @@ class Imagine(nn.Module):
                     optim.step()
                     optim.zero_grad()
             except KeyboardInterrupt as e:
-                logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Keyboard Interrunpted")
+                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Keyboard Interrunpted")
                 raise e
 
             del self.start_image
@@ -580,14 +580,24 @@ class Imagine(nn.Module):
 
         try:
             for epoch in range(self.epochs):
-                for i in range(self.iterations):
-                    _, loss = self.train_step(epoch, i)
+                for iteration in range(self.iterations):
+                    try:
+                        get_data: Dict[str, bool] = self.i2c_queue.get_nowait()
+                        if get_data[JSON_ABORT]:
+                            logger.warning(f"[{self.client_uuid}]: <<AIcon Core>> Abort signal detected")
+                            raise AIconAbortedError("Abort signal detected")
+                    except Empty:
+                        pass
+
+                    sequence_number: int = self.get_img_sequence_number(epoch, iteration)
+
+                    _, loss = self.train_step(epoch, iteration)
 
                 # Update clip_encoding per epoch if we are creating a story
                 if self.create_story:
                     self.clip_encoding = self.update_story_encoding()
-        except KeyboardInterrupt:
-            print('interrupted by keyboard, gracefully exiting')
-            return
+        except KeyboardInterrupt as e:
+            logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Keyboard Interrunpted")
+            raise e
 
-        self.save_image(epoch, i) # one final save at end
+        self.save_image(epoch, iteration) # one final save at end
