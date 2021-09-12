@@ -400,7 +400,7 @@ class Imagine(nn.Module):
         self.gradient_accumulate_every: int = gradient_accumulate_every
         self.text: Optional[str] = text
         self.image: Optional[str] = img
-        self.textpath: str = create_text_path(self.perceptor.context_length, text=text, img=img, encoding=clip_encoding, separator=story_separator)
+        self.textpath: str = create_text_path(self.perceptor.context_length, text=text, img=img, separator=story_separator)
         self.filename: Path = self.get_output_img_path()
         
         # create coding to optimize for
