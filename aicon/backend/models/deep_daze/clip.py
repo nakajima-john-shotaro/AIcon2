@@ -16,12 +16,6 @@ from constant import CustomFormatter
 from torch import nn
 from torchvision.transforms import Compose, Normalize
 
-stream_handler: StreamHandler = StreamHandler()
-stream_handler.setLevel(INFO)
-stream_handler.setFormatter(CustomFormatter())
-logger: Logger = getLogger()
-logger.addHandler(stream_handler)
-logger.setLevel(INFO)
 
 _MODELS = {
     "RN50": "https://openaipublic.azureedge.net/clip/models/afeb0e10f9e5a86da6080e35cf09123aca3b358a0c3e3b6c78a7b63bc04b6762/RN50.pt",
