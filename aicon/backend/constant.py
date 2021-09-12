@@ -26,6 +26,7 @@ CHC_EMPTY_TOLERANCE: int = 5
 
 MAIN_EMPTY_TOLERANCE: int = 10
 
+COMPATIBLE_PYTORCH_VERSION: str = "1.7.1"
 
 class CustomFormatter(logging.Formatter):
 
@@ -55,7 +56,7 @@ class CustomFormatter(logging.Formatter):
 
 
 class AIconBaseException(Exception):
-    def __init__(self, arg="") -> None:
+    def __init__(self, arg="AIcon internal error") -> None:
         self.arg = arg
 
 
@@ -70,5 +71,10 @@ class AIconValueError(AIconBaseException):
 
 
 class AIconTypeError(AIconBaseException):
+    def __str__(self):
+        return f"{self.arg}"
+
+
+class AIconOutOfMemoryError(AIconBaseException):
     def __str__(self):
         return f"{self.arg}"
