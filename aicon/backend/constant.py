@@ -1,6 +1,5 @@
 """constant.py"""
 
-import logging
 from logging import (
     StreamHandler, Logger, Formatter, 
     getLogger, DEBUG, INFO, WARNING, ERROR, CRITICAL
