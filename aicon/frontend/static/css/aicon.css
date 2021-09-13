@@ -1,11 +1,11 @@
 /* フォントの設定 */
 @font-face {
-	font-family: 'MyFont';
+	font-family: 'NicoKaku';
 	src: url(../font/nicokaku_v1.ttf);
 }
 
 #nico_font {
-	font-family: MyFont;
+	font-family: NicoKaku;
 }
 /* 設定関連 */
 .carousel .carousel-item{
