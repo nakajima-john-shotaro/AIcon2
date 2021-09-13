@@ -5,6 +5,8 @@ from logging import (
     getLogger, DEBUG, INFO, WARNING, ERROR, CRITICAL
 )
 
+RATE_LIMIT: str = "100 per minute"
+PORT: int = 5050
 
 JSON_MODEL_NAME: str = "model_name"
 JSON_TEXT: str = "text"
@@ -18,7 +20,6 @@ JSON_ABORT: str = "abort"
 JSON_PRIORITY: str = "priority"
 JSON_NUM_CLIENTS: str = "num_clients"
 JSON_IMG_PATH: str = "img_path"
-JSON_GIF_PATH: str = "gif_path" # will be deprecated
 JSON_MP4_PATH: str = "mp4_path"
 
 MODEL_NAME_BIG_SLEEP: str = "BigSleep"
@@ -26,8 +27,10 @@ MODEL_NAME_DEEP_DAZE: str = "DeepDaze"
 MODEL_NAME_DALL_E: str = "DALL-E"
 
 IF_HASH_INIT: str = "00000000-0000-0000-0000-000000000000"
+IF_BASE_IMG_PATH: str = "../frontend/static/dst_img"
+IF_BASE_MP4_PATH: str = "../frontend/static/dst_mp4"
 IF_QUEUE_EMPTY_COUNTER: str = "queue_empty_counter"
-IF_EMPTY_TOLERANCE: int = 15
+IF_EMPTY_TOLERANCE: int = 30
 
 CORE_COMPATIBLE_PYTORCH_VERSION: str = "1.7.1"
 CORE_C2I_QUEUE: str = "c2i_queue"
@@ -36,6 +39,8 @@ CORE_I2C_QUEUE: str = "i2c_queue"
 CHC_TIMEOUT: float = 7.0
 CHC_EMPTY_TOLERANCE: int = 5
 CHC_LAST_CONNECTION_TIME: str = "last_connection_time"
+
+GC_TIMEOUT: int = 3600
 
 
 class CustomFormatter(Formatter):
