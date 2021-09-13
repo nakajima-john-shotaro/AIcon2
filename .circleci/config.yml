@@ -3,7 +3,7 @@ jobs:
 
   build:
     docker:
-      - image: magicspell/aicon:0.0.2
+      - image: magicspell/aicon:0.1.0
         auth:
           username: $DOCKERHUB_USER
           password: $DOCKERHUB_PASSWORD
