@@ -1,3 +1,12 @@
+/* フォントの設定 */
+@font-face {
+	font-family: 'MyFont';
+	src: url(../font/nicokaku_v1.ttf);
+}
+
+#nico_font {
+	font-family: MyFont;
+}
 /* 設定関連 */
 .carousel .carousel-item{
 	width:100%;
@@ -100,6 +109,13 @@ border-bottom:1px solid #ccc;
 	cursor: pointer;
 }
 
+#image_upload_text {
+	font-weight: bold;
+	font-size: large;
+	text-align: center;
+	transform: translate(0%, 100%);
+}
+
 #img_delete_button {
 	display: none;
 	position: absolute;
@@ -182,7 +198,7 @@ border-bottom:1px solid #ccc;
 	#fixed-area{
 		position:relative!important;/*position stickyを解除*/
 		width:100%;/*横幅を100%にして1列に見せる*/
-		height: auto;/*縦幅を100vh⇒40vh ※任意の高さに設定可能*/
+		height: 30vh;/*縦幅を100vh⇒40vh ※任意の高さに設定可能*/
 	}
 	#scroll_container{
 		width:100%;/*横幅を100%にして1列に見せる*/

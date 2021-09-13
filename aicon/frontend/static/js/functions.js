@@ -9,14 +9,14 @@ $(window).on('load resize', function () {
     }
 });
 
-// $(window).load(function () {
-//     $('html,body').animate({ scrollTop: 0 }, '1');
-// });
+$(window).load(function () {
+    $('html,body').animate({ scrollTop: 0 }, '1');
+});
 
-// $('#reload').on('click', function () {
-//     location.reload();
-//     $('html,body').animate({ scrollTop: 0 }, '1');
-// });
+$('#reload').on('click', function () {
+    location.reload();
+    $('html,body').animate({ scrollTop: 0 }, '1');
+});
 
 // キー入力に関係する関数です
 $(function () {
@@ -31,7 +31,8 @@ $(function () {
 // モデルの選択に関する関数です
 // materializeが原因で脳筋手法に出ます
 // 今後はもっと汎用性のあるものを作ります…
-var DeepDaze_button_active = false;
+var DeepDaze_button_active = true;
+document.getElementById("DeepDaze").classList.add("add_Color");
 var BigSleep_button_active = false;
 $("#DeepDaze").click(function () {
     if (!communicate_status) {

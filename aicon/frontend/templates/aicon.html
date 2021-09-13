@@ -18,9 +18,9 @@
     <div class="navbar-fixed">
       <nav>
         <div class="nav-wrapper  light-blue darken-1">
-          <i href="#!" class="brand-logo center">
+          <h href="#!" class="brand-logo center" id="nico_font">
             AIcon
-          </i>
+          </h>
           <a href="#" data-target="mobile-demo" class="sidenav-trigger">
             <i class="material-icons">
               menu
@@ -203,7 +203,11 @@
               <div class="col s6 user-icon-dnd-wrapper">
                 <input type="file" name="icon" id="input_file" accept="image/*">
                 <div id="preview_field"></div>
-                <div id="drop_area">drag and drop<br>or<br>click here.</div>
+                <div id="drop_area">
+                  <div id="image_upload_text">
+                    Drop Image Here<br>or<br>Click Here.
+                  </div>
+                </div>
                 <i class="material-icons prefix" id="img_delete_button" >delete</i>
               </div>
               <div class="col s3"></div>
@@ -261,7 +265,7 @@
     </div> <!-- wrapper -->
 
     <!-- 通信を開始した際に以下のコンテナを出現させる -->
-    <div class="container" id="img_make_container">
+    <div class="container" id="img_make_container" hidden>
       <img id="result_img" src="../static/img/Fire_in_the_sky.000092.png">
       <!-- <div class="row" style="text-align: center;">
       </div> -->
