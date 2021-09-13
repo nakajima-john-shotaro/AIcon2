@@ -133,7 +133,7 @@ USER user
 ENV HOME=/home/user
 RUN chmod 777 /home/user
 ARG HOSTNAME="aicon"
-RUN echo "export PS1='\[\033[01;32m\]chomolunma@${HOSTNAME}\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '" >> /home/user/.bashrc && \
+RUN echo "export PS1='\[\033[01;32m\]aicon@${HOSTNAME}\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '" >> /home/user/.bashrc && \
     echo "PYTHONIOENCODING=utf-8" >> /home/user/.bashrc && \
     echo 'alias python="python3"' >> /home/user/.bashrc && \
     echo 'alias pip="pip3"' >> /home/user/.bashrc
