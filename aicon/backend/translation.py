@@ -1,11 +1,13 @@
 """translation.py"""
 
+import os
+os.environ['WDM_LOG_LEVEL'] = '0'
 import time
 
-import chromedriver_binary # pylint: disable=unused-import
+from googletrans import Translator
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from googletrans import Translator
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 class Translation(object):
@@ -32,7 +34,10 @@ class Translation(object):
                 self.d_options.add_argument('--headless')
                 self.d_options.add_argument('--no-sandbox')
 
-                driver: webdriver.Chrome = webdriver.Chrome(options=self.d_options)
+                driver: webdriver.Chrome = webdriver.Chrome(
+                    ChromeDriverManager(print_first_line=False).install(), 
+                    options=self.d_options
+                )
                 driver.get("https://www.deepl.com/ja/translator")
 
                 input_selector = driver.find_element_by_css_selector(".lmt__textarea.lmt__source_textarea.lmt__textarea_base_style")
@@ -63,3 +68,7 @@ class Translation(object):
         output_text = "".join(output_text)
 
         return output_text
+
+
+def install_webdriver() -> None:
+    _ = webdriver.Chrome(ChromeDriverManager(print_first_line=False).install())
