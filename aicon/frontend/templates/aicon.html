@@ -13,179 +13,242 @@
     <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stickyfill/2.1.0/stickyfill.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/push.js/0.0.11/push.min.js"></script>
   </head>
 
   <body>
 
-    <div id="overall">
-      <div class="navbar-fixed">
-        <nav>
-          <div class="nav-wrapper  light-blue darken-1">
-            <b href="#!" class="brand-logo center">
-              AIcon
-            </b>
-            <a href="#" data-target="mobile-demo" class="sidenav-trigger">
-              <i class="material-icons">
-                menu
-              </i>
-            </a>
-            <ul class="right hide-on-med-and-down">
-              <li><a href="help.html">help</a></li>
-              <li><a href="review.html">review</a></li>
-            </ul>
-          </div>
-        </nav>
-      </div>
+    <div class="navbar-fixed">
+      <nav>
+        <div class="nav-wrapper  light-blue darken-1">
+          <i href="#!" class="brand-logo center">
+            AIcon
+          </i>
+          <a href="#" data-target="mobile-demo" class="sidenav-trigger">
+            <i class="material-icons">
+              menu
+            </i>
+          </a>
+          <ul class="right hide-on-med-and-down">
+            <li><a href="help.html">help</a></li>
+            <li><a href="review.html">review</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
 
-      <ul class="sidenav" id="mobile-demo">
-        <li><a href="help.html">help</a></li>
-        <li><a href="review.html">review</a></li>
-      </ul>
+    <ul class="sidenav" id="mobile-demo">
+      <li><a href="help.html">help</a></li>
+      <li><a href="review.html">review</a></li>
+    </ul>
 
-      <div id="wrapper">
-        <!-- 左固定 -->
-        <div id="fixed-area">
-          <div class="container">
-            <div class="col s1"></div>
-            <div class="carousel col s10" id="DeepDaze_example">
-              <p class="carousel-item center"><img src="https://lorempixel.com/250/250/nature/1" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/2" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/3" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/4" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/5" alt="Can't load image."></p>
-            </div>
-            <div class="carousel col s10" id="BigSleep_example" hidden>
-              <p class="carousel-item center"><img src="https://lorempixel.com/250/250/cats/1" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/cats/2" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/cats/3" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/cats/4" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/cats/5" alt="Can't load image."></p>
-            </div>
-            <div class="carousel col s10" id="DALL-E_example" hidden>
-              <p class="carousel-item center"><img src="https://lorempixel.com/250/250/nature/1" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/2" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/3" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/4" alt="Can't load image."></p>
-              <p class="carousel-item"><img src="https://lorempixel.com/250/250/nature/5" alt="Can't load image."></p>
-              <div class="col s1"></div>
-            </div>
+
+    <div id="wrapper">
+      <!-- 左固定 -->
+        <div class="container" id="fixed-area">
+          <div class="container carousel col s12 gallery">
+              <img class="carousel-item" id="img1" src="https://lorempixel.com/250/250/cats/0" alt="Can't load image." width="512">
+              <img class="carousel-item" id="img2" src="https://lorempixel.com/250/250/cats/1" alt="Can't load image.">
+              <img class="carousel-item" id="img3" src="https://lorempixel.com/250/250/cats/2" alt="Can't load image.">
+              <img class="carousel-item" id="img4" src="https://lorempixel.com/250/250/cats/3" alt="Can't load image.">
+              <img class="carousel-item" id="img5" src="https://lorempixel.com/250/250/cats/4" alt="Can't load image.">
           </div>
-          <!-- <a class="waves-effect waves-light btn-large" id="action">
-            <i class="material-icons left">done_all</i>
-            Check
-          </a> -->
+          <div class="text">
+            
+          </div>
         </div><!--/fixed-area-->
 
 
-        <!-- 右可変 -->
-        <div class="container active" id="scroll_container" style="padding-top: 5px;">
-          <div class="row">
-            <div class="col s6">
-              <div id="DeepDaze" class="Model_Area">
-                <p class="not_select_text center">DeepDaze</p>
+      <!-- 右可変 -->
+      <div class="container active" id="scroll_container">
+        <div class="row" id="right_container">
+          <div class="col s1"></div>
+          <div class="col s10" id="param_space">
+            <div class="row">
+              <h7>モデルを選択。</h7>
+            </div>
+            <div class="row">
+              <a class="modal-trigger" href="#fit_model_description">あなたに合ったモデルは？</a>
+              <div id="fit_model_description" class="modal">
+                <div class="modal-content">
+                  <h4>DeepDaze</h4>
+                  <div class="conteiner">
+                    <p>A bunch of text</p>
+                  </div>
+                  <h4>BigSleep</h4>
+                  <div class="conteiner">
+                  <p>A bunch of text</p>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+                </div>
               </div>
             </div>
-            <div class="col s6">
-              <div id="BigSleep" class="Model_Area">
-                <p class="not_select_text center">BigSleep</p>
+            <div class="row">
+              <div class="col s6">
+                <div id="DeepDaze" class="Model_Area">
+                  <p class="not_select_text center">DeepDaze</p>
+                </div><!-- DeepDaze -->
+              </div>
+              <div class="col s6">
+                <div id="BigSleep" class="Model_Area">
+                  <p class="not_select_text center">BigSleep</p>
+                </div><!-- BigSleep -->
               </div>
             </div>
-          </div>
-          <br>
 
-
-          <div class="row center">
-            <b>Speed / Quality</b>
+            <div class="border_sample"><br></div>
+            <div class="row">
+              <br>
+              <h7>仕上がりを調整。</h7>
+              <br>
+            </div>
+            <div class="row center" id="srider">
+              <b>Speed / Quality</b>
+              <div class="row">
+                <div class="col s3"></div>
+                <div class="col s6">
+                  <form sction="#">
+                    <div class="row">
+                      <p class="range-field ">
+                        <input type="range" min="30" max="100" value="65" style="width: 100%" id="slider">
+                      </p>
+                    </div>
+                  </form>
+                </div>
+                <div class="col s3"></div>
+              </div>
+            </div>
+        
+            <div class="border_sample"></div>
+            <div class="row">
+              <br>
+              <h7>理想の文。</h7>
+              <br>
+            </div>
             <div class="row">
               <div class="col s3"></div>
-              <div class="col s6">
-                <form sction="#">
-                  <div class="row">
-                    <p class="range-field ">
-                      <input type="range" min="0" max="100" value="50" style="width: 100%" id="slider">
-                    </p>
+              <form class="col s6">
+                <div class="row">
+                  <div class="input-field col s12">
+                    <i class="material-icons prefix">mode_edit</i>
+                    <input id="textarea" class="materialize-textarea cancelEnter" type="search"></input>
+                    <label for="textarea">Input Text</label>
                   </div>
-                </form>
+                </div>
+              </form>
+            <div class="col s3"></div>
+            </div>
+
+            <div class="border_sample"></div>
+            <div class="row">
+              <br>
+              <h7>基にする画像。</h7>
+              <br>
+            </div>
+            <div class="row">
+              <a class="modal-trigger" href="#image_description">基にする画像とは？</a>
+              <div id="image_description" class="modal">
+                <div class="modal-content">
+                  <h4>基にする画像とは</h4>
+                  <div class="conteiner">
+                    <p>アップロードされた画像を基にして画像を作ります。</p>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col s3"></div>
+              <div class="col s6 user-icon-dnd-wrapper">
+                <input type="file" name="icon" id="input_file" accept="image/*">
+                <div id="preview_field"></div>
+                <div id="drop_area">drag and drop<br>or<br>click here.</div>
+                <i class="material-icons prefix" id="img_delete_button" >delete</i>
               </div>
               <div class="col s3"></div>
             </div>
-          </div>
 
-          <div class="row center">
-            <div class="col 2"></div>
-            <form  class="col s12">
-              <i class="material-icons prefix">mode_edit</i>
-              <div class="input-field inline">
-                <input id="textarea" class="materialize-textarea cancelEnter" type="search"></input>
-                <label for="textarea">Input Text</label>
-                </div>
-            </form>
-            <div class="col 2"></div>
-          </div>
+            
+            <br><br>
+            <div class="border_sample"></div>
 
-          <div class="row">
-            <div class="col s4"></div>
-            <div class="col s6 left-align">
-              <form action="#">
-                <p>
-                  <label>
-                    <input type="checkbox" />
-                    <span>Notification</span>
-                  </label>
-                </p>
-                <p>
-                  <label>
-                    <input id="indeterminate-checkbox" type="checkbox" />
-                    <span>Reduce data traffic</span>
-                  </label>
-                </p>
-              </form>
+            <br>
+            <h7>オプション</h7>
+            <br>
+            <div class="row">
+              <div class="col s4"></div>
+              <div class="col s6 left-align">
+                <form action="#">
+                  <p>
+                    <label>
+                      <input type="checkbox" />
+                      <span>Notification</span>
+                    </label>
+                  </p>
+                  <p>
+                    <label>
+                      <input type="checkbox" />
+                      <span>Reduce data traffic</span>
+                    </label>
+                  </p>
+                </form>
+              </div>
+              <div class="col s2"></div>
             </div>
-            <div class="col s2"></div>
-          </div>
 
-          <div class="center">
-            <a class="waves-effect waves-light btn-large" onclick="start()">
-              <i class="material-icons left">play_arrow</i>
-              Start
-            </a>
-            <a class="waves-effect waves-light btn-large" onclick="reload_window()">
+            <div class="row center">
+              <a class="waves-effect waves-light btn-large disabled" id="start_quit_button" onclick="start()">
+                <i class="material-icons left" id="start_quit_icon">play_arrow</i>
+                <h id="start_quit_text">Play</h>
+              </a>
+              <a class="waves-effect waves-light btn-large" id="reload">
               <i class="material-icons left">refresh</i>
               Reload
-            </a>
-          </div>
+              </a>
+            </div>
+          </div><!-- param_space -->
+          <div class="col s1"></div>
+        </div><!-- right_container -->
+      </div> <!-- scroll_container -->
+    </div> <!-- wrapper -->
 
-        </div> <!-- scroll_container -->
-      </div> <!-- wrapper -->
+    <!-- 通信を開始した際に以下のコンテナを出現させる -->
+    <div class="container blue center" id="img_make_container" hidden>
+      <div id="img_setting">
+        <img id="result_img" src="https://lorempixel.com/250/250/cats/0" alt="" width="512" height="512">
+      </div>
+    </div>
+  </div> <!-- overall -->
 
-      <!-- 通信を開始した際に以下のコンテナを出現させる -->
-        <div class="container blue center" id="img_make_container" hidden>
-          <div class="card blue-grey">
-            <img id="result_img" src="" alt="">
-          </div>
-        </div>
-    </div> <!-- overall -->
-
-    <script>
-      $(document).ready(function(){
-        $('ul.tabs').tabs({
-          swipeable : true,
-          responsiveThreshold : 1920
-        });
+  <script>
+    $(document).ready(function(){
+      $('ul.tabs').tabs({
+        swipeable : true,
+        responsiveThreshold : 1920
       });
+    });
 
-      $(document).ready(function(){
-        $('.sidenav').sidenav();
-      });
+    $(document).ready(function(){
+      $('.sidenav').sidenav();
+    });
 
-      $(document).ready(function(){
-        $('.carousel').carousel();
-      });
+    $(document).ready(function(){
+      $('.carousel').carousel();
+    });
 
-      $(document).ready(function(){
-        $('select').formSelect();
-      });
-    </script>
+    $(document).ready(function(){
+      $('select').formSelect();
+    });
+    
+    $(document).ready(function(){
+      $('.modal').modal();
+    });
+
+  </script>
 
     <!-- <script type=text/javascript src="{{ url_for('static', filename='../static/js/functions.js') }}"></script> -->
     <script type=text/javascript src="{{ url_for('static', filename='../static/js/functions.js') }}"></script>
