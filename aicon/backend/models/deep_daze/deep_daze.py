@@ -264,10 +264,12 @@ class Imagine(nn.Module):
         self.client_uuid: str = client_uuid
         self.client_data: Dict[str, Union[str, Queue]] = client_data
 
-        self.dst_img_path: str = self.client_data[JSON_IMG_PATH]
-        self.dst_mp4_path: str = os.path.join(self.client_data[JSON_MP4_PATH], "timelapse.mp4")
+        self.save_img_path: str = self.client_data[JSON_IMG_PATH]
+        self.response_img_path: str = self.client_data[JSON_IMG_PATH].replace("frontend/", "")
+        save_mp4_path: str = os.path.join(self.client_data[JSON_MP4_PATH], "timelapse.mp4")
+        self.response_mp4_path: str = save_mp4_path.replace("frontend/", "")
 
-        self.writer: imageio.core.Format.Writer = get_writer(self.dst_mp4_path, fps=10)
+        self.writer: imageio.core.Format.Writer = get_writer(save_mp4_path, fps=10)
 
         text: str = self.client_data[JSON_TEXT]
         # For debug
@@ -281,7 +283,7 @@ class Imagine(nn.Module):
 
         self.put_data: Dict[str, Optional[Union[str, bool]]] = {
             JSON_HASH: self.client_uuid,
-            JSON_CURRENT_ITER: "0",
+            JSON_CURRENT_ITER: None,
             JSON_IMG_PATH: None,
             JSON_MP4_PATH: None,
             JSON_COMPLETE: False
@@ -401,7 +403,7 @@ class Imagine(nn.Module):
         self.text: Optional[str] = text
         self.image: Optional[str] = img
         self.textpath: str = create_text_path(self.perceptor.context_length, text=text, img=img, separator=story_separator)
-        self.filename: Path = self.get_output_img_path()
+        self.response_filename: Optional[Path] = None
         
         # create coding to optimize for
         self.clip_encoding: torch.Tensor = self.create_clip_encoding(text=text, img=img, encoding=clip_encoding)
@@ -497,16 +499,16 @@ class Imagine(nn.Module):
 
         return encoding
 
-    def get_output_img_path(self, sequence_number: int = None):
+    def get_output_img_path(self, sequence_number: Optional[int]) -> Tuple[Path, Path]:
         """
         Returns underscore separated Path.
         :rtype: Path
         """
         output_path: str = self.textpath
-        if sequence_number is not None:
-            output_path = os.path.join(self.dst_img_path, f"{output_path}.{sequence_number:06d}")
+        save_output_path: str = os.path.join(self.save_img_path, f"{output_path}.{sequence_number:06d}")
+        response_output_path: str = os.path.join(self.response_img_path, f"{output_path}.{sequence_number:06d}")
 
-        return Path(f"{output_path}.png")
+        return (Path(f"{save_output_path}.png"), Path(f"{response_output_path}.png"))
 
     def train_step(self, epoch, iteration):
         total_loss: float = 0.
@@ -541,10 +543,10 @@ class Imagine(nn.Module):
         if img is None:
             img = self.model(self.clip_encoding, return_loss=False).cpu().float().clamp(0., 1.)
 
-        self.filename = self.get_output_img_path(sequence_number=sequence_number)
+        save_filename, self.response_filename = self.get_output_img_path(sequence_number=sequence_number)
         
         pil_img: Image = T.ToPILImage()(img.squeeze())
-        pil_img.save(self.filename)
+        pil_img.save(save_filename)
 
         self.writer.append_data(np.uint8(np.array(pil_img) * 255.))
 
@@ -587,9 +589,11 @@ class Imagine(nn.Module):
                     _, loss = self.train_step(epoch, iteration)
 
                     self.put_data[JSON_CURRENT_ITER] = str(sequence_number)
-                    self.put_data[JSON_IMG_PATH] = str(self.filename)
+                    self.put_data[JSON_IMG_PATH] = str(self.response_filename)
 
                     self.c2i_queue.put_nowait(self.put_data)
+
+                    logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Processing... {sequence_number}/{self.iterations * self.epochs}")
 
                 # Update clip_encoding per epoch if we are creating a story
                 if self.create_story:
@@ -609,9 +613,11 @@ class Imagine(nn.Module):
 
         finally:
             self.save_image(epoch, iteration)
+            self.writer.close()
 
             self.put_data[JSON_CURRENT_ITER] = str(sequence_number)
-            self.put_data[JSON_IMG_PATH] = str(self.filename)
+            self.put_data[JSON_IMG_PATH] = str(self.response_filename)
+            self.put_data[JSON_MP4_PATH] = self.response_mp4_path
             self.put_data[JSON_COMPLETE] = True
 
             self.c2i_queue.put_nowait(self.put_data)
