@@ -18,7 +18,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.exceptions import HTTPException, BadRequest, Forbidden, InternalServerError
 from waitress import serve
 
-from translation import Translation
+from translation import Translation, install_webdriver
 from models.deep_daze import deep_daze
 from constant import *
 
@@ -211,6 +211,7 @@ class AIconInterface(Resource):
             logger.info(f"[{IF_HASH_INIT}]: <<AIcon I/F >> Connection requested from an anonymous client. UUID {client_uuid} is assined.")
 
             try:
+                logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translating input text")
                 translated_text: str = self.translator.translate(received_data[JSON_TEXT])
                 logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated text `{received_data[JSON_TEXT]}` to `{translated_text}`")
 
@@ -355,6 +356,8 @@ class AIconInterface(Resource):
 
 if __name__ == "__main__":
     logger.info("<<AIcon>> Seesion started")
+
+    install_webdriver()
 
     multiprocessing.set_start_method("spawn")
 

@@ -272,6 +272,7 @@ class Imagine(nn.Module):
         self.writer: imageio.core.Format.Writer = get_writer(save_mp4_path, fps=10)
 
         text: str = self.client_data[JSON_TEXT]
+
         # For debug
         self.client_data[JSON_SEED] = 42
         seed: int = self.client_data[JSON_SEED]
