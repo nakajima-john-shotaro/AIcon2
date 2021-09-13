@@ -1,21 +1,21 @@
 // ウィンドウに関しての関数です
-$(window).on('load resize', function() {
+$(window).on('load resize', function () {
     var windowWidth = window.innerWidth;
     var elements = $('#fixed-area');
     if (windowWidth >= 768) {
-    Stickyfill.add(elements);
-    }else{
-    Stickyfill.remove(elements);
+        Stickyfill.add(elements);
+    } else {
+        Stickyfill.remove(elements);
     }
 });
 
-$(window).load(function(){
-	$('html,body').animate({ scrollTop: 0 }, '1');
+$(window).load(function () {
+    $('html,body').animate({ scrollTop: 0 }, '1');
 });
 
-$('#reload').on('click',function(){
+$('#reload').on('click', function () {
     location.reload();
-	$('html,body').animate({ scrollTop: 0 }, '1');
+    $('html,body').animate({ scrollTop: 0 }, '1');
 });
 
 // キー入力に関係する関数です
@@ -33,39 +33,39 @@ $(function () {
 // 今後はもっと汎用性のあるものを作ります…
 var DeepDaze_button_active = false;
 var BigSleep_button_active = false;
-$("#DeepDaze").click(function(){
-    if (!communicate_status){
-        if (!(DeepDaze_button_active ^ BigSleep_button_active)){
+$("#DeepDaze").click(function () {
+    if (!communicate_status) {
+        if (!(DeepDaze_button_active ^ BigSleep_button_active)) {
             document.getElementById("DeepDaze").classList.add("add_Color");
             document.getElementById("BigSleep").classList.remove("add_Color");
             DeepDaze_button_active = true;
             BigSleep_button_active = false;
         }
-        else if (DeepDaze_button_active ^ BigSleep_button_active){
+        else if (DeepDaze_button_active ^ BigSleep_button_active) {
             if (DeepDaze_button_active) {
                 document.getElementById("DeepDaze").classList.remove("add_Color");
-            DeepDaze_button_active = false;
-            BigSleep_button_active = false;
+                DeepDaze_button_active = false;
+                BigSleep_button_active = false;
             }
             else if (BigSleep_button_active) {
-            document.getElementById("DeepDaze").classList.add("add_Color");
-            document.getElementById("BigSleep").classList.remove("add_Color");
-            DeepDaze_button_active = true;
-            BigSleep_button_active = false;
+                document.getElementById("DeepDaze").classList.add("add_Color");
+                document.getElementById("BigSleep").classList.remove("add_Color");
+                DeepDaze_button_active = true;
+                BigSleep_button_active = false;
             }
         }
     }
 });
 
-$("#BigSleep").click(function(){
-    if (!communicate_status){
-        if (!(DeepDaze_button_active ^ BigSleep_button_active)){
+$("#BigSleep").click(function () {
+    if (!communicate_status) {
+        if (!(DeepDaze_button_active ^ BigSleep_button_active)) {
             document.getElementById("BigSleep").classList.add("add_Color");
             document.getElementById("DeepDaze").classList.remove("add_Color");
             DeepDaze_button_active = false;
             BigSleep_button_active = true;
         }
-        else if (DeepDaze_button_active ^ BigSleep_button_active){
+        else if (DeepDaze_button_active ^ BigSleep_button_active) {
             if (BigSleep_button_active) {
                 document.getElementById("BigSleep").classList.remove("add_Color");
                 DeepDaze_button_active = false;
@@ -82,25 +82,25 @@ $("#BigSleep").click(function(){
 });
 
 
-$('.Model_Area').click( function() {
+$('.Model_Area').click(function () {
     let img_id_list = [];
-    $(".carousel-item").each(function() {
-        img_id_list.push('#'+$(this).attr('id'));
+    $(".carousel-item").each(function () {
+        img_id_list.push('#' + $(this).attr('id'));
     });
 
     if (DeepDaze_button_active) {
-        for (let i = 0; i < img_id_list.length; i++){
-            $(img_id_list[i]).attr('src',"https://lorempixel.com/250/250/nature/" + (i+1));
+        for (let i = 0; i < img_id_list.length; i++) {
+            $(img_id_list[i]).attr('src', "https://lorempixel.com/250/250/nature/" + (i + 1));
         };
     }
     else if (BigSleep_button_active) {
-        for (let i = 0; i < img_id_list.length; i++){
-            $(img_id_list[i]).attr('src',"https://lorempixel.com/250/250/sports/" + (i+1));
+        for (let i = 0; i < img_id_list.length; i++) {
+            $(img_id_list[i]).attr('src', "https://lorempixel.com/250/250/sports/" + (i + 1));
         };
     }
     else {
-        for (let i = 0; i < img_id_list.length; i++){
-            $(img_id_list[i]).attr('src', "https://lorempixel.com/250/250/cats/" + (i+1));
+        for (let i = 0; i < img_id_list.length; i++) {
+            $(img_id_list[i]).attr('src', "https://lorempixel.com/250/250/cats/" + (i + 1));
         };
     }
     check()
@@ -110,10 +110,10 @@ $('.Model_Area').click( function() {
 // 仕上がりの調整に関するボタンです
 $('#set_param_middle').addClass('add_Color');
 var param_button_id = 'set_param_middle';
-$('.set_param_button').click( function() {
+$('.set_param_button').click(function () {
     param_button_id = this.id;
     $('.set_param_button').removeClass('add_Color');
-    $('#'+param_button_id).addClass('add_Color');
+    $('#' + param_button_id).addClass('add_Color');
 });
 
 
@@ -126,27 +126,27 @@ function get_range_value() {
 
 // 入力する文に関しての関数です
 var text_length = 0;
-$('#textarea').on('input', function() {
+$('#textarea').on('input', function () {
     text_length = $('#textarea').val().length;
     check()
 });
 
 // 画像のドラッグ＆ドロップに関する関数です
 $(function () {
-    if (!communicate_status){
+    if (!communicate_status) {
         // クリックで画像を選択する場合
         $('#drop_area').on('click', function () {
             $('#input_file').click();
         });
 
         $('#input_file').on('change', function () {
-        // 画像が複数選択されていた場合
-        if (this.files.length > 1) {
-            alert('アップロードできる画像は1つだけです');
-            $('#input_file').val('');
-            return;
-        }
-        handleFiles(this.files);
+            // 画像が複数選択されていた場合
+            if (this.files.length > 1) {
+                alert('アップロードできる画像は1つだけです');
+                $('#input_file').val('');
+                return;
+            }
+            handleFiles(this.files);
         });
     }
 });
@@ -167,7 +167,7 @@ $('#drop_area').on('dragleave', function (event) {
 
 // ドラッグしている要素がドロップされたとき
 $('#drop_area').on('drop', function (event) {
-    if (!communicate_status){
+    if (!communicate_status) {
         event.preventDefault();
         $('#input_file')[0].files = event.originalEvent.dataTransfer.files;
         // 画像が複数選択されていた場合
@@ -186,7 +186,7 @@ function handleFiles(files) {
     var imageType = 'image.*';
 
     // ファイルが画像が確認する
-    if (! file.type.match(imageType)) {
+    if (!file.type.match(imageType)) {
         alert('画像ファイルではありません。\n画像を選択してください');
         $('#input_file').val('');
         $('#drop_area').css('border', '5px dashed #ccc');
@@ -194,7 +194,7 @@ function handleFiles(files) {
     }
 
     $('#drop_area').hide();  // いちばん上のdrop_areaを非表示にします
-    $('#img_delete_button').show(); 
+    $('#img_delete_button').show();
 
     let img = document.createElement('img');  // <img>をつくります
     img.id = 'upload_img';
@@ -209,14 +209,14 @@ function handleFiles(files) {
     reader.readAsDataURL(file); // ファイル読み込みを非同期でバックグラウンドで開始
 }
 
-$(window).resize(function() {
+$(window).resize(function () {
     $('#upload_img').width($('#drop_area').outerWidth());
     $('#upload_img').height($('#drop_area').outerHeight());
 });
 
 // アイコン画像を消去するボタン
 $('#img_delete_button').on('click', function () {
-    if (!communicate_status){
+    if (!communicate_status) {
         $('#preview_field').empty();  // 表示していた画像を消去
         $('#input_file').val('');  // inputの中身を消去
         $('#drop_area').show();  // drop_areaをいちばん前面に表示
@@ -265,7 +265,7 @@ function check() {
 };
 
 // 開始後に関する関数です
-function stop_input(){
+function stop_input() {
     $('#slider').prop('disabled', true);
     $('#textarea').prop('disabled', true);
     $('#start_quit_button').addClass('red accent-2')
@@ -273,41 +273,61 @@ function stop_input(){
     $('#start_quit_text').text('Quit');
 }
 
+// 中止ボタンを押された際に送信データを変更する
+function abort_signal() {
+    send_data = {
+        model_name: select_check(),
+        text: $('#textarea').val(),
+        total_iter: parseInt(get_range_value()),
+        size: 256,
+        hash: hash,
+        abort: true,
+    };
+    console.log("abort_signalでたンゴ")
+    let send_json_data = JSON.stringify(send_data)
+    communicate(send_json_data)
+};
 
 var communicate_status = false;
+var hash = '00000000-0000-0000-0000-000000000000';
 function start() {
-    PushNotification()
-    let abort_signal = ($('#start_quit_text').text() === 'Play' ? false : true);
-    communicate_status = true;
+    console.log("start直下")
     stop_input()
+    PushNotification()
+    // let abort_signal = ($('#start_quit_text').text() === 'Play' ? false : true);
+    communicate_status = true;
     // 使用するモデルの選択
     const use_model = select_check();
     if (use_model === "") {
         return;
     }
-
+    $('#start_quit_button').attr("onclick", "abort_signal()")
     $('#img_make_container').fadeIn(1000);
     const target = $('#img_make_container').get(0).offsetTop;
-    $('body,html').animate({scrollTop:target}, 500, 'swing');
+    $('body,html').animate({ scrollTop: target }, 500, 'swing');
     // スライダーの値を取得
-    const slider_val = get_range_value()
+    const slider_val = get_range_value();
 
     // 入力された文字を取得
     var input_text = $('#textarea').val();
 
     // 送信するデータ
     send_data = {
-        model_name : use_model,
-        text : input_text,
-        total_iter : parseInt(slider_val),
-        size : 256,
-        hash : '00000000-0000-0000-0000-000000000000',
-        abort : abort_signal,
+        model_name: use_model,
+        text: input_text,
+        total_iter: parseInt(slider_val),
+        size: 256,
+        hash: hash,
+        abort: false,
 
     };
     let send_json_data = JSON.stringify(send_data)
-    // communicate(send_json_data)
-}
+    console.log("ﾄﾏﾗﾝﾄﾏﾗﾝ")
+
+    console.log('s_data')
+    console.log(send_data)
+    communicate(send_json_data)
+};
 
 // 通信に関しての関数
 function communicate(s_data) {
@@ -322,24 +342,27 @@ function communicate(s_data) {
     })
         .done(function (r_data, textStatus, xhr) {
             console.log("Communication success");
-            // console.log(r_data);
+            console.log("r_data");
+            console.log(r_data);
+            console.log("s_data");
             console.log(s_data);
-            const tmp_data = JSON.parse(s_data);
+            tmp_data = JSON.parse(s_data);
 
-            $('#result_img').attr("src", r_data["img_path"]).on("load", function (){
+            $('#result_img').attr("src", r_data["img_path"]).on("load", function () {
                 $('#result_img').fadeIn();
             });
             // 通信継続の確認
-            if (!r_data["complete"] ) {
-                wait(3000).done(function () {
+            if (!r_data["complete"]) {
+                wait(700).done(function () {
                     tmp_data["hash"] = r_data["hash"];
+                    hash = r_data["hash"];
                     communicate(JSON.stringify(tmp_data));
                 });
-            }else{
+            } else {
                 console.log("Communication is finished")
             }
         })
-        .fail(function (r_data, textStatus, error){ 
+        .fail(function (r_data, textStatus, error) {
             console.log("Commnucation error");
             console.log(r_data);
             console.log(typeof r_data);
@@ -358,12 +381,12 @@ function wait(msec) {
 // 通知に関しての関数
 function PushNotification() {
     Push.create('AIconです。', {
-    body: '画像を作り終えました！！',
-    icon: 'https://lorempixel.com/250/250/cats/0',
-    timeout: 5000,
-    onClick: function () {
-    this.close();
-    location.href = 'https://www.yahoo.co.jp';
-    }
+        body: '画像を作り終えました！！',
+        icon: 'https://lorempixel.com/250/250/cats/0',
+        timeout: 5000,
+        onClick: function () {
+            this.close();
+            location.href = 'https://www.yahoo.co.jp';
+        }
     });
 }
