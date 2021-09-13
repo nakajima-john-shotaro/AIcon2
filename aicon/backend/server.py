@@ -1,7 +1,6 @@
 import os
 import time
 import json
-import datetime # pylint: disable=unused-import
 import multiprocessing
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
@@ -31,7 +30,7 @@ app: Flask = Flask(
 app.config["JSON_AS_ASCII"] = False
 app.config["JSON_SORT_KEYS"] = False
 app.config['RATELIMIT_HEADERS_ENABLED'] = True
-limiter = Limiter(app, key_func=get_remote_address, default_limits=["100 per minute"])
+limiter = Limiter(app, key_func=get_remote_address, default_limits=[RATE_LIMIT])
 CORS(app)
 api: Api = Api(app)
 
@@ -40,6 +39,11 @@ logger: Logger = get_logger()
 _client_data: Dict[str, Dict[str, Union[str, Queue]]] = {}
 _client_data_queue_chc: Queue_ = Queue_(maxsize=1)
 _client_data_queue_pm: Queue_ = Queue_(maxsize=1)
+_valid_response: Dict[str, Union[str, bool, int]] = {
+    JSON_CURRENT_ITER: None,
+    JSON_IMG_PATH: None,
+    JSON_MP4_PATH: None,
+}
 _lock: Lock = Lock()
 
 
@@ -59,7 +63,7 @@ class AIconCore:
         logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Start image generation with {self.model_name}")
 
         if self.model_name == MODEL_NAME_BIG_SLEEP:
-            raise ValueError
+            raise NotImplementedError
 
         elif self.model_name == MODEL_NAME_DEEP_DAZE:
             try:
@@ -67,7 +71,7 @@ class AIconCore:
             except (AIconOutOfMemoryError, AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
                 print(e)
         elif self.model_name == MODEL_NAME_DALL_E:
-            raise ValueError
+            raise NotImplementedError
 
         logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Finished image generation")
 
@@ -165,7 +169,7 @@ class AIconInterface(Resource):
         self.translator: Translation = Translation(translator_name)
 
         self.base_img_path: str = "../frontend/static/dst_img"
-        self.base_mp4_path: str = "../frontend/static/dst_gif"
+        self.base_mp4_path: str = "../frontend/static/dst_mp4"
 
     def _get_client_priority(self, client_uuid: str) -> int:
         global _client_data
@@ -215,7 +219,7 @@ class AIconInterface(Resource):
                 logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated text `{received_data[JSON_TEXT]}` to `{translated_text}`")
 
                 c2i_queue: Queue = Queue()
-                i2c_queue: Queue = Queue()
+                i2c_queue: Queue = Queue(maxsize=1)
 
                 if received_data[JSON_MODEL_NAME] not in [MODEL_NAME_BIG_SLEEP, MODEL_NAME_DEEP_DAZE, MODEL_NAME_DALL_E]:
                     logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> Invalid model name `{received_data[JSON_MODEL_NAME]}` requested")
@@ -268,7 +272,17 @@ class AIconInterface(Resource):
             put_data: Dict[str, bool] = {
                 JSON_ABORT: received_data[JSON_ABORT],
             }
-            _client_data[client_uuid][CORE_I2C_QUEUE].put_nowait(put_data)
+
+            def _put_data(put_data: Dict[str, bool]) -> None:
+                try:
+                    _client_data[client_uuid][CORE_I2C_QUEUE].put_nowait(put_data)
+                except Full:
+                    try:
+                        _ = _client_data[client_uuid][CORE_I2C_QUEUE].get_nowait()
+                    except Empty:
+                        _put_data(put_data)
+
+            _put_data(put_data)
 
             _client_data[client_uuid][JSON_PRIORITY] = client_priority
             _client_data[client_uuid][CHC_LAST_CONNECTION_TIME] = time.time()
@@ -297,7 +311,7 @@ class AIconInterface(Resource):
                 client_data: Dict[str, Union[str, Queue]] = _client_data[client_uuid]
 
                 try:
-                    get_data: Dict[str, str] = client_data[CORE_C2I_QUEUE].get_nowait()
+                    get_data: Dict[str, Union[str, bool, int]] = client_data[CORE_C2I_QUEUE].get_nowait()
 
                     _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] = 0
 
@@ -305,6 +319,13 @@ class AIconInterface(Resource):
                     res[JSON_IMG_PATH] = get_data[JSON_IMG_PATH]
                     res[JSON_MP4_PATH] = get_data[JSON_MP4_PATH]
                     res[JSON_COMPLETE] = get_data[JSON_COMPLETE]
+
+                    if get_data[JSON_CURRENT_ITER] is not None:
+                        _valid_response[JSON_CURRENT_ITER] = get_data[JSON_CURRENT_ITER]
+                    if get_data[JSON_IMG_PATH] is not None:
+                        _valid_response[JSON_IMG_PATH] = get_data[JSON_IMG_PATH]
+                    if get_data[JSON_MP4_PATH] is not None:
+                        _valid_response[JSON_MP4_PATH] = get_data[JSON_MP4_PATH]
 
                     if get_data[JSON_COMPLETE]:
                         if self._remove_client_data(client_uuid):
@@ -314,6 +335,7 @@ class AIconInterface(Resource):
 
                 except Empty:
                     _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] += 1
+
                     if IF_EMPTY_TOLERANCE >= _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] > 3 * IF_EMPTY_TOLERANCE / 4:
                         logger.warning(f"[{client_uuid}]: <<AIcon I/F >> No data has been sent from AIcon Core for a long time. AIcon Core may have crashed.")
 
@@ -324,13 +346,17 @@ class AIconInterface(Resource):
                             JSON_ABORT: True,
                         }
                         _client_data[client_uuid][CORE_I2C_QUEUE].put_nowait(put_data)
+                        res[JSON_COMPLETE] = True
 
-                        raise InternalServerError("Server crashed") from None
+                    res[JSON_CURRENT_ITER] = _valid_response[JSON_CURRENT_ITER]
+                    res[JSON_IMG_PATH] = _valid_response[JSON_IMG_PATH]
+                    res[JSON_MP4_PATH] = _valid_response[JSON_MP4_PATH]
         else:
             logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> Invalid UUID")
             abort(403, f"Invalid UUID: {client_uuid}")
 
         return jsonify(res)
+
     
     @app.errorhandler(BadRequest)
     @app.errorhandler(Forbidden)
@@ -347,6 +373,7 @@ class AIconInterface(Resource):
         response.content_type = "application/json"
 
         return response
+
 
     @app.route("/")
     def index():
