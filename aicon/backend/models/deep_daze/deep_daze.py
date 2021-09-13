@@ -23,7 +23,6 @@ from torch import nn
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn.parameter import Parameter
 from torch_optimizer import AdamP, DiffGrad
-from tqdm import tqdm, trange
 
 from .clip import load, tokenize
 
@@ -589,7 +588,7 @@ class Imagine(nn.Module):
 
                     _, loss = self.train_step(epoch, iteration)
 
-                    self.put_data[JSON_CURRENT_ITER] = str(sequence_number)
+                    self.put_data[JSON_CURRENT_ITER] = int(sequence_number)
                     self.put_data[JSON_IMG_PATH] = str(self.response_filename)
 
                     self.c2i_queue.put_nowait(self.put_data)
@@ -612,14 +611,14 @@ class Imagine(nn.Module):
                 raise AIconRuntimeError(str(e))
 
         except AIconAbortedError as e:
-            raise AIconAbortedError(str(e))
+            raise e
 
         finally:
             self.save_image(epoch, iteration)
             self.writer.close()
 
             try:
-                self.put_data[JSON_CURRENT_ITER] = str(sequence_number)
+                self.put_data[JSON_CURRENT_ITER] = int(sequence_number)
             except UnboundLocalError:
                 pass
 
