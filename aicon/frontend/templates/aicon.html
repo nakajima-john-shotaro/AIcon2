@@ -2,8 +2,6 @@
   <head>
     <title>AIcon</title>
     <!-- css file -->
-    <!-- <link rel="stylesheet" href="aicon.css" type="text/css"> -->
-    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/aicon.css')}}" type="text/css"> -->
     <link rel="stylesheet" href="../static/css/aicon.css" type="text/css">
 
     <!-- MAterialize -->
@@ -122,7 +120,8 @@
                 </div><!-- set_param_high -->
               </div>
             </div>
-
+            
+            <br>
             <div class="row">
               <ul class="collapsible">
                 <li>
@@ -137,19 +136,20 @@
                       <br>
                     </div>
                     <div class="row center" id="srider">
-                      <b>Speed / Quality</b>
                       <div class="row">
-                        <div class="col s3"></div>
-                        <div class="col s6">
+                        <div class="col s2">
+                          <b>Speedy</b>
+                        </div>
+                        <div class="col s8">
                           <form sction="#">
-                            <div class="row">
                               <p class="range-field ">
-                                <input type="range" min="30" max="1000" value="65" style="width: 100%" id="slider">
+                                <input type="range" min="30" max="1000" value="515" style="width: 100%" id="slider">
                               </p>
-                            </div>
                           </form>
                         </div>
-                        <div class="col s3"></div>
+                        <div class="col s2">
+                          <b>High Quality</b>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -157,13 +157,8 @@
               </ul>
             </div>
 
-            
-
             <div class="border_sample"><br></div>
             
-
-        
-            <div class="border_sample"></div>
             <div class="row">
               <br>
               <h7>理想の文。</h7>
@@ -241,27 +236,44 @@
               <div class="col s2"></div>
             </div>
 
-            <div class="row center">
-              <a class="waves-effect waves-light btn-large disabled" id="start_quit_button" onclick="start()">
-                <i class="material-icons left" id="start_quit_icon">play_arrow</i>
-                <h id="start_quit_text">Play</h>
-              </a>
-              <a class="waves-effect waves-light btn-large" id="reload">
-              <i class="material-icons left">refresh</i>
-              Reload
-              </a>
+            <div class="row">
+              <div class="col s2"></div>
+              <div class="col s4">
+                <a class="waves-effect waves-light btn-large disabled" id="start_quit_button" onclick="start()">
+                  <i class="material-icons left" id="start_quit_icon">play_arrow</i>
+                  <h id="start_quit_text">Play</h>
+                </a>
+              </div>
+              <div class="col s4">  
+                <a class="waves-effect waves-light btn-large" id="reload">
+                  <i class="material-icons left">refresh</i>
+                  Reload
+                </a>
+              </div>
+              <div class="col s2"></div>
             </div>
           </div><!-- param_space -->
           <div class="col s1"></div>
         </div><!-- right_container -->
+        <br>
+
       </div> <!-- scroll_container -->
     </div> <!-- wrapper -->
 
     <!-- 通信を開始した際に以下のコンテナを出現させる -->
-    <div class="container center" id="img_make_container" hidden>
-      <div id="img_setting">
-        <img id="result_img" src="https://lorempixel.com/250/250/cats/0" alt="" width="512" height="512">
-      </div>
+    <div class="container" id="img_make_container">
+      <img id="result_img" src="../static/img/Fire_in_the_sky.000092.png">
+      <!-- <div class="row" style="text-align: center;">
+      </div> -->
+
+      <!-- <div id="img_field">
+        ブロック
+      </div> -->
+      <!-- <div class="row center" id="output_img_field">
+        <div id="display_img">
+          <img id="result_img" src="https://lorempixel.com/250/250/cats/0">
+        </div>
+      </div> -->
     </div>
   </div> <!-- overall -->
 
@@ -277,8 +289,15 @@
       $('.sidenav').sidenav();
     });
 
+    function autoplay() {
+      $('.carousel').carousel('next');
+      autoplay: true,
+      setTimeout(autoplay, 3000);
+    }
+
     $(document).ready(function(){
       $('.carousel').carousel();
+      autoplay();
     });
 
     $(document).ready(function(){

@@ -124,14 +124,30 @@ border-bottom:1px solid #ccc;
 
 /* 出力画像関係 */
 /* -----出力画像を可変に----- */
-#result_img {
-	width: 90%;
-	max-width: 512px;
-    height: auto;
+#img_make_container {
+	position: relative;
+	top: 8%;
+	width: 100%;
+	height: 95vh;
+	text-align: center;
 }
 
+#img_field {
+	background: bisque;
+	display: block;
+	margin: auto;
+	width: 70%;
+	height: 50%;
+}
 
-
+#result_img {
+	position: static;
+	/* top: 10%; */
+	padding-top: 10%;
+	width: 60%;
+	height: auto;
+	margin: auto;
+}
 
 
 /* 全体構成関係 */
@@ -160,15 +176,15 @@ border-bottom:1px solid #ccc;
 /*＝＝＝＝＝＝＝＝＝＝＝768px以下の見え方＝＝＝＝＝＝＝＝＝＝＝＝＝*/
 
 @media screen and (max-width:768px){
-#wrapper{
-	display: block;/*display:flex;を解除*/
-}
-#fixed-area{
-	position:relative!important;/*position stickyを解除*/
-	width:100%;/*横幅を100%にして1列に見せる*/
-	height: auto;/*縦幅を100vh⇒40vh ※任意の高さに設定可能*/
-}
-#scroll_container{
-	width:100%;/*横幅を100%にして1列に見せる*/
+	#wrapper{
+		display: block;/*display:flex;を解除*/
+	}
+	#fixed-area{
+		position:relative!important;/*position stickyを解除*/
+		width:100%;/*横幅を100%にして1列に見せる*/
+		height: auto;/*縦幅を100vh⇒40vh ※任意の高さに設定可能*/
+	}
+	#scroll_container{
+		width:100%;/*横幅を100%にして1列に見せる*/
 }
 }

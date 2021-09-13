@@ -9,14 +9,14 @@ $(window).on('load resize', function () {
     }
 });
 
-$(window).load(function () {
-    $('html,body').animate({ scrollTop: 0 }, '1');
-});
+// $(window).load(function () {
+//     $('html,body').animate({ scrollTop: 0 }, '1');
+// });
 
-$('#reload').on('click', function () {
-    location.reload();
-    $('html,body').animate({ scrollTop: 0 }, '1');
-});
+// $('#reload').on('click', function () {
+//     location.reload();
+//     $('html,body').animate({ scrollTop: 0 }, '1');
+// });
 
 // キー入力に関係する関数です
 $(function () {
@@ -212,6 +212,8 @@ function handleFiles(files) {
 $(window).resize(function () {
     $('#upload_img').width($('#drop_area').outerWidth());
     $('#upload_img').height($('#drop_area').outerHeight());
+    // $('#result_img').width($('#drop_area').outerWidth());
+    // $('#result_img').height($('#drop_area').outerHeight());
 });
 
 // アイコン画像を消去するボタン
@@ -349,7 +351,7 @@ function communicate(s_data) {
             });
             // 通信継続の確認
             if (!r_data["complete"]) {
-                wait(1000).done(function () {
+                wait(300).done(function () {
                     tmp_data["hash"] = r_data["hash"];
                     hash = r_data["hash"];
                     communicate(JSON.stringify(tmp_data));
