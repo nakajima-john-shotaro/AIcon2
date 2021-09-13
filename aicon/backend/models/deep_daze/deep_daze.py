@@ -231,7 +231,7 @@ class Imagine(nn.Module):
             img: Optional[str] = None,
             lr: float = 0.0001,
             batch_size: int = 12,
-            gradient_accumulate_every: int = 7,
+            gradient_accumulate_every: int = 4,
             num_layers: int = 16,
             hidden_size: int = 256,
             model_name: str = "ViT-B/32",
@@ -593,7 +593,7 @@ class Imagine(nn.Module):
 
                     self.c2i_queue.put_nowait(self.put_data)
 
-                    logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Processing... {sequence_number}/{self.iterations * self.epochs}")
+                    logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Processing... {sequence_number + 1}/{self.iterations * self.epochs}")
 
                 # Update clip_encoding per epoch if we are creating a story
                 if self.create_story:
