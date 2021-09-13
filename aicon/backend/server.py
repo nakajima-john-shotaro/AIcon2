@@ -1,26 +1,29 @@
-import os
-import time
 import json
 import multiprocessing
+import os
+import shutil
+import time
+from multiprocessing import Process, Queue
+from pathlib import Path
+from pprint import pprint  # pylint: disable=unused-import
+from queue import Empty, Full
+from queue import Queue as Queue_
+from threading import Lock, Thread
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
-from multiprocessing import Process, Queue
-from threading import Thread, Lock
-from queue import Empty, Full, Queue as Queue_
-from pprint import pprint # pylint: disable=unused-import
 
-from flask import Flask, Response, jsonify, render_template, abort, request
+from flask import Flask, Response, abort, jsonify, render_template, request
 from flask_cors import CORS
-from flask_restful import Api, Resource
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from werkzeug.exceptions import HTTPException, BadRequest, Forbidden, InternalServerError
+from flask_restful import Api, Resource
 from waitress import serve
+from werkzeug.exceptions import (BadRequest, Forbidden, HTTPException,
+                                 InternalServerError)
 
-from translation import Translation, install_webdriver
-from models.deep_daze import deep_daze
 from constant import *
-
+from models.deep_daze import deep_daze
+from translation import Translation, install_webdriver
 
 app: Flask = Flask(
     import_name=__name__, 
@@ -47,33 +50,35 @@ _valid_response: Dict[str, Union[str, bool, int]] = {
 _lock: Lock = Lock()
 
 
-class AIconCore:
+class GarbageCollector:
     def __init__(
         self,
-        client_data: Dict[str, Union[str, Queue]],
-        client_uuid: str,
+        target_dirs: List[Path],
+        interval: float = 60.,
     ) -> None:
-        self.model_name: str = client_data[JSON_MODEL_NAME]
-        self.client_uuid: str = client_uuid
-
-        p: Process = Process(target=self.run, args=(client_data, ), daemon=True)
+        p: Thread = Thread(target=self.run, args=(interval, target_dirs, ), daemon=True)
         p.start()
 
-    def run(self, client_data: Any) -> None:
-        logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Start image generation with {self.model_name}")
+    def run(
+        self,
+        interval: float,
+        target_dirs: List[Path],
+    ) -> None:
+        while True:
+            for target_dir in target_dirs:
+                if target_dir.exists():
+                    dir_list: List[Path] = [p for p in target_dir.iterdir() if p.is_dir()]
 
-        if self.model_name == MODEL_NAME_BIG_SLEEP:
-            raise NotImplementedError
+                    for dir in dir_list:
+                        mtime: float = dir.stat().st_mtime
+                        now: float = time.time()
 
-        elif self.model_name == MODEL_NAME_DEEP_DAZE:
-            try:
-                deep_daze.Imagine(self.client_uuid, client_data)()
-            except (AIconOutOfMemoryError, AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
-                print(e)
-        elif self.model_name == MODEL_NAME_DALL_E:
-            raise NotImplementedError
-
-        logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Finished image generation")
+                        if now - mtime > GC_TIMEOUT:
+                            logger.warn(
+                                f"[{dir.stem}]: <<Garbage Collector>> Removed outdated directory {dir}"
+                            )
+                            shutil.rmtree(dir)
+            time.sleep(interval)
 
 
 class ConnectionHealthChecker:
@@ -91,7 +96,7 @@ class ConnectionHealthChecker:
         empty_counter: int = 0
         while True:
             try:
-                _client_data: dict = _client_data_queue_chc.get_nowait()
+                _client_data: Dict[str, Dict[str, Union[str, Queue]]] = _client_data_queue_chc.get_nowait()
                 if _client_data:
                     for client_uuid, client_data in list(_client_data.items()):
                         last_connection_time: float = client_data[CHC_LAST_CONNECTION_TIME]
@@ -100,13 +105,19 @@ class ConnectionHealthChecker:
 
                         if time.time() - last_connection_time > CHC_TIMEOUT:
                             _lock.acquire()
+                            put_data: Dict[str, bool] = {
+                                JSON_ABORT: True,
+                            }
+                            client_data[CORE_I2C_QUEUE].put_nowait(put_data)
                             result = _client_data.pop(client_uuid, None)
                             _lock.release()
 
                             if result is None:
                                 pass
                             else:
-                                logger.error(f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause the connection has timed out {CHC_TIMEOUT}s")
+                                logger.error(
+                                    f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause the connection has timed out {CHC_TIMEOUT}s"
+                                )
                         else:
                             logger.debug(f"[{client_uuid}]: <<Connection Health Checker>> No problem was found")
                 empty_counter = 0
@@ -118,6 +129,10 @@ class ConnectionHealthChecker:
                     try:
                         for client_uuid, client_data in list(_client_data.items()):
                             _lock.acquire()
+                            put_data: Dict[str, bool] = {
+                                JSON_ABORT: True,
+                            }
+                            client_data[CORE_I2C_QUEUE].put_nowait(put_data)
                             result = _client_data.pop(client_uuid, None)
                             _lock.release()
 
@@ -159,6 +174,35 @@ class PriorityMonitor:
             time.sleep(interval)
 
 
+class AIconCore:
+    def __init__(
+        self,
+        client_data: Dict[str, Union[str, Queue]],
+        client_uuid: str,
+    ) -> None:
+        self.model_name: str = client_data[JSON_MODEL_NAME]
+        self.client_uuid: str = client_uuid
+
+        p: Process = Process(target=self.run, args=(client_data, ), daemon=True)
+        p.start()
+
+    def run(self, client_data: Any) -> None:
+        logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Start image generation with {self.model_name}")
+
+        if self.model_name == MODEL_NAME_BIG_SLEEP:
+            raise NotImplementedError
+
+        elif self.model_name == MODEL_NAME_DEEP_DAZE:
+            try:
+                deep_daze.Imagine(self.client_uuid, client_data)()
+            except (AIconOutOfMemoryError, AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
+                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> {e}")
+        elif self.model_name == MODEL_NAME_DALL_E:
+            raise NotImplementedError
+
+        logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Finished image generation")
+
+
 class AIconInterface(Resource):
     def __init__(
         self,
@@ -168,8 +212,8 @@ class AIconInterface(Resource):
 
         self.translator: Translation = Translation(translator_name)
 
-        self.base_img_path: str = "../frontend/static/dst_img"
-        self.base_mp4_path: str = "../frontend/static/dst_mp4"
+        self.base_img_path: str = IF_BASE_IMG_PATH
+        self.base_mp4_path: str = IF_BASE_MP4_PATH
 
     def _get_client_priority(self, client_uuid: str) -> int:
         global _client_data
@@ -387,10 +431,22 @@ if __name__ == "__main__":
 
     multiprocessing.set_start_method("spawn")
 
+    GarbageCollector(target_dirs=[
+        Path(IF_BASE_IMG_PATH)/Path(MODEL_NAME_BIG_SLEEP),
+        Path(IF_BASE_IMG_PATH)/Path(MODEL_NAME_DEEP_DAZE),
+        Path(IF_BASE_IMG_PATH)/Path(MODEL_NAME_DALL_E),
+    ])
+    GarbageCollector(target_dirs=[
+        Path(IF_BASE_MP4_PATH)/Path(MODEL_NAME_BIG_SLEEP),
+        Path(IF_BASE_MP4_PATH)/Path(MODEL_NAME_DEEP_DAZE),
+        Path(IF_BASE_MP4_PATH)/Path(MODEL_NAME_DALL_E),
+    ])
     PriorityMonitor()
     ConnectionHealthChecker()
 
     AIconInterface()
     api.add_resource(AIconInterface, '/service')
 
-    serve(app, host='0.0.0.0', port=5050, threads=30)
+    logger.info(f"<<AIcon>> Running on http://localhost:{PORT}/")
+
+    serve(app, host='0.0.0.0', port=PORT, threads=30)
