@@ -66,10 +66,16 @@ RUN apt-get update && \
         libopenmpi-dev \
         zlib1g-dev \
         locales \
-        libjpeg8-dev && \
+        libjpeg8-dev \
+        libgconf-2-4 \
+        libnss3-dev && \
+    apt-get --fix-broken install && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     mkdir -p ${WORK_DIR}
+
+RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    apt-get install -y ./google-chrome-stable_current_amd64.deb
 
 RUN echo "PYTHONIOENCODING=utf-8" >> /root/.bashrc && \
     echo "TF_CPP_MIN_LOG_LEVEL=2" >> /root/.bashrc && \
@@ -99,7 +105,7 @@ RUN pip3 install --verbose \
         flask_restful \
         waitress \
         bs4 \
-        chromedriver-binary \
+        webdriver-manager \
         selenium \
         googletrans==4.0.0-rc1 \
         siren_pytorch \
