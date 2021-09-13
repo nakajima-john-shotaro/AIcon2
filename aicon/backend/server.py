@@ -107,6 +107,7 @@ class ConnectionHealthChecker:
                         else:
                             logger.debug(f"[{client_uuid}]: <<Connection Health Checker>> No problem was found")
                 empty_counter = 0
+
             except Empty:
                 empty_counter += 1
                 
