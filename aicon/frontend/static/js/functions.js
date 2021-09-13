@@ -90,21 +90,32 @@ $('.Model_Area').click( function() {
 
     if (DeepDaze_button_active) {
         for (let i = 0; i < img_id_list.length; i++){
-            $(img_id_list[i]).attr('src',"https://lorempixel.com/250/250/nature/"+ (i+1))
+            $(img_id_list[i]).attr('src',"https://lorempixel.com/250/250/nature/" + (i+1));
         };
     }
     else if (BigSleep_button_active) {
         for (let i = 0; i < img_id_list.length; i++){
-            $(img_id_list[i]).attr('src',"https://lorempixel.com/250/250/sports/"+(i+1))
+            $(img_id_list[i]).attr('src',"https://lorempixel.com/250/250/sports/" + (i+1));
         };
     }
     else {
         for (let i = 0; i < img_id_list.length; i++){
-            $(img_id_list[i]).attr('src', "https://lorempixel.com/250/250/cats/"+(i+1));
+            $(img_id_list[i]).attr('src', "https://lorempixel.com/250/250/cats/" + (i+1));
         };
     }
     check()
 });
+
+
+// 仕上がりの調整に関するボタンです
+$('#set_param_middle').addClass('add_Color');
+var param_button_id = 'set_param_middle';
+$('.set_param_button').click( function() {
+    param_button_id = this.id;
+    $('.set_param_button').removeClass('add_Color');
+    $('#'+param_button_id).addClass('add_Color');
+});
+
 
 
 // スライダーに関する関数です

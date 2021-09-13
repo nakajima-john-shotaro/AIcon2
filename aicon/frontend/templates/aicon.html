@@ -98,28 +98,71 @@
               </div>
             </div>
 
-            <div class="border_sample"><br></div>
+            <div class="border_sample"></div>
+            
+            
             <div class="row">
               <br>
-              <h7>仕上がりを調整。</h7>
+              <h7>仕上がりの選択。</h7>
               <br>
             </div>
-            <div class="row center" id="srider">
-              <b>Speed / Quality</b>
-              <div class="row">
-                <div class="col s3"></div>
-                <div class="col s6">
-                  <form sction="#">
-                    <div class="row">
-                      <p class="range-field ">
-                        <input type="range" min="30" max="100" value="65" style="width: 100%" id="slider">
-                      </p>
-                    </div>
-                  </form>
-                </div>
-                <div class="col s3"></div>
+            <div class="row center">
+              <div class="col s4">
+                <div id="set_param_low" class="set_param_button">
+                  <p class="not_select_text center">Low</p>
+                </div><!-- set_param_low -->
+              </div>
+              <div class="col s4">
+                <div id="set_param_middle" class="set_param_button">
+                  <p class="not_select_text center">Middle</p>
+                </div><!-- set_param_middle -->
+              </div>
+              <div class="col s4">
+                <div id="set_param_high" class="set_param_button">
+                  <p class="not_select_text center">High</p>
+                </div><!-- set_param_high -->
               </div>
             </div>
+
+            <div class="row">
+              <ul class="collapsible">
+                <li>
+                  <div class="collapsible-header">
+                    <i class="material-icons">settings</i>
+                    Detailed Settings
+                  </div>
+                  <div class="collapsible-body">
+                    <div class="row">
+                      <br>
+                      <h7>仕上がりを調整。</h7>
+                      <br>
+                    </div>
+                    <div class="row center" id="srider">
+                      <b>Speed / Quality</b>
+                      <div class="row">
+                        <div class="col s3"></div>
+                        <div class="col s6">
+                          <form sction="#">
+                            <div class="row">
+                              <p class="range-field ">
+                                <input type="range" min="30" max="100" value="65" style="width: 100%" id="slider">
+                              </p>
+                            </div>
+                          </form>
+                        </div>
+                        <div class="col s3"></div>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            
+
+            <div class="border_sample"><br></div>
+            
+
         
             <div class="border_sample"></div>
             <div class="row">
@@ -171,7 +214,6 @@
               </div>
               <div class="col s3"></div>
             </div>
-
             
             <br><br>
             <div class="border_sample"></div>
@@ -248,6 +290,9 @@
       $('.modal').modal();
     });
 
+    $(document).ready(function(){
+      $('.collapsible').collapsible();
+    });
   </script>
 
     <!-- <script type=text/javascript src="{{ url_for('static', filename='../static/js/functions.js') }}"></script> -->

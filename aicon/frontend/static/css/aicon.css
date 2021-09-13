@@ -52,6 +52,26 @@ border-bottom:1px solid #ccc;
 	border: solid 1px;
 }
 
+/* -----パラメータ設定選択ボタン関係----- */
+.set_param_button {
+	padding: 5px;
+	border: solid 1px #ccc;
+	width: 95%;
+	border-radius: 10px;
+	cursor: pointer;
+	cursor: hand;
+	margin: 0 auto;
+}
+
+.set_param_button:hover{
+	border: solid 1px;
+}
+
+/* -----ボタンの背景色を付与----- */
+.add_Color {
+	box-shadow: 0 1px 10px rgba(52, 162, 212, 0.993), 0 0 50px rgba(128, 128, 128, 0.1) ;
+}
+
 
 /* -----写真のドラッグ＆ドロップ関係 -----*/
 .user-icon-dnd-wrapper {
@@ -101,10 +121,6 @@ border-bottom:1px solid #ccc;
 	opacity: 1;
 }
 
-/* -----背景色を付与----- */
-.add_Color {
-	box-shadow: 0 1px 10px rgba(0, 170, 248, 0.993), 0 0 50px rgba(128, 128, 128, 0.1) ;
-}
 
 /* 出力画像関係 */
 /* -----出力画像を可変に----- */
