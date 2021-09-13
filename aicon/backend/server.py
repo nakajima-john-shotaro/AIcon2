@@ -64,13 +64,12 @@ class AIconCore:
         elif self.model_name == MODEL_NAME_DEEP_DAZE:
             try:
                 deep_daze.Imagine(self.client_uuid, client_data)()
-            except AIconOutOfMemoryError as e:
+            except (AIconOutOfMemoryError, AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
                 print(e)
-            except KeyboardInterrupt as e:
-                print(e)
-
         elif self.model_name == MODEL_NAME_DALL_E:
             raise ValueError
+
+        logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Finished image generation")
 
 
 class ConnectionHealthChecker:
