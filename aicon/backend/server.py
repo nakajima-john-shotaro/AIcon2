@@ -56,13 +56,18 @@ class AIconCore:
         p.start()
 
     def run(self, client_data: Any) -> None:
-        logger.info(f"[{self.client_uuid}]: Start image generation with {self.model_name}")
+        logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Start image generation with {self.model_name}")
 
         if self.model_name == MODEL_NAME_BIG_SLEEP:
             raise ValueError
 
         elif self.model_name == MODEL_NAME_DEEP_DAZE:
-            deep_daze.Imagine(self.client_uuid, client_data)()
+            try:
+                deep_daze.Imagine(self.client_uuid, client_data)()
+            except AIconOutOfMemoryError as e:
+                print(e)
+            except KeyboardInterrupt as e:
+                print(e)
 
         elif self.model_name == MODEL_NAME_DALL_E:
             raise ValueError
@@ -88,7 +93,7 @@ class ConnectionHealthChecker:
                     for client_uuid, client_data in list(_client_data.items()):
                         last_connection_time: float = client_data[CHC_LAST_CONNECTION_TIME]
 
-                        logger.info(f"[{client_uuid}]: <<Connection Health Checker>> Checking connection health")
+                        logger.debug(f"[{client_uuid}]: <<Connection Health Checker>> Checking connection health")
 
                         if time.time() - last_connection_time > CHC_TIMEOUT:
                             _lock.acquire()
@@ -100,7 +105,7 @@ class ConnectionHealthChecker:
                             else:
                                 logger.error(f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause the connection has timed out {CHC_TIMEOUT}s")
                         else:
-                            logger.info(f"[{client_uuid}]: <<Connection Health Checker>> No problem was found")
+                            logger.debug(f"[{client_uuid}]: <<Connection Health Checker>> No problem was found")
                 empty_counter = 0
             except Empty:
                 empty_counter += 1
@@ -195,24 +200,24 @@ class AIconInterface(Resource):
         global _client_data
 
         received_data: Dict[str, Union[str, bool]] = request.get_json(force=True)
-        logger.info(f"<<AIcon Interface>> Requested from {request.remote_addr} | {request.method} {str(request.url_rule)} {request.environ.get('SERVER_PROTOCOL')} {request.environ.get('HTTP_CONNECTION')}")
+        logger.debug(f"<<AIcon I/F >> Requested from {request.remote_addr} | {request.method} {str(request.url_rule)} {request.environ.get('SERVER_PROTOCOL')} {request.environ.get('HTTP_CONNECTION')}")
 
         client_uuid: str = received_data[JSON_HASH]
 
         if client_uuid == IF_HASH_INIT:
             client_uuid = str(uuid4())
 
-            logger.info(f"[{IF_HASH_INIT}]: <<AIcon Interface>> Connection requested from an anonymous client. UUID {client_uuid} is assined.")
+            logger.info(f"[{IF_HASH_INIT}]: <<AIcon I/F >> Connection requested from an anonymous client. UUID {client_uuid} is assined.")
 
             try:
                 translated_text: str = self.translator.translate(received_data[JSON_TEXT])
-                logger.info(f"[{client_uuid}]: <<AIcon Interface>> Translated text `{received_data[JSON_TEXT]}` to `{translated_text}`")
+                logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated text `{received_data[JSON_TEXT]}` to `{translated_text}`")
 
                 c2i_queue: Queue = Queue()
                 i2c_queue: Queue = Queue()
 
                 if received_data[JSON_MODEL_NAME] not in [MODEL_NAME_BIG_SLEEP, MODEL_NAME_DEEP_DAZE, MODEL_NAME_DALL_E]:
-                    logger.fatal(f"[{client_uuid}]: <<AIcon Interface>> Invalid model name `{received_data[JSON_MODEL_NAME]}` requested")
+                    logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> Invalid model name `{received_data[JSON_MODEL_NAME]}` requested")
                     abort(400, f"Invalid model name {received_data[JSON_MODEL_NAME]}")
 
                 _client_data[client_uuid] = {
@@ -237,7 +242,7 @@ class AIconInterface(Resource):
                     pass
 
             except KeyError as error_state:
-                logger.fatal(f"[{client_uuid}]: <<AIcon Interface>> {error_state}")
+                logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> {error_state}")
                 abort(400, error_state)
 
             self._set_path(client_uuid)
@@ -255,9 +260,9 @@ class AIconInterface(Resource):
             return jsonify(res)
 
         if client_uuid in _client_data.keys():
-            logger.info(f"[{client_uuid}]: <<AIcon Interface>> Connection requested from a registered client")
-
             client_priority = self._get_client_priority(client_uuid)
+
+            logger.info(f"[{client_uuid}]: <<AIcon I/F >> Connection requested from a registered client. Queued Clients: {len(_client_data)} Priority: #{client_priority}")
 
             put_data: Dict[str, bool] = {
                 JSON_ABORT: received_data[JSON_ABORT],
@@ -283,8 +288,6 @@ class AIconInterface(Resource):
             }
     
             if client_priority == 1:
-                logger.info(f"[{client_uuid}]: <<AIcon Interface>> This client is #{client_priority}.")
-
                 try:
                     _client_data_queue_pm.put_nowait(_client_data)
                 except Full:
@@ -293,7 +296,7 @@ class AIconInterface(Resource):
                 client_data: Dict[str, Union[str, Queue]] = _client_data[client_uuid]
 
                 try:
-                    get_data: Dict[str, str] = client_data[CORE_C2I_QUEUE].get(timeout=1.)
+                    get_data: Dict[str, str] = client_data[CORE_C2I_QUEUE].get_nowait()
 
                     _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] = 0
 
@@ -304,23 +307,26 @@ class AIconInterface(Resource):
 
                     if get_data[JSON_COMPLETE]:
                         if self._remove_client_data(client_uuid):
-                            logger.info(f"[{client_uuid}]: <<AIcon Interface>> The task is successfully completed. Removed the client data.")
+                            logger.info(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. Removed the client data.")
                         else:
-                            logger.warn(f"[{client_uuid}]: <<AIcon Interface>> The task is successfully completed. But failed to remove the client data.")
+                            logger.warn(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. But failed to remove the client data.")
 
                 except Empty:
                     _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] += 1
-                    logger.warning(f"[{client_uuid}]: <<AIcon Interface>> Queue is empty")
+                    if IF_EMPTY_TOLERANCE >= _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] > 3 * IF_EMPTY_TOLERANCE / 4:
+                        logger.warning(f"[{client_uuid}]: <<AIcon I/F >> No data has been sent from AIcon Core for a long time. AIcon Core may have crashed.")
 
-                    if _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] > IF_EMPTY_TOLERANCE:
-                        logger.error(f"[{client_uuid}]: <<AIcon Interface>> No data has been sent for a long time, AIcon Core may have crashed")
-                        abort(500, "Server crashed")
+                    elif _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] > IF_EMPTY_TOLERANCE:
+                        logger.error(f"[{client_uuid}]: <<AIcon I/F >> AIcon Core crashed. Sending an abort signal.")
 
-            else:
-                logger.warning(f"[{client_uuid}]: <<AIcon Interface>> {len(_client_data)} clients are queued. This client is #{client_priority}. Skipping the task.")
+                        put_data: Dict[str, bool] = {
+                            JSON_ABORT: True,
+                        }
+                        _client_data[client_uuid][CORE_I2C_QUEUE].put_nowait(put_data)
 
+                        raise InternalServerError("Server crashed") from None
         else:
-            logger.fatal(f"[{client_uuid}]: <<AIcon Interface>> Invalid UUID")
+            logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> Invalid UUID")
             abort(403, f"Invalid UUID: {client_uuid}")
 
         return jsonify(res)
