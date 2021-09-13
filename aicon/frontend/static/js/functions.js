@@ -283,7 +283,7 @@ function abort_signal() {
         hash: hash,
         abort: true,
     };
-    console.log("abort_signalでたンゴ")
+    console.log('中止信号が押されました')
     let send_json_data = JSON.stringify(send_data)
     communicate(send_json_data)
 };
@@ -293,8 +293,6 @@ var hash = '00000000-0000-0000-0000-000000000000';
 function start() {
     console.log("start直下")
     stop_input()
-    PushNotification()
-    // let abort_signal = ($('#start_quit_text').text() === 'Play' ? false : true);
     communicate_status = true;
     // 使用するモデルの選択
     const use_model = select_check();
@@ -302,7 +300,7 @@ function start() {
         return;
     }
     $('#start_quit_button').attr("onclick", "abort_signal()")
-    $('#img_make_container').fadeIn(1000);
+    $('#img_make_container').fadeIn('1000');
     const target = $('#img_make_container').get(0).offsetTop;
     $('body,html').animate({ scrollTop: target }, 500, 'swing');
     // スライダーの値を取得
@@ -322,8 +320,6 @@ function start() {
 
     };
     let send_json_data = JSON.stringify(send_data)
-    console.log("ﾄﾏﾗﾝﾄﾏﾗﾝ")
-
     console.log('s_data')
     console.log(send_data)
     communicate(send_json_data)
@@ -353,13 +349,14 @@ function communicate(s_data) {
             });
             // 通信継続の確認
             if (!r_data["complete"]) {
-                wait(700).done(function () {
+                wait(1000).done(function () {
                     tmp_data["hash"] = r_data["hash"];
                     hash = r_data["hash"];
                     communicate(JSON.stringify(tmp_data));
                 });
             } else {
                 console.log("Communication is finished")
+                PushNotification()
             }
         })
         .fail(function (r_data, textStatus, error) {
