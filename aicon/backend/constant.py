@@ -5,6 +5,7 @@ from logging import (
     getLogger, DEBUG, INFO, WARNING, ERROR, CRITICAL
 )
 
+RATE_LIMIT: str = "100 per minute"
 
 JSON_MODEL_NAME: str = "model_name"
 JSON_TEXT: str = "text"
@@ -27,7 +28,7 @@ MODEL_NAME_DALL_E: str = "DALL-E"
 
 IF_HASH_INIT: str = "00000000-0000-0000-0000-000000000000"
 IF_QUEUE_EMPTY_COUNTER: str = "queue_empty_counter"
-IF_EMPTY_TOLERANCE: int = 15
+IF_EMPTY_TOLERANCE: int = 30
 
 CORE_COMPATIBLE_PYTORCH_VERSION: str = "1.7.1"
 CORE_C2I_QUEUE: str = "c2i_queue"
