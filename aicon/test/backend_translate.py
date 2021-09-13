@@ -3,11 +3,11 @@
 import time
 
 import requests
-import chromedriver_binary
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 from googletrans import Translator
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 class Translation():
@@ -34,7 +34,7 @@ class Translation():
         else:
             self.d_options.add_argument('--headless')
             self.d_options.add_argument('--no-sandbox')
-            driver: webdriver.Chrome = webdriver.Chrome(options=self.d_options)
+            driver: webdriver.Chrome = webdriver.Chrome(ChromeDriverManager().install(), options=self.d_options)
             driver.get("https://www.deepl.com/ja/translator")
             input_selector = driver.find_element_by_css_selector(".lmt__textarea.lmt__source_textarea.lmt__textarea_base_style")
             input_selector.send_keys(text)
