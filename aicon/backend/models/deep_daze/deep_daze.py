@@ -23,7 +23,6 @@ from torch import nn
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn.parameter import Parameter
 from torch_optimizer import AdamP, DiffGrad
-from tqdm import tqdm, trange
 
 from .clip import load, tokenize
 
@@ -589,7 +588,7 @@ class Imagine(nn.Module):
 
                     _, loss = self.train_step(epoch, iteration)
 
-                    self.put_data[JSON_CURRENT_ITER] = str(sequence_number)
+                    self.put_data[JSON_CURRENT_ITER] = int(sequence_number)
                     self.put_data[JSON_IMG_PATH] = str(self.response_filename)
 
                     self.c2i_queue.put_nowait(self.put_data)
@@ -607,20 +606,28 @@ class Imagine(nn.Module):
         except RuntimeError as e:
             if 'out of memory' in str(e):
                 logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Ran out of gpu memory")
-                torch.cuda.empty_cache()
                 raise AIconOutOfMemoryError(str(e))
             else:
                 raise AIconRuntimeError(str(e))
+
+        except AIconAbortedError as e:
+            raise e
 
         finally:
             self.save_image(epoch, iteration)
             self.writer.close()
 
-            self.put_data[JSON_CURRENT_ITER] = str(sequence_number)
+            try:
+                self.put_data[JSON_CURRENT_ITER] = int(sequence_number)
+            except UnboundLocalError:
+                pass
+
             self.put_data[JSON_IMG_PATH] = str(self.response_filename)
             self.put_data[JSON_MP4_PATH] = self.response_mp4_path
             self.put_data[JSON_COMPLETE] = True
 
             self.c2i_queue.put_nowait(self.put_data)
+
+            torch.cuda.empty_cache()
 
             logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Completed imagination")

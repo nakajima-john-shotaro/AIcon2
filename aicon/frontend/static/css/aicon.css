@@ -1,3 +1,4 @@
+/* 設定関連 */
 .carousel .carousel-item{
 	width:100%;
 }
@@ -12,10 +13,34 @@ input[type="search"]::-webkit-search-cancel-button {
 body {
 	user-select: none;
 }
-/* 静的付与済み */
+
+
+/* 左関係 */
+/* #gallery_model_name_container {
+	height: auto;
+} */
+
+.gallery {
+	height: 50%;
+	min-height: 85%;
+}
+
+/* 右関係 */
+.border_sample{
+border-bottom:1px solid #ccc;
+}
+
+
+/* コンテナの中身の位置を全体的に少し下げる */
+#right_container {
+	position: relative;
+	top: 7%;
+}
+
+/* -----モデル選択ボタン関係----- */
 .Model_Area {
 	padding: 5px;
-	border: solid 1px;
+	border: solid 1px #ccc;
 	width: 95%;
 	border-radius: 10px;
 	cursor: pointer;
@@ -24,19 +49,92 @@ body {
 }
 
 .Model_Area:hover{
-	border: solid 2px;
+	border: solid 1px;
 }
 
+/* -----パラメータ設定選択ボタン関係----- */
+.set_param_button {
+	padding: 5px;
+	border: solid 1px #ccc;
+	width: 95%;
+	border-radius: 10px;
+	cursor: pointer;
+	cursor: hand;
+	margin: 0 auto;
+}
 
+.set_param_button:hover{
+	border: solid 1px;
+}
 
-/* 背景色を付与 */
+/* -----ボタンの背景色を付与----- */
 .add_Color {
-	box-shadow: 0 1px 10px rgba(0, 170, 248, 0.993), 0 0 50px rgba(128, 128, 128, 0.1) ;
-	/* background-color: #ff0000; */
+	box-shadow: 0 1px 10px rgba(52, 162, 212, 0.993), 0 0 50px rgba(128, 128, 128, 0.1) ;
+}
+
+
+/* -----写真のドラッグ＆ドロップ関係 -----*/
+.user-icon-dnd-wrapper {
+	position: relative;
+	width: 100%;
+	/* height: 100%; */
+}
+
+#preview_field {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 0;
+	padding-bottom: 100%;
+}
+
+#drop_area {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 0;
+	padding-bottom: 100%;
+	border: 5px dashed #ccc;
+	cursor: pointer;
+}
+
+#img_delete_button {
+	display: none;
+	position: absolute;
+	top: 5%;
+	right: 5%;
+	width: 25px;
+	height: 25px;
+	cursor: pointer;
+}
+
+#input_file {
+	width: 100%;
+	height: 0;
+	padding-bottom: 100%;
+	opacity: 0;
+}
+
+#input_file:focus {
+	opacity: 1;
+}
+
+
+/* 出力画像関係 */
+/* -----出力画像を可変に----- */
+#result_img {
+	width: 90%;
+	max-width: 512px;
+    height: auto;
 }
 
 
 
+
+
+/* 全体構成関係 */
 /*左と右を囲う全体のエリア*/
 #wrapper{
 	position: relative;/*position stickyの基点にするため relativeをかける*/
@@ -46,11 +144,9 @@ body {
 
 /*左エリア*/
 #fixed-area{
-  /*左固定記述*/
-  position: -webkit-sticky;/*Safari用*/
-  position: sticky;
-  top:0;
-	/*横半分50% 縦を100vhにする*/
+	position: -webkit-sticky;
+	position: sticky;
+	top:0;
 	width: 50%;
 	height: 100vh;
 }
@@ -68,9 +164,9 @@ body {
 	display: block;/*display:flex;を解除*/
 }
 #fixed-area{
- 	position:relative!important;/*position stickyを解除*/
+	position:relative!important;/*position stickyを解除*/
 	width:100%;/*横幅を100%にして1列に見せる*/
-		height: 60vh;/*縦幅を100vh⇒40vh ※任意の高さに設定可能*/
+	height: auto;/*縦幅を100vh⇒40vh ※任意の高さに設定可能*/
 }
 #scroll_container{
 	width:100%;/*横幅を100%にして1列に見せる*/

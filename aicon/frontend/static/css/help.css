@@ -1,0 +1,176 @@
+@charset "utf-8";
+
+/*========= レイアウトのためのCSS ===============*/
+
+body{
+    word-break: break-all;
+}
+
+/* HEADER */
+
+#header{
+position: relative;
+z-index:999;
+/*装飾のためのCSS*/
+background:rgb(0, 0, 0);
+color: #f2f2f2;
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding:5px 20px;
+}
+
+
+/*全体のエリア設定*/
+
+.ms-section{
+color:#fff;
+padding:20px;
+}
+
+.ms-section a{
+color:#fff;
+}
+
+h1{
+font-size:1.5rem;
+}
+
+h2{
+font-size:1.3rem;
+margin:0 0 20px 0;
+text-align: center;
+}
+
+p{
+margin:0 0 20px 0;
+}
+
+/*右にある丸ナビゲーション色*/
+
+#multiscroll-nav span{
+background:transparent!important;
+border-color:#fff!important;
+}
+
+/*右にある丸のナビゲーション現在地色*/
+
+#multiscroll-nav li .active span{
+background:#fff!important;
+}
+
+/*右上のナビゲーション*/
+
+#menu li {
+display:inline-block;
+margin: 10px;
+}
+
+#menu li a{
+text-decoration:none;
+color: #fff;
+padding: 5px 10px;
+display:block;
+border-radius: 10px;
+}
+
+#menu li.active a{
+color: #666;
+}
+
+
+/*右エリア画像設定*/
+
+#right1{
+background:url("http://coco-factory.jp/ugokuweb/wp-content/themes/ugokuweb/data/move02/6-3/img/daniel-chen-546446-unsplash.jpg") no-repeat center;
+background-size:cover;
+}
+
+#right2{
+background:url("http://coco-factory.jp/ugokuweb/wp-content/themes/ugokuweb/data/move02/6-3/img/hisu-lee-169301-unsplash.jpg") no-repeat center;
+background-size:cover;
+}
+
+#right3{
+background:url("http://coco-factory.jp/ugokuweb/wp-content/themes/ugokuweb/data/move02/6-3/img/jeff-sheldon-3226-unsplash.jpg") no-repeat center;
+background-size:cover;
+}
+
+#right4{
+background:url("http://coco-factory.jp/ugokuweb/wp-content/themes/ugokuweb/data/move02/6-3/img/hisu-lee-169301-unsplash.jpg") no-repeat center;
+background-size:cover;
+}
+
+#right5{
+background:url("http://coco-factory.jp/ugokuweb/wp-content/themes/ugokuweb/data/move02/6-3/img/jeff-sheldon-3226-unsplash.jpg") no-repeat center;
+background-size:cover;
+}
+
+
+/*＝＝＝＝＝＝＝＝＝＝＝タブレット以下の見え方＝＝＝＝＝＝＝＝＝＝＝＝＝*/
+
+@media screen and (max-width:768px){
+
+#header{
+justify-content: center;
+}
+
+/*全体のボックスについている余白をリセット*/
+.ms-section{
+padding:0;
+}
+
+/*天地中央になっている見せ方を上ぞろえに上書き*/
+.ms-tableCell{
+vertical-align:top;
+}
+
+/*右上ナビゲーションと右エリア非表示*/
+#menu,
+.ms-right{
+display: none;
+}
+
+/*左エリアを横幅100%にして画像＋テキストを出す設定*/
+.ms-left{
+width:100%!important;
+}
+
+/*左エリア上部画像設定*/
+.sp-top{
+height:50%;
+margin:0 0 20px 0;
+}
+
+#left1 .sp-top{
+background:url("http://coco-factory.jp/ugokuweb/wp-content/themes/ugokuweb/data/move02/6-3/img/daniel-chen-546446-unsplash.jpg") no-repeat center;
+background-size:cover;
+}
+
+#left2 .sp-top{
+background:url("http://coco-factory.jp/ugokuweb/wp-content/themes/ugokuweb/data/move02/6-3/img/hisu-lee-169301-unsplash.jpg") no-repeat center;
+background-size:cover;
+}
+
+#left3 .sp-top{
+background:url("http://coco-factory.jp/ugokuweb/wp-content/themes/ugokuweb/data/move02/6-3/img/jeff-sheldon-3226-unsplash.jpg") no-repeat center;
+background-size:cover;
+}
+
+#left4 .sp-top{
+background:url("http://coco-factory.jp/ugokuweb/wp-content/themes/ugokuweb/data/move02/6-3/img/daniel-chen-546446-unsplash.jpg") no-repeat center;
+background-size:cover;
+}
+
+#left5 .sp-top{
+background:url("http://coco-factory.jp/ugokuweb/wp-content/themes/ugokuweb/data/move02/6-3/img/hisu-lee-169301-unsplash.jpg") no-repeat center;
+background-size:cover;
+}
+
+
+/*左エリア下部テキスト余白設定*/
+.sp-bottom{
+padding:20px;
+}
+
+}
