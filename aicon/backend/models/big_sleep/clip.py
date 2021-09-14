@@ -1,21 +1,21 @@
+import hashlib
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
+import urllib
+import warnings
 from collections import OrderedDict
-from typing import Tuple, Union
+from pathlib import Path
+from typing import List, Tuple, Union
 
 import torch
 import torch.nn.functional as F
+from constant import *
 from torch import nn
-from pathlib import Path
+from torchvision.transforms import Compose, Normalize
 
-import hashlib
-import os
-import urllib
-import warnings
-from typing import Union, List
-
-import torch
-from PIL import Image
-from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
-from tqdm import tqdm
+logger: Logger = get_logger()
 
 _MODELS = {
     "RN50": "https://openaipublic.azureedge.net/clip/models/afeb0e10f9e5a86da6080e35cf09123aca3b358a0c3e3b6c78a7b63bc04b6762/RN50.pt",
@@ -24,7 +24,7 @@ _MODELS = {
     "ViT-B/32": "https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt",
 }
 
-def _download(url: str, root: str = os.path.expanduser("~/.cache/clip")):
+def _download(url: str, root: str = os.path.expanduser("/workspace/backend/.cache/clip")):
     os.makedirs(root, exist_ok=True)
     filename = os.path.basename(url)
 
@@ -32,25 +32,27 @@ def _download(url: str, root: str = os.path.expanduser("~/.cache/clip")):
     download_target = os.path.join(root, filename)
 
     if os.path.exists(download_target) and not os.path.isfile(download_target):
+        logger.error(f"[????????-????-????-????-????????????]: <<AIcon Core>> {download_target} exists and is not a regular file")
         raise RuntimeError(f"{download_target} exists and is not a regular file")
 
     if os.path.isfile(download_target):
         if hashlib.sha256(open(download_target, "rb").read()).hexdigest() == expected_sha256:
             return download_target
         else:
-            warnings.warn(f"{download_target} exists, but the SHA256 checksum does not match; re-downloading the file")
+            logger.warning(f"[????????-????-????-????-????????????]: <<AIcon Core>> {download_target} exists, but the SHA256 checksum does not match; re-downloading the file")
 
+    logger.info(f"[????????-????-????-????-????????????]: <<AIcon Core>> Downloading pre-trained model. This may take some time.")
     with urllib.request.urlopen(url) as source, open(download_target, "wb") as output:
-        with tqdm(total=int(source.info().get("Content-Length")), ncols=80, unit='iB', unit_scale=True) as loop:
-            while True:
-                buffer = source.read(8192)
-                if not buffer:
-                    break
+        while True:
+            buffer = source.read(524288)
 
-                output.write(buffer)
-                loop.update(len(buffer))
+            if not buffer:
+                break
+
+            output.write(buffer)
 
     if hashlib.sha256(open(download_target, "rb").read()).hexdigest() != expected_sha256:
+        logger.error(f"[????????-????-????-????-????????????]: <<AIcon Core>> Model has been downloaded but the SHA256 checksum does not not match")
         raise RuntimeError(f"Model has been downloaded but the SHA256 checksum does not not match")
 
     return download_target
