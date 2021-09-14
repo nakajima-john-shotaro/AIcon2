@@ -427,6 +427,7 @@ class AIconInterface(Resource):
 if __name__ == "__main__":
     logger.info("<<AIcon>> Seesion started")
 
+    logger.info("<<AIcon>> Installing web driver. This may take some time.")
     install_webdriver()
 
     multiprocessing.set_start_method("spawn")
