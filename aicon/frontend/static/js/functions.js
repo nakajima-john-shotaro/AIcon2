@@ -31,7 +31,8 @@ $(function () {
 // モデルの選択に関する関数です
 // materializeが原因で脳筋手法に出ます
 // 今後はもっと汎用性のあるものを作ります…
-var DeepDaze_button_active = false;
+var DeepDaze_button_active = true;
+document.getElementById("DeepDaze").classList.add("add_Color");
 var BigSleep_button_active = false;
 $("#DeepDaze").click(function () {
     if (!communicate_status) {
@@ -212,6 +213,8 @@ function handleFiles(files) {
 $(window).resize(function () {
     $('#upload_img').width($('#drop_area').outerWidth());
     $('#upload_img').height($('#drop_area').outerHeight());
+    // $('#result_img').width($('#drop_area').outerWidth());
+    // $('#result_img').height($('#drop_area').outerHeight());
 });
 
 // アイコン画像を消去するボタン
@@ -349,7 +352,7 @@ function communicate(s_data) {
             });
             // 通信継続の確認
             if (!r_data["complete"]) {
-                wait(1000).done(function () {
+                wait(300).done(function () {
                     tmp_data["hash"] = r_data["hash"];
                     hash = r_data["hash"];
                     communicate(JSON.stringify(tmp_data));
