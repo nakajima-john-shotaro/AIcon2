@@ -25,7 +25,7 @@ _MODELS = {
     "ViT-B/32": "https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt",
 }
 
-def _download(url: str, root: str = os.path.expanduser("~/.cache/clip")):
+def _download(url: str, root: str = os.path.expanduser("/workspace/backend/.cache/clip")):
     os.makedirs(root, exist_ok=True)
     filename = os.path.basename(url)
 
@@ -33,23 +33,27 @@ def _download(url: str, root: str = os.path.expanduser("~/.cache/clip")):
     download_target = os.path.join(root, filename)
 
     if os.path.exists(download_target) and not os.path.isfile(download_target):
+        logger.error(f"[????????-????-????-????-????????????]: <<AIcon Core>> {download_target} exists and is not a regular file")
         raise RuntimeError(f"{download_target} exists and is not a regular file")
 
     if os.path.isfile(download_target):
         if hashlib.sha256(open(download_target, "rb").read()).hexdigest() == expected_sha256:
             return download_target
         else:
-            warnings.warn(f"{download_target} exists, but the SHA256 checksum does not match; re-downloading the file")
+            logger.warning(f"[????????-????-????-????-????????????]: <<AIcon Core>> {download_target} exists, but the SHA256 checksum does not match; re-downloading the file")
 
+    logger.info(f"[????????-????-????-????-????????????]: <<AIcon Core>> Downloading pre-trained model. This may take some time.")
     with urllib.request.urlopen(url) as source, open(download_target, "wb") as output:
         while True:
             buffer = source.read(524288)
+
             if not buffer:
                 break
 
             output.write(buffer)
 
     if hashlib.sha256(open(download_target, "rb").read()).hexdigest() != expected_sha256:
+        logger.error(f"[????????-????-????-????-????????????]: <<AIcon Core>> Model has been downloaded but the SHA256 checksum does not not match")
         raise RuntimeError(f"Model has been downloaded but the SHA256 checksum does not not match")
 
     return download_target
