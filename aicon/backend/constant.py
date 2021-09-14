@@ -4,6 +4,7 @@ from logging import (
     StreamHandler, Logger, Formatter, 
     getLogger, DEBUG, INFO, WARNING, ERROR, CRITICAL
 )
+from typing import List
 
 RATE_LIMIT: str = "1000 per minute"
 PORT: int = 5050
@@ -11,7 +12,6 @@ PORT: int = 5050
 JSON_MODEL_NAME: str = "model_name"
 JSON_TEXT: str = "text"
 JSON_CURRENT_ITER: str = "current_iter"
-JSON_TOTAL_ITER: str = "total_iter"
 JSON_SIZE: str = "size"
 JSON_HASH: str = "hash"
 JSON_COMPLETE: str = "complete"
@@ -21,11 +21,23 @@ JSON_NUM_CLIENTS: str = "num_clients"
 JSON_IMG_PATH: str = "img_path"
 JSON_MP4_PATH: str = "mp4_path"
 
-JSON_SEED: str = "seed"
+JSON_GAE: int = "gae"
+JSON_SEED: int = "seed"
+JSON_TOTAL_ITER: str = "total_iter"
+JSON_BACK_BONE: str = "back_bone"
+
+JSON_NUM_LAYER: int = "num_layer"
+JSON_HIDDEN_SIZE: int = "hidden_size"
+JSON_BATCH_SIZE: int = "batch_size"
+
+JSON_CARROT: str = "carrot"
+JSON_STICK: str = "stick"
 
 MODEL_NAME_BIG_SLEEP: str = "BigSleep"
 MODEL_NAME_DEEP_DAZE: str = "DeepDaze"
 MODEL_NAME_DALL_E: str = "DALL-E"
+
+ACCEPTABLE_BACK_BONE: List[str] = ["RN50", "RN101", "RN50x4", "ViT-B/32"]
 
 IF_HASH_INIT: str = "00000000-0000-0000-0000-000000000000"
 IF_BASE_IMG_PATH: str = "../frontend/static/dst_img"
@@ -46,12 +58,12 @@ GC_TIMEOUT: int = 3600
 
 class CustomFormatter(Formatter):
 
-    gray = "\x1b[38;1m"
-    blue = "\x1b[34;1m"
-    green = "\x1b[32;1m"
-    yellow = "\x1b[33;1m"
-    red = "\x1b[31;1m"
-    red_underlined = "\x1b[31;1;4m"
+    gray = "\x1b[98;1m"
+    blue = "\x1b[94;1m"
+    green = "\x1b[92;1m"
+    yellow = "\x1b[93;1m"
+    red = "\x1b[91;1m"
+    red_underlined = "\x1b[91;1;4m"
     reset = "\x1b[0m"
 
     format = "[%(levelname)-8s] [%(asctime)s]: %(message)s (%(filename)s:L%(lineno)d)"
