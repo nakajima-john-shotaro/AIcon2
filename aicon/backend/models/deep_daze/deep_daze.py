@@ -365,7 +365,7 @@ class Imagine(nn.Module):
         self.image_width: int = image_width
         total_batches: int = self.epochs * self.iterations * batch_size * gradient_accumulate_every
 
-        model: nn.Module = DeepDaze(
+        model: DeepDaze = DeepDaze(
             self.perceptor,
             norm,
             input_res,
@@ -388,7 +388,7 @@ class Imagine(nn.Module):
             averaging_weight=averaging_weight,
         ).to(self.device)
 
-        self.model: nn.Module = model
+        self.model: DeepDaze = model
         self.scaler: GradScaler = GradScaler()
         siren_params: Iterator[Parameter] = model.model.parameters()
 
@@ -510,26 +510,23 @@ class Imagine(nn.Module):
 
         return (Path(f"{save_output_path}.png"), Path(f"{response_output_path}.png"))
 
-    def train_step(self, epoch, iteration):
-        total_loss: float = 0.
-
+    def train_step(self, epoch: int, iteration: int) -> None:
         for _ in range(self.gradient_accumulate_every):
             with autocast(enabled=True):
                 out: torch.Tensor
                 loss: torch.Tensor
                 out, loss = self.model(self.clip_encoding)
             loss = loss / self.gradient_accumulate_every
-            total_loss += loss
             self.scaler.scale(loss).backward()
+
+            del loss
    
         out = out.cpu().float().clamp(0., 1.)
         self.scaler.step(self.optimizer)
         self.scaler.update()
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
 
         self.save_image(epoch, iteration, img=out)
-
-        return out, total_loss
     
     def get_img_sequence_number(self, epoch: int, iteration: int) -> int:
         sequence_number: int = epoch * self.iterations + iteration
@@ -586,7 +583,7 @@ class Imagine(nn.Module):
 
                     sequence_number: int = self.get_img_sequence_number(epoch, iteration)
 
-                    _, loss = self.train_step(epoch, iteration)
+                    self.train_step(epoch, iteration)
 
                     self.put_data[JSON_CURRENT_ITER] = int(sequence_number)
                     self.put_data[JSON_IMG_PATH] = str(self.response_filename)
