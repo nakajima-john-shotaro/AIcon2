@@ -10,6 +10,7 @@ $(window).on('load resize', function () {
 });
 
 $(window).load(function () {
+    change_advanced_param(model_button_id, param_button_id);
     $('html,body').animate({ scrollTop: 0 }, '1');
 });
 
@@ -29,101 +30,102 @@ $(function () {
 });
 
 // モデルの選択に関する関数です
-// materializeが原因で脳筋手法に出ます
-// 今後はもっと汎用性のあるものを作ります…
-var DeepDaze_button_active = true;
-document.getElementById("DeepDaze").classList.add("add_Color");
-var BigSleep_button_active = false;
-$("#DeepDaze").click(function () {
-    if (!communicate_status) {
-        if (!(DeepDaze_button_active ^ BigSleep_button_active)) {
-            document.getElementById("DeepDaze").classList.add("add_Color");
-            document.getElementById("BigSleep").classList.remove("add_Color");
-            DeepDaze_button_active = true;
-            BigSleep_button_active = false;
-        }
-        else if (DeepDaze_button_active ^ BigSleep_button_active) {
-            if (DeepDaze_button_active) {
-                document.getElementById("DeepDaze").classList.remove("add_Color");
-                DeepDaze_button_active = false;
-                BigSleep_button_active = false;
-            }
-            else if (BigSleep_button_active) {
-                document.getElementById("DeepDaze").classList.add("add_Color");
-                document.getElementById("BigSleep").classList.remove("add_Color");
-                DeepDaze_button_active = true;
-                BigSleep_button_active = false;
-            }
-        }
-    }
-});
-
-$("#BigSleep").click(function () {
-    if (!communicate_status) {
-        if (!(DeepDaze_button_active ^ BigSleep_button_active)) {
-            document.getElementById("BigSleep").classList.add("add_Color");
-            document.getElementById("DeepDaze").classList.remove("add_Color");
-            DeepDaze_button_active = false;
-            BigSleep_button_active = true;
-        }
-        else if (DeepDaze_button_active ^ BigSleep_button_active) {
-            if (BigSleep_button_active) {
-                document.getElementById("BigSleep").classList.remove("add_Color");
-                DeepDaze_button_active = false;
-                BigSleep_button_active = false;
-            }
-            else if (DeepDaze_button_active) {
-                document.getElementById("BigSleep").classList.add("add_Color");
-                document.getElementById("DeepDaze").classList.remove("add_Color");
-                DeepDaze_button_active = false;
-                BigSleep_button_active = true;
-            }
-        }
-    }
+$('#DeepDaze').addClass('add_Color');
+var model_button_id = 'DeepDaze';
+$('.Model_Area').click(function() {
+    if (!communicate_status){
+        model_button_id = this.id;
+        $('.Model_Area').removeClass('add_Color');
+        $('#' + model_button_id).addClass('add_Color');
+        change_advanced_param(model_button_id, param_button_id);
+    };
 });
 
 
 $('.Model_Area').click(function () {
-    let img_id_list = [];
-    $(".carousel-item").each(function () {
-        img_id_list.push('#' + $(this).attr('id'));
-    });
-
-    if (DeepDaze_button_active) {
-        for (let i = 0; i < img_id_list.length; i++) {
-            $(img_id_list[i]).attr('src', "https://lorempixel.com/250/250/nature/" + (i + 1));
-        };
+    if (!communicate_status) {
+        let img_id_list = [];
+        $(".carousel-item").each(function () {
+            img_id_list.push('#' + $(this).attr('id'));
+        });
+        if (model_button_id === 'DeepDaze') {
+            for (let i = 0; i < img_id_list.length; i++) {
+                $(img_id_list[i]).attr('src', "https://lorempixel.com/250/250/cats/" + (i + 1));
+            };
+        }
+        else if (model_button_id === 'BigSleep') {
+            for (let i = 0; i < img_id_list.length; i++) {
+                $(img_id_list[i]).attr('src', "https://lorempixel.com/250/250/sports/" + (i + 1));
+            };
+        }
     }
-    else if (BigSleep_button_active) {
-        for (let i = 0; i < img_id_list.length; i++) {
-            $(img_id_list[i]).attr('src', "https://lorempixel.com/250/250/sports/" + (i + 1));
-        };
-    }
-    else {
-        for (let i = 0; i < img_id_list.length; i++) {
-            $(img_id_list[i]).attr('src', "https://lorempixel.com/250/250/cats/" + (i + 1));
-        };
-    }
-    check()
 });
 
 
 // 仕上がりの調整に関するボタンです
-$('#set_param_middle').addClass('add_Color');
-var param_button_id = 'set_param_middle';
+$('#middle').addClass('add_Color');
+var param_button_id = 'middle';
 $('.set_param_button').click(function () {
-    param_button_id = this.id;
-    $('.set_param_button').removeClass('add_Color');
-    $('#' + param_button_id).addClass('add_Color');
+    if (!communicate_status) {
+        param_button_id = this.id;
+        $('.set_param_button').removeClass('add_Color');
+        $('#' + param_button_id).addClass('add_Color');
+        change_advanced_param(model_button_id, param_button_id);
+    }
 });
 
-
-
-// スライダーに関する関数です
-function get_range_value() {
-    const slider = document.getElementById("slider")
-    return slider.value;
+var backbone_model = "RN50x4";
+function change_advanced_param(model_button_id , param_button_id) {
+    let setting_param_key = Object.keys(MODEL_PARAM[model_button_id][param_button_id])
+    $('.advanced_params').fadeOut(0)
+    if (model_button_id === 'DeepDaze'){
+        for (let i = 0; i < setting_param_key.length; i++) {
+            $('#' + setting_param_key[i]).fadeIn(400);
+        };
+        $('#iter_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["iter"]);
+        $('#num_layer_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["num_layer"]);
+        $('#hidden_size_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["hidden_size"]);
+        $('#batchsize_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["batch_size"]);
+        $('#gae_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["gae"]);
+        $('.backbone_button').removeClass('add_Color');
+        $('#' + MODEL_PARAM[model_button_id][param_button_id]["backbone"]).addClass('add_Color');
+        backbone_model = MODEL_PARAM[model_button_id][param_button_id]["backbone"];
+    }
+    else if (model_button_id === 'BigSleep'){
+        for (let i = 0; i < setting_param_key.length; i++) {
+            $('#' + setting_param_key[i]).fadeIn(400);
+        };
+        $('#iter_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["iter"]);
+        $('#gae_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["gae"]);
+        $('.backbone_button').removeClass('add_Color');
+        $('#' + MODEL_PARAM[model_button_id][param_button_id]["backbone"]).addClass('add_Color');
+        backbone_model = MODEL_PARAM[model_button_id][param_button_id]["backbone"];
+    }
 };
+
+
+// 詳細設定に関しての関数です 
+// スライダーに関する関数です
+function get_slider_values() {
+    let slider_val_dict = {};
+    slider_val_dict["iter"] = document.getElementById("iter_slider").value;
+    slider_val_dict["num_layer"] = document.getElementById("num_layer_slider").value;
+    slider_val_dict["hidden_size"] = document.getElementById("hidden_size_slider").value;
+    slider_val_dict["batch_size"] = document.getElementById("batch_size_slider").value;
+    slider_val_dict["gae"] = document.getElementById("gae_slider").value;
+    return slider_val_dict;
+}
+
+// バックボーンに関するボタンです
+$('#ResNet50').addClass('add_Color');
+var backbone = 'ResNet50';
+$('.backbone_button').click(function () {
+    if (!communicate_status) {
+    backbone = this.id;
+    $('.backbone_button').removeClass('add_Color');
+    $('#' + backbone).addClass('add_Color');
+    }
+});
 
 // 入力する文に関しての関数です
 var text_length = 0;
@@ -134,12 +136,13 @@ $('#textarea').on('input', function () {
 
 // 画像のドラッグ＆ドロップに関する関数です
 $(function () {
-    if (!communicate_status) {
+    
         // クリックで画像を選択する場合
         $('#drop_area').on('click', function () {
-            $('#input_file').click();
+            if (!communicate_status) {
+                $('#input_file').click();
+            }
         });
-
         $('#input_file').on('change', function () {
             // 画像が複数選択されていた場合
             if (this.files.length > 1) {
@@ -149,21 +152,24 @@ $(function () {
             }
             handleFiles(this.files);
         });
-    }
 });
 
 // ドラッグしている要素がドロップ領域に入ったとき・領域にある間
 $('#drop_area').on('dragenter dragover', function (event) {
-    event.stopPropagation();
-    event.preventDefault();
-    $('#drop_area').css('border', '5px solid #333');  // 枠を実線にする
+    if (!communicate_status) {
+        event.stopPropagation();
+        event.preventDefault();
+        $('#drop_area').css('border', '5px solid #333');  // 枠を実線にする
+    }
 });
 
 // ドラッグしている要素がドロップ領域から外れたとき
 $('#drop_area').on('dragleave', function (event) {
-    event.stopPropagation();
-    event.preventDefault();
-    $('#drop_area').css('border', '5px dashed #ccc');  // 枠を点線に戻す
+    if (!communicate_status) {
+        event.stopPropagation();
+        event.preventDefault();
+        $('#drop_area').css('border', '5px dashed #ccc');  // 枠を点線に戻す
+    }
 });
 
 // ドラッグしている要素がドロップされたとき
@@ -206,15 +212,13 @@ function handleFiles(files) {
         img.src = reader.result;  // readAsDataURLの読み込み結果がresult
         $('#preview_field').append(img);  // preview_filedに画像を表示
     }
-    console.log($('#drop_area').attr('width'))
     reader.readAsDataURL(file); // ファイル読み込みを非同期でバックグラウンドで開始
 }
 
 $(window).resize(function () {
+    
     $('#upload_img').width($('#drop_area').outerWidth());
     $('#upload_img').height($('#drop_area').outerHeight());
-    // $('#result_img').width($('#drop_area').outerWidth());
-    // $('#result_img').height($('#drop_area').outerHeight());
 });
 
 // アイコン画像を消去するボタン
@@ -244,21 +248,9 @@ $(document).on('drop', function (event) {
 
 
 // 選択の確認
-function select_check() {
-    let use_model = "";
-    if (DeepDaze_button_active === true) {
-        use_model = "DeepDaze";
-    }
-    else if (BigSleep_button_active === true) {
-        use_model = "BigSleep";
-    }
-    return use_model;
-}
-
 function check() {
-    let model_button_status = DeepDaze_button_active || BigSleep_button_active;
     let text_length_status = (text_length > 0 ? true : false);
-    let start_status = model_button_status && text_length_status;
+    let start_status = text_length_status;
     if (start_status) {
         $('#start_quit_button').removeClass('disabled');
     }
@@ -269,7 +261,12 @@ function check() {
 
 // 開始後に関する関数です
 function stop_input() {
-    $('#slider').prop('disabled', true);
+    let advanced_param_list = Object.keys(MODEL_PARAM[model_button_id][param_button_id])
+    for (let i = 0; i < advanced_param_list.length; i++) {
+        console.log( advanced_param_list[i])
+        $('#' + advanced_param_list[i] + '_slider').prop('disabled', true);
+    };
+    // $('#').prop('disabled', true);
     $('#textarea').prop('disabled', true);
     $('#start_quit_button').addClass('red accent-2')
     $('#start_quit_icon').text('cancel');
@@ -279,7 +276,7 @@ function stop_input() {
 // 中止ボタンを押された際に送信データを変更する
 function abort_signal() {
     send_data = {
-        model_name: select_check(),
+        model_name: model_button_id,
         text: $('#textarea').val(),
         total_iter: parseInt(get_range_value()),
         size: 256,
@@ -297,26 +294,26 @@ function start() {
     console.log("start直下")
     stop_input()
     communicate_status = true;
-    // 使用するモデルの選択
-    const use_model = select_check();
-    if (use_model === "") {
-        return;
-    }
+
     $('#start_quit_button').attr("onclick", "abort_signal()")
     $('#img_make_container').fadeIn('1000');
     const target = $('#img_make_container').get(0).offsetTop;
     $('body,html').animate({ scrollTop: target }, 500, 'swing');
+    
     // スライダーの値を取得
-    const slider_val = get_range_value();
-
-    // 入力された文字を取得
-    var input_text = $('#textarea').val();
-
+    const slider_vals = get_slider_values();
+ 
+    console.log(slider_vals);
     // 送信するデータ
     send_data = {
-        model_name: use_model,
-        text: input_text,
-        total_iter: parseInt(slider_val),
+        model_name: model_button_id,
+        text: $('#textarea').val(),
+        total_iter: slider_vals['iter'],
+        num_layer: slider_vals['num_layer'],
+        hidden_size: slider_vals['hidden_size'],
+        batch_size: slider_vals['batch_size'],
+        gae: slider_vals['gae'],
+        backbone: backbone_model,
         size: 256,
         hash: hash,
         abort: false,
