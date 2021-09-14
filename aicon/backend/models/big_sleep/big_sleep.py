@@ -1,6 +1,10 @@
 import os
+from queue import Empty
 import sys
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
+import numpy as np
+
+from torch import optim
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 import random
@@ -22,11 +26,10 @@ from PIL import Image
 from torch import nn
 from torch.optim import Adam
 from torchvision.transforms.transforms import Compose
-from torchvision.utils import save_image
 from tqdm import tqdm, trange
 
 from big_sleep.biggan import BigGAN
-from big_sleep.clip import load, tokenize
+from big_sleep.clip import CLIP, load, tokenize
 from big_sleep.ema import EMA
 from big_sleep.resample import resample
 
@@ -69,6 +72,7 @@ def differentiable_topk(x, k, temperature=1.):
             x = x.scatter(-1, indices, float('-inf'))
 
     topks = torch.cat(topk_tensors, dim=-1)
+
     return topks.reshape(n, k, dim).sum(dim = 1)
 
 
@@ -106,9 +110,6 @@ def rand_cutout(image: torch.Tensor, size: int, center_bias: bool = False, cente
 
     return cutout
 
-# load clip
-
-perceptor, normalize_image = load('ViT-B/32', jit=False)
 
 # load biggan
 
@@ -178,6 +179,7 @@ class Model(nn.Module):
 class BigSleep(nn.Module):
     def __init__(
         self,
+        clip_model: Tuple[CLIP, Compose],
         num_cutouts = 128,
         loss_coef = 100,
         image_width = 512,
@@ -197,6 +199,9 @@ class BigSleep(nn.Module):
 
         self.interpolation_settings = {'mode': 'bilinear', 'align_corners': False} if bilinear else {'mode': 'nearest'}
 
+        self.perceptor: CLIP = clip_model[0]
+        self.normalize_image: Compose = clip_model[1]
+
         self.model = Model(
             image_width = image_width,
             max_classes = max_classes,
@@ -213,7 +218,7 @@ class BigSleep(nn.Module):
             sign = 1
         return sign * self.loss_coef * torch.cosine_similarity(text_embed, img_embed, dim = -1).mean()
 
-    def forward(self, text_embeds, text_min_embeds=[], return_loss = True):
+    def forward(self, text_embeds, stick_embeds=[], return_loss = True):
         width, num_cutouts = self.image_width, self.num_cutouts
 
         out = self.model()
@@ -234,9 +239,9 @@ class BigSleep(nn.Module):
             pieces.append(apper)
 
         into = torch.cat(pieces)
-        into = normalize_image(into)
+        into = self.normalize_image(into)
 
-        image_embed = perceptor.encode_image(into)
+        image_embed = self.perceptor.encode_image(into)
 
         latents, soft_one_hot_classes = self.model.latents()
         num_latents = latents.shape[0]
@@ -263,9 +268,10 @@ class BigSleep(nn.Module):
         results = []
         for txt_embed in text_embeds:
             results.append(self.sim_txt_to_img(txt_embed, image_embed))
-        for txt_min_embed in text_min_embeds:
+        for txt_min_embed in stick_embeds:
             results.append(self.sim_txt_to_img(txt_min_embed, image_embed, "min"))
         sim_loss = sum(results).mean()
+
         return out, (lat_loss, cls_loss, sim_loss)
 
 
@@ -275,24 +281,16 @@ class Imagine(nn.Module):
         client_uuid: str,
         client_data: Dict[str, Union[str, Queue]],
         img: Optional[str] = None,
-        text_min = "",
-        lr = .07,
-        image_width = 512,
-        gradient_accumulate_every = 1,
-        save_every = 50,
-        epochs = 20,
-        iterations = 1050,
-        save_progress = False,
+        lr: float = 0.07,
+        epochs: int = 1,
         bilinear = False,
-        seed = None,
         max_classes = None,
         class_temperature = 2.,
-        save_date_time = False,
         save_best = False,
         experimental_resample = False,
         ema_decay = 0.99,
         num_cutouts = 128,
-        center_bias = False,
+        center_bias = True,
     ):
         super().__init__()
 
@@ -306,13 +304,32 @@ class Imagine(nn.Module):
 
         self.writer: imageio.core.Format.Writer = get_writer(save_mp4_path, fps=10)
 
-        text: str = self.client_data[JSON_TEXT]
-
         # For debug
+        self.client_data[JSON_STICK] = "dark"
         self.client_data[JSON_SEED] = 42
-        seed: int = self.client_data[JSON_SEED]
+        self.client_data[JSON_SIZE] = 256
+        self.client_data[JSON_TOTAL_ITER] = 300
+        self.client_data[JSON_GAE] = 1
+        self.client_data[JSON_BACK_BONE] = "ViT-B/32"
+
+        text: str = f"{self.client_data[JSON_TEXT]}|{self.client_data[JSON_CARROT]}"
+        stick: str = self.client_data[JSON_STICK]
+        seed: int = int(self.client_data[JSON_SEED])
         image_width: int = int(self.client_data[JSON_SIZE])
-        self.iterations: int = self.client_data[JSON_TOTAL_ITER]
+        iterations: int = int(self.client_data[JSON_TOTAL_ITER])
+        gradient_accumulate_every: int = int(self.client_data[JSON_GAE])
+        model_name: str = self.client_data[JSON_BACK_BONE]
+
+        self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
+        self.i2c_queue: Queue = self.client_data[CORE_I2C_QUEUE]
+
+        self.put_data: Dict[str, Optional[Union[str, bool]]] = {
+            JSON_HASH: self.client_uuid,
+            JSON_CURRENT_ITER: None,
+            JSON_IMG_PATH: None,
+            JSON_MP4_PATH: None,
+            JSON_COMPLETE: False
+        }
 
 
         if exists(seed):
@@ -328,157 +345,215 @@ class Imagine(nn.Module):
             torch.backends.cudnn.benchmark = True
 
         self.epochs: int = epochs
-        self.iterations = iterations
+        self.iterations: int = iterations
 
-        model: nn.Module = BigSleep(
-            image_width = image_width,
-            bilinear = bilinear,
-            max_classes = max_classes,
-            class_temperature = class_temperature,
-            experimental_resample = experimental_resample,
-            ema_decay = ema_decay,
-            num_cutouts = num_cutouts,
-            center_bias = center_bias,
+        clip_model: Tuple[CLIP, Compose] = load(model_name, jit=False)
+        self.perceptor, _ = clip_model
+
+        model: BigSleep = BigSleep(
+            image_width=image_width,
+            bilinear=bilinear,
+            max_classes=max_classes,
+            class_temperature=class_temperature,
+            experimental_resample=experimental_resample,
+            ema_decay=ema_decay,
+            num_cutouts=num_cutouts,
+            center_bias=center_bias,
+            clip_model=clip_model,
         ).cuda()
 
-        self.model: nn.Module = model
+        self.model: BigSleep = model
 
-        self.lr = lr
-        self.optimizer = Adam(model.model.latents.model.parameters(), lr)
-        self.gradient_accumulate_every = gradient_accumulate_every
-        self.save_every = save_every
-
-        self.save_progress = save_progress
-        self.save_date_time = save_date_time
+        self.lr: float = lr
+        self.optimizer: optim.Adam = Adam(model.model.latents.model.parameters(), lr)
+        self.gradient_accumulate_every: int = gradient_accumulate_every
 
         self.save_best = save_best
         self.current_best_score = 0
 
-        self.total_image_updates = (self.epochs * self.iterations) / self.save_every
-        self.encoded_texts = {
+        self.total_image_updates: int = self.epochs * self.iterations
+        self.encoded_texts: Dict[str, list] = {
             "max": [],
             "min": []
         }
+
         # create img transform
         self.clip_transform = create_clip_img_transform(224)
-        # create starting encoding
-        self.set_clip_encoding(text=text, img=img, text_min=text_min)
 
-    def set_text(self, text):
+        # create starting encoding
+        self.set_clip_encoding(text=text, img=img, stick=stick)
+
+    def set_text(self, text: Optional[str] = None) -> None:
         self.set_clip_encoding(text=text)
 
-    def create_clip_encoding(self, text=None, img=None, encoding=None):
+    def create_clip_encoding(self, text: Optional[str] = None, img: Optional[str] = None) -> torch.Tensor:
         self.text = text
         self.img = img
-        if encoding is not None:
-            encoding = encoding.cuda()
-        #elif self.create_story:
-        #    encoding = self.update_story_encoding(epoch=0, iteration=1)
-        elif text is not None and img is not None:
-            encoding = (self.create_text_encoding(text) + self.create_img_encoding(img)) / 2
+
+        if text is not None and img is not None:
+            encoding: torch.Tensor = (self.create_text_encoding(text) + self.create_img_encoding(img)) / 2
         elif text is not None:
             encoding = self.create_text_encoding(text)
         elif img is not None:
             encoding = self.create_img_encoding(img)
+
         return encoding
 
-    def create_text_encoding(self, text):
-        tokenized_text = tokenize(text).cuda()
+    def create_text_encoding(self, text: str) -> torch.Tensor:
+        tokenized_text: torch.Tensor = tokenize(text).cuda()
         with torch.no_grad():
-            text_encoding = perceptor.encode_text(tokenized_text).detach()
+            text_encoding: torch.Tensor = self.perceptor.encode_text(tokenized_text).detach()
+
         return text_encoding
     
-    def create_img_encoding(self, img):
-        if isinstance(img, str):
-            img = Image.open(img)
-        normed_img = self.clip_transform(img).unsqueeze(0).cuda()
+    def create_img_encoding(self, img: str) -> torch.Tensor:
+        normed_img: torch.Tensor = self.clip_transform(img).unsqueeze(0).cuda()
+
         with torch.no_grad():
-            img_encoding = perceptor.encode_image(normed_img).detach()
+            img_encoding: torch.Tensor = self.perceptor.encode_image(normed_img).detach()
+
         return img_encoding
     
     
-    def encode_multiple_phrases(self, text, img=None, encoding=None, text_type="max"):
+    def encode_multiple_phrases(self, text: Optional[str] = None, img: Optional[str] = None, text_type: str = "max"):
         if text is not None and "|" in text:
-            self.encoded_texts[text_type] = [self.create_clip_encoding(text=prompt_min, img=img, encoding=encoding) for prompt_min in text.split("|")]
+            self.encoded_texts[text_type] = [self.create_clip_encoding(text=prompt_min, img=img) for prompt_min in text.split("|")]
         else:
-            self.encoded_texts[text_type] = [self.create_clip_encoding(text=text, img=img, encoding=encoding)]
+            self.encoded_texts[text_type] = [self.create_clip_encoding(text=text, img=img)]
 
-    def encode_max_and_min(self, text, img=None, encoding=None, text_min=""):
-        self.encode_multiple_phrases(text, img=img, encoding=encoding)
-        if text_min is not None and text_min != "":
-            self.encode_multiple_phrases(text_min, img=img, encoding=encoding, text_type="min")
+    def encode_max_and_min(self, text: Optional[str] = None, img: Optional[str] = None, stick: str = ""):
+        self.encode_multiple_phrases(text, img=img)
+        if stick is not None and stick != "":
+            self.encode_multiple_phrases(stick, img=img, text_type="min")
 
-    def set_clip_encoding(self, text=None, img=None, encoding=None, text_min=""):
+    def set_clip_encoding(self, text: Optional[str] = None, img: Optional[str] = None, stick: str = ""):
         self.current_best_score = 0
         self.text = text
-        self.text_min = text_min
+        self.stick = stick
         
-        if len(text_min) > 0:
-            text = text + "_wout_" + text_min[:255] if text is not None else "wout_" + text_min[:255]
-        text_path = create_text_path(text=text, img=img, encoding=encoding)
-        if self.save_date_time:
-            text_path = datetime.now().strftime("%y%m%d-%H%M%S-") + text_path
+        if len(stick) > 0:
+            text = text + "_wout_" + stick[:255] if text is not None else "wout_" + stick[:255]
+        text_path = create_text_path(text=text, img=img)
 
         self.text_path = text_path
         self.filename = Path(f'./{text_path}.png')
-        self.encode_max_and_min(text, img=img, encoding=encoding, text_min=text_min) # Tokenize and encode each prompt
+        self.encode_max_and_min(text, img=img, stick=stick) # Tokenize and encode each prompt
 
-    def reset(self):
+    def reset(self) -> None:
         self.model.reset()
         self.model = self.model.cuda()
         self.optimizer = Adam(self.model.model.latents.parameters(), self.lr)
+    
+    def get_output_img_path(self, sequence_number: Optional[int]) -> Tuple[Path, Path]:
+        """
+        Returns underscore separated Path.
+        :rtype: Path
+        """
+        output_path: str = self.text_path
+        save_output_path: str = os.path.join(self.save_img_path, f"{output_path}.{sequence_number:06d}")
+        response_output_path: str = os.path.join(self.response_img_path, f"{output_path}.{sequence_number:06d}")
 
-    def train_step(self, epoch, i, pbar=None):
-        total_loss = 0
+        return (Path(f"{save_output_path}.png"), Path(f"{response_output_path}.png"))
+
+    def get_img_sequence_number(self, epoch: int, iteration: int) -> int:
+        sequence_number: int = epoch * self.iterations + iteration
+
+        return sequence_number
+
+    def train_step(self, epoch: int, iteration: int) -> None:
+        total_loss: float = 0
 
         for _ in range(self.gradient_accumulate_every):
             out, losses = self.model(self.encoded_texts["max"], self.encoded_texts["min"])
-            loss = sum(losses) / self.gradient_accumulate_every
-            total_loss += loss
+    
+            loss: torch.Tensor = sum(losses) / self.gradient_accumulate_every
             loss.backward()
+
+            total_loss = total_loss + loss.item()
+
+            del loss
 
         self.optimizer.step()
         self.model.model.latents.update()
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
 
-        if (i + 1) % self.save_every == 0:
-            with torch.no_grad():
-                self.model.model.latents.eval()
-                out, losses = self.model(self.encoded_texts["max"], self.encoded_texts["min"])
-                top_score, best = torch.topk(losses[2], k=1, largest=False)
-                image = self.model.model()[best].cpu()
-                self.model.model.latents.train()
+        self.save_image(epoch, iteration)
 
-                save_image(image, str(self.filename))
-                if pbar is not None:
-                    pbar.update(1)
-                else:
-                    print(f'image updated at "./{str(self.filename)}"')
+    @torch.no_grad()
+    def save_image(self, epoch: int, iteration: int) -> None:
+        self.model.model.latents.eval()
 
-                if self.save_progress:
-                    total_iterations = epoch * self.iterations + i
-                    num = total_iterations // self.save_every
-                    save_image(image, Path(f'./{self.text_path}.{num}.png'))
+        _, losses = self.model(self.encoded_texts["max"], self.encoded_texts["min"])
+        top_score, best = torch.topk(losses[2], k=1, largest=False)
 
-                if self.save_best and top_score.item() < self.current_best_score:
-                    self.current_best_score = top_score.item()
-                    save_image(image, Path(f'./{self.text_path}.best.png'))
+        img: torch.Tensor = self.model.model()[best].cpu().float().clamp(0., 1.)
 
-        return out, total_loss
+        self.model.model.latents.train()
 
-    def forward(self):
-        penalizing = ""
-        if len(self.text_min) > 0:
-            penalizing = f'penalizing "{self.text_min}"'
-        print(f'Imagining "{self.text_path}" {penalizing}...')
+        sequence_number: int = self.get_img_sequence_number(epoch, iteration)
+
+        save_filename, self.response_filename = self.get_output_img_path(sequence_number=sequence_number)
         
+        pil_img: Image = T.ToPILImage()(img.squeeze())
+        pil_img.save(save_filename)
+
+        self.writer.append_data(np.uint8(np.array(pil_img) * 255.))
+
+    def forward(self) -> None:      
         with torch.no_grad():
             self.model(self.encoded_texts["max"][0]) # one warmup step due to issue with CLIP and CUDA
 
-        image_pbar = tqdm(total=self.total_image_updates, desc='image update', position=2, leave=True)
-        for epoch in trange(self.epochs, desc = '      epochs', position=0, leave=True):
-            pbar = trange(self.iterations, desc='   iteration', position=1, leave=True)
-            image_pbar.update(0)
-            for i in pbar:
-                out, loss = self.train_step(epoch, i, image_pbar)
-                pbar.set_description(f'loss: {loss.item():04.2f}')
+        try:
+            for epoch in range(self.epochs):
+                for iteration in range(self.iterations):
+                    try:
+                        get_data: Dict[str, bool] = self.i2c_queue.get_nowait()
+                        if get_data[JSON_ABORT]:
+                            logger.warning(f"[{self.client_uuid}]: <<AIcon Core>> Abort signal detected")
+                            raise AIconAbortedError("Abort signal detected")
+                    except Empty:
+                        pass
+
+                    sequence_number: int = self.get_img_sequence_number(epoch, iteration)
+    
+                    self.train_step(epoch, iteration)
+
+                    self.put_data[JSON_CURRENT_ITER] = int(sequence_number)
+                    self.put_data[JSON_IMG_PATH] = str(self.response_filename)
+
+                    self.c2i_queue.put_nowait(self.put_data)
+
+                    logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Processing... {sequence_number + 1}/{self.iterations * self.epochs}")
+
+        except KeyboardInterrupt as e:
+            logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Keyboard Interrunpted")
+            raise e
+
+        except RuntimeError as e:
+            if 'out of memory' in str(e):
+                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Ran out of gpu memory")
+                raise AIconOutOfMemoryError(str(e))
+            else:
+                raise AIconRuntimeError(str(e))
+
+        except AIconAbortedError as e:
+            raise e
+
+        finally:
+            self.save_image(epoch, iteration)
+            self.writer.close()
+
+            try:
+                self.put_data[JSON_CURRENT_ITER] = int(sequence_number)
+            except UnboundLocalError:
+                pass
+
+            self.put_data[JSON_IMG_PATH] = str(self.response_filename)
+            self.put_data[JSON_MP4_PATH] = self.response_mp4_path
+            self.put_data[JSON_COMPLETE] = True
+
+            self.c2i_queue.put_nowait(self.put_data)
+
+            torch.cuda.empty_cache()
+
+            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Completed imagination")
