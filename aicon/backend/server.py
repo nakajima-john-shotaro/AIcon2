@@ -23,6 +23,7 @@ from werkzeug.exceptions import (BadRequest, Forbidden, HTTPException,
 
 from constant import *
 from models.deep_daze import deep_daze
+from models.big_sleep import big_sleep
 from translation import Translation, install_webdriver
 
 app: Flask = Flask(
@@ -194,7 +195,10 @@ class AIconCore:
         logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Start image generation with {self.model_name}")
 
         if self.model_name == MODEL_NAME_BIG_SLEEP:
-            raise NotImplementedError
+            try:
+                big_sleep.Imagine(self.client_uuid, client_data)()
+            except (AIconOutOfMemoryError, AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
+                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> {e}")
 
         elif self.model_name == MODEL_NAME_DEEP_DAZE:
             try:
