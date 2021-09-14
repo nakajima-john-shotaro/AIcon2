@@ -5,7 +5,7 @@ from logging import (
     getLogger, DEBUG, INFO, WARNING, ERROR, CRITICAL
 )
 
-RATE_LIMIT: str = "100 per minute"
+RATE_LIMIT: str = "1000 per minute"
 PORT: int = 5050
 
 JSON_MODEL_NAME: str = "model_name"
@@ -30,7 +30,7 @@ IF_HASH_INIT: str = "00000000-0000-0000-0000-000000000000"
 IF_BASE_IMG_PATH: str = "../frontend/static/dst_img"
 IF_BASE_MP4_PATH: str = "../frontend/static/dst_mp4"
 IF_QUEUE_EMPTY_COUNTER: str = "queue_empty_counter"
-IF_EMPTY_TOLERANCE: int = 30
+IF_EMPTY_TOLERANCE: int = 100
 
 CORE_COMPATIBLE_PYTORCH_VERSION: str = "1.7.1"
 CORE_C2I_QUEUE: str = "c2i_queue"
