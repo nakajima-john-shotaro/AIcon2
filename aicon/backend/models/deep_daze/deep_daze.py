@@ -3,7 +3,6 @@ import sys
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import imageio
-from torchvision.transforms.transforms import Compose
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 import random
@@ -23,6 +22,7 @@ from torch import nn
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn.parameter import Parameter
 from torch_optimizer import AdamP, DiffGrad
+from torchvision.transforms.transforms import Compose
 
 from .clip import load, tokenize
 
