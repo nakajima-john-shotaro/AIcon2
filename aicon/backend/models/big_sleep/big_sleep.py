@@ -1,18 +1,13 @@
 import os
-from queue import Empty
 import sys
+from queue import Empty
 from typing import Any, Dict, List, Optional, Tuple, Union
-import numpy as np
 
+import numpy as np
 from torch import optim
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 import random
-import re
-import signal
-import string
-import subprocess
-from datetime import datetime
 from multiprocessing import Queue
 from pathlib import Path
 
@@ -24,15 +19,14 @@ from constant import *
 from imageio import get_writer
 from PIL import Image
 from torch import nn
+from torch.cuda.amp import GradScaler, autocast
 from torch.optim import Adam
 from torchvision.transforms.transforms import Compose
-from tqdm import tqdm, trange
 
-from big_sleep.biggan import BigGAN
-from big_sleep.clip import CLIP, load, tokenize
-from big_sleep.ema import EMA
-from big_sleep.resample import resample
-
+from .biggan import BigGAN
+from .clip import CLIP, load, tokenize
+from .ema import EMA
+from .resample import resample
 
 assert torch.cuda.is_available(), 'CUDA must be available in order to use Big Sleep'
 
@@ -241,7 +235,8 @@ class BigSleep(nn.Module):
         into = torch.cat(pieces)
         into = self.normalize_image(into)
 
-        image_embed = self.perceptor.encode_image(into)
+        with autocast(enabled=False):
+            image_embed = self.perceptor.encode_image(into)
 
         latents, soft_one_hot_classes = self.model.latents()
         num_latents = latents.shape[0]
@@ -286,7 +281,6 @@ class Imagine(nn.Module):
         bilinear = False,
         max_classes = None,
         class_temperature = 2.,
-        save_best = False,
         experimental_resample = False,
         ema_decay = 0.99,
         num_cutouts = 128,
@@ -305,6 +299,7 @@ class Imagine(nn.Module):
         self.writer: imageio.core.Format.Writer = get_writer(save_mp4_path, fps=10)
 
         # For debug
+        self.client_data[JSON_CARROT] = "zoom"
         self.client_data[JSON_STICK] = "dark"
         self.client_data[JSON_SEED] = 42
         self.client_data[JSON_SIZE] = 256
@@ -347,7 +342,15 @@ class Imagine(nn.Module):
         self.epochs: int = epochs
         self.iterations: int = iterations
 
-        clip_model: Tuple[CLIP, Compose] = load(model_name, jit=False)
+        jit: bool = True
+
+        # jit models only compatible with version CORE_COMPATIBLE_PYTORCH_VERSION
+        if CORE_COMPATIBLE_PYTORCH_VERSION not in torch.__version__:
+            if jit:
+                logger.warning(f"[{self.client_uuid}]: <<AIcon Core>> Setting jit to False because torch version is not {CORE_COMPATIBLE_PYTORCH_VERSION}")
+            jit = False
+
+        clip_model: Tuple[CLIP, Compose] = load(model_name, jit=jit)
         self.perceptor, _ = clip_model
 
         model: BigSleep = BigSleep(
@@ -362,14 +365,13 @@ class Imagine(nn.Module):
             clip_model=clip_model,
         ).cuda()
 
+        self.scaler: GradScaler = GradScaler()
+
         self.model: BigSleep = model
 
         self.lr: float = lr
         self.optimizer: optim.Adam = Adam(model.model.latents.model.parameters(), lr)
         self.gradient_accumulate_every: int = gradient_accumulate_every
-
-        self.save_best = save_best
-        self.current_best_score = 0
 
         self.total_image_updates: int = self.epochs * self.iterations
         self.encoded_texts: Dict[str, list] = {
@@ -415,19 +417,18 @@ class Imagine(nn.Module):
         return img_encoding
     
     
-    def encode_multiple_phrases(self, text: Optional[str] = None, img: Optional[str] = None, text_type: str = "max"):
+    def encode_multiple_phrases(self, text: Optional[str] = None, img: Optional[str] = None, text_type: str = "max") -> None:
         if text is not None and "|" in text:
             self.encoded_texts[text_type] = [self.create_clip_encoding(text=prompt_min, img=img) for prompt_min in text.split("|")]
         else:
             self.encoded_texts[text_type] = [self.create_clip_encoding(text=text, img=img)]
 
-    def encode_max_and_min(self, text: Optional[str] = None, img: Optional[str] = None, stick: str = ""):
+    def encode_max_and_min(self, text: Optional[str] = None, img: Optional[str] = None, stick: str = "") -> None:
         self.encode_multiple_phrases(text, img=img)
         if stick is not None and stick != "":
             self.encode_multiple_phrases(stick, img=img, text_type="min")
 
-    def set_clip_encoding(self, text: Optional[str] = None, img: Optional[str] = None, stick: str = ""):
-        self.current_best_score = 0
+    def set_clip_encoding(self, text: Optional[str] = None, img: Optional[str] = None, stick: str = "") -> None:
         self.text = text
         self.stick = stick
         
@@ -464,16 +465,19 @@ class Imagine(nn.Module):
         total_loss: float = 0
 
         for _ in range(self.gradient_accumulate_every):
-            out, losses = self.model(self.encoded_texts["max"], self.encoded_texts["min"])
+            with autocast(enabled=True):
+                loss: torch.Tensor
+                _, losses = self.model(self.encoded_texts["max"], self.encoded_texts["min"])
     
             loss: torch.Tensor = sum(losses) / self.gradient_accumulate_every
-            loss.backward()
+            self.scaler.scale(loss).backward()
 
             total_loss = total_loss + loss.item()
 
             del loss
 
-        self.optimizer.step()
+        self.scaler.step(self.optimizer)
+        self.scaler.update()
         self.model.model.latents.update()
         self.optimizer.zero_grad(set_to_none=True)
 
@@ -526,12 +530,10 @@ class Imagine(nn.Module):
                     logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Processing... {sequence_number + 1}/{self.iterations * self.epochs}")
 
         except KeyboardInterrupt as e:
-            logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Keyboard Interrunpted")
             raise e
 
         except RuntimeError as e:
             if 'out of memory' in str(e):
-                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Ran out of gpu memory")
                 raise AIconOutOfMemoryError(str(e))
             else:
                 raise AIconRuntimeError(str(e))
@@ -555,5 +557,3 @@ class Imagine(nn.Module):
             self.c2i_queue.put_nowait(self.put_data)
 
             torch.cuda.empty_cache()
-
-            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Completed imagination")
