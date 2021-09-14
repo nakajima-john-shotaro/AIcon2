@@ -1,33 +1,39 @@
 import os
 import sys
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
-from torchvision.transforms.transforms import Compose
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
-import subprocess
+import random
+import re
 import signal
 import string
-import re
-
+import subprocess
 from datetime import datetime
+from multiprocessing import Queue
 from pathlib import Path
-import random
 
+import imageio
 import torch
 import torch.nn.functional as F
+import torchvision.transforms as T
+from constant import *
+from imageio import get_writer
+from PIL import Image
 from torch import nn
 from torch.optim import Adam
+from torchvision.transforms.transforms import Compose
 from torchvision.utils import save_image
-import torchvision.transforms as T
-from PIL import Image
 from tqdm import tqdm, trange
 
-from big_sleep.ema import EMA
-from big_sleep.resample import resample
 from big_sleep.biggan import BigGAN
 from big_sleep.clip import load, tokenize
+from big_sleep.ema import EMA
+from big_sleep.resample import resample
+
 
 assert torch.cuda.is_available(), 'CUDA must be available in order to use Big Sleep'
+
+logger: Logger = get_logger()
 
 # helpers
 
@@ -102,11 +108,11 @@ def rand_cutout(image: torch.Tensor, size: int, center_bias: bool = False, cente
 
 # load clip
 
-perceptor, normalize_image = load('ViT-B/32', jit = False)
+perceptor, normalize_image = load('ViT-B/32', jit=False)
 
 # load biggan
 
-class Latents(torch.nn.Module):
+class Latents(nn.Module):
     def __init__(
         self,
         num_latents = 15,
@@ -116,11 +122,12 @@ class Latents(torch.nn.Module):
         class_temperature = 2.
     ):
         super().__init__()
-        self.normu = torch.nn.Parameter(torch.zeros(num_latents, z_dim).normal_(std = 1))
-        self.cls = torch.nn.Parameter(torch.zeros(num_latents, num_classes).normal_(mean = -3.9, std = .3))
+        self.normu = nn.Parameter(torch.zeros(num_latents, z_dim).normal_(std = 1))
+        self.cls = nn.Parameter(torch.zeros(num_latents, num_classes).normal_(mean = -3.9, std = .3))
         self.register_buffer('thresh_lat', torch.tensor(1))
 
         assert not exists(max_classes) or max_classes > 0 and max_classes <= num_classes, f'max_classes must be between 0 and {num_classes}'
+
         self.max_classes = max_classes
         self.class_temperature = class_temperature
 
@@ -135,14 +142,16 @@ class Latents(torch.nn.Module):
 class Model(nn.Module):
     def __init__(
         self,
-        image_size,
+        image_width,
         max_classes = None,
         class_temperature = 2.,
         ema_decay = 0.99
     ):
         super().__init__()
-        assert image_size in (128, 256, 512), 'image size must be one of 128, 256, or 512'
-        self.biggan = BigGAN.from_pretrained(f'biggan-deep-{image_size}')
+        
+        assert image_width in (128, 256, 512), 'image size must be one of 128, 256, or 512'
+
+        self.biggan = BigGAN.from_pretrained(f'biggan-deep-{image_width}')
         self.max_classes = max_classes
         self.class_temperature = class_temperature
         self.ema_decay\
@@ -171,7 +180,7 @@ class BigSleep(nn.Module):
         self,
         num_cutouts = 128,
         loss_coef = 100,
-        image_size = 512,
+        image_width = 512,
         bilinear = False,
         max_classes = None,
         class_temperature = 2.,
@@ -181,7 +190,7 @@ class BigSleep(nn.Module):
     ):
         super().__init__()
         self.loss_coef = loss_coef
-        self.image_size = image_size
+        self.image_width = image_width
         self.num_cutouts = num_cutouts
         self.experimental_resample = experimental_resample
         self.center_bias = center_bias
@@ -189,7 +198,7 @@ class BigSleep(nn.Module):
         self.interpolation_settings = {'mode': 'bilinear', 'align_corners': False} if bilinear else {'mode': 'nearest'}
 
         self.model = Model(
-            image_size = image_size,
+            image_width = image_width,
             max_classes = max_classes,
             class_temperature = class_temperature,
             ema_decay = ema_decay
@@ -205,7 +214,7 @@ class BigSleep(nn.Module):
         return sign * self.loss_coef * torch.cosine_similarity(text_embed, img_embed, dim = -1).mean()
 
     def forward(self, text_embeds, text_min_embeds=[], return_loss = True):
-        width, num_cutouts = self.image_size, self.num_cutouts
+        width, num_cutouts = self.image_width, self.num_cutouts
 
         out = self.model()
 
@@ -263,13 +272,12 @@ class BigSleep(nn.Module):
 class Imagine(nn.Module):
     def __init__(
         self,
-        *,
-        text=None,
-        img=None,
-        encoding=None,
+        client_uuid: str,
+        client_data: Dict[str, Union[str, Queue]],
+        img: Optional[str] = None,
         text_min = "",
         lr = .07,
-        image_size = 512,
+        image_width = 512,
         gradient_accumulate_every = 1,
         save_every = 50,
         epochs = 20,
@@ -277,8 +285,6 @@ class Imagine(nn.Module):
         save_progress = False,
         bilinear = False,
         seed = None,
-        append_seed = False,
-        torch_deterministic = False,
         max_classes = None,
         class_temperature = 2.,
         save_date_time = False,
@@ -290,24 +296,42 @@ class Imagine(nn.Module):
     ):
         super().__init__()
 
-        if torch_deterministic:
-            assert not bilinear, 'the deterministic (seeded) operation does not work with interpolation (PyTorch 1.7.1)'
-            torch.set_deterministic(True)
+        self.client_uuid: str = client_uuid
+        self.client_data: Dict[str, Union[str, Queue]] = client_data
 
-        self.seed = seed
-        self.append_seed = append_seed
+        self.save_img_path: str = self.client_data[JSON_IMG_PATH]
+        self.response_img_path: str = self.client_data[JSON_IMG_PATH].replace("frontend/", "")
+        save_mp4_path: str = os.path.join(self.client_data[JSON_MP4_PATH], "timelapse.mp4")
+        self.response_mp4_path: str = save_mp4_path.replace("frontend/", "")
+
+        self.writer: imageio.core.Format.Writer = get_writer(save_mp4_path, fps=10)
+
+        text: str = self.client_data[JSON_TEXT]
+
+        # For debug
+        self.client_data[JSON_SEED] = 42
+        seed: int = self.client_data[JSON_SEED]
+        image_width: int = int(self.client_data[JSON_SIZE])
+        self.iterations: int = self.client_data[JSON_TOTAL_ITER]
+
 
         if exists(seed):
-            print(f'setting seed of {seed}')
-            if seed == 0:
-                print('you can override this with --seed argument in the command line, or --random for a randomly chosen one')
+            self.seed: int = seed
+            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Seed is manually set to {self.seed}")
             torch.manual_seed(seed)
+            torch.cuda.manual_seed(seed)
+            random.seed(seed)
+            torch.backends.cudnn.deterministic = True
+        else:
+            self.seed = random.randint(-sys.maxint - 1, sys.minsize)
+            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> No seed is specified. It will automatically be set to {self.seed}")
+            torch.backends.cudnn.benchmark = True
 
-        self.epochs = epochs
+        self.epochs: int = epochs
         self.iterations = iterations
 
-        model = BigSleep(
-            image_size = image_size,
+        model: nn.Module = BigSleep(
+            image_width = image_width,
             bilinear = bilinear,
             max_classes = max_classes,
             class_temperature = class_temperature,
@@ -317,7 +341,7 @@ class Imagine(nn.Module):
             center_bias = center_bias,
         ).cuda()
 
-        self.model = model
+        self.model: nn.Module = model
 
         self.lr = lr
         self.optimizer = Adam(model.model.latents.model.parameters(), lr)
@@ -338,11 +362,7 @@ class Imagine(nn.Module):
         # create img transform
         self.clip_transform = create_clip_img_transform(224)
         # create starting encoding
-        self.set_clip_encoding(text=text, img=img, encoding=encoding, text_min=text_min)
-    
-    @property
-    def seed_suffix(self):
-        return f'.{self.seed}' if self.append_seed and exists(self.seed) else ''
+        self.set_clip_encoding(text=text, img=img, text_min=text_min)
 
     def set_text(self, text):
         self.set_clip_encoding(text=text)
@@ -400,7 +420,7 @@ class Imagine(nn.Module):
             text_path = datetime.now().strftime("%y%m%d-%H%M%S-") + text_path
 
         self.text_path = text_path
-        self.filename = Path(f'./{text_path}{self.seed_suffix}.png')
+        self.filename = Path(f'./{text_path}.png')
         self.encode_max_and_min(text, img=img, encoding=encoding, text_min=text_min) # Tokenize and encode each prompt
 
     def reset(self):
@@ -438,11 +458,11 @@ class Imagine(nn.Module):
                 if self.save_progress:
                     total_iterations = epoch * self.iterations + i
                     num = total_iterations // self.save_every
-                    save_image(image, Path(f'./{self.text_path}.{num}{self.seed_suffix}.png'))
+                    save_image(image, Path(f'./{self.text_path}.{num}.png'))
 
                 if self.save_best and top_score.item() < self.current_best_score:
                     self.current_best_score = top_score.item()
-                    save_image(image, Path(f'./{self.text_path}{self.seed_suffix}.best.png'))
+                    save_image(image, Path(f'./{self.text_path}.best.png'))
 
         return out, total_loss
 
@@ -462,7 +482,3 @@ class Imagine(nn.Module):
             for i in pbar:
                 out, loss = self.train_step(epoch, i, image_pbar)
                 pbar.set_description(f'loss: {loss.item():04.2f}')
-
-                if terminate:
-                    print('detecting keyboard interrupt, gracefully exiting')
-                    return
