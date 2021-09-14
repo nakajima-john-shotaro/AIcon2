@@ -74,7 +74,7 @@ class GarbageCollector:
                         now: float = time.time()
 
                         if now - mtime > GC_TIMEOUT:
-                            logger.warn(
+                            logger.info(
                                 f"[{dir.stem}]: <<Garbage Collector>> Removed outdated directory {dir}"
                             )
                             shutil.rmtree(dir)
@@ -94,6 +94,7 @@ class ConnectionHealthChecker:
         interval: float,
     ) -> None:
         empty_counter: int = 0
+    
         while True:
             try:
                 _client_data: Dict[str, Dict[str, Union[str, Queue]]] = _client_data_queue_chc.get_nowait()
@@ -132,7 +133,10 @@ class ConnectionHealthChecker:
                             put_data: Dict[str, bool] = {
                                 JSON_ABORT: True,
                             }
-                            client_data[CORE_I2C_QUEUE].put_nowait(put_data)
+                            try:
+                                client_data[CORE_I2C_QUEUE].put(put_data, block=True, timeout=1.)
+                            except Full:
+                                pass
                             result = _client_data.pop(client_uuid, None)
                             _lock.release()
 
@@ -389,7 +393,10 @@ class AIconInterface(Resource):
                         put_data: Dict[str, bool] = {
                             JSON_ABORT: True,
                         }
-                        _client_data[client_uuid][CORE_I2C_QUEUE].put_nowait(put_data)
+                        try:
+                            _client_data[client_uuid][CORE_I2C_QUEUE].put_nowait(put_data)
+                        except Full:
+                            pass
                         res[JSON_COMPLETE] = True
 
                     res[JSON_CURRENT_ITER] = _valid_response[JSON_CURRENT_ITER]
