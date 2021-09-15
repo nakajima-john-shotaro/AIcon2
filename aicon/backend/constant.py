@@ -22,6 +22,7 @@ JSON_PRIORITY: str = "priority"
 JSON_NUM_CLIENTS: str = "num_clients"
 JSON_IMG_PATH: str = "img_path"
 JSON_MP4_PATH: str = "mp4_path"
+JSON_MODEL_STATUS: str = "model_status"
 
 JSON_GAE: int = "gae"
 JSON_SEED: int = "seed"

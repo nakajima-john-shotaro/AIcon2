@@ -34,7 +34,7 @@ app: Flask = Flask(
 app.config["JSON_AS_ASCII"] = False
 app.config["JSON_SORT_KEYS"] = False
 app.config['RATELIMIT_HEADERS_ENABLED'] = True
-limiter = Limiter(app, key_func=get_remote_address, default_limits=[RATE_LIMIT])
+Limiter(app, key_func=get_remote_address, default_limits=[RATE_LIMIT])
 CORS(app)
 api: Api = Api(app)
 
@@ -47,6 +47,7 @@ _valid_response: Dict[str, Union[str, bool, int]] = {
     JSON_CURRENT_ITER: None,
     JSON_IMG_PATH: None,
     JSON_MP4_PATH: None,
+    JSON_MODEL_STATUS: False,
 }
 _lock: Lock = Lock()
 
@@ -283,9 +284,13 @@ class AIconInterface(Resource):
                 c2i_queue: Queue = Queue()
                 i2c_queue: Queue = Queue(maxsize=1)
 
-                if received_data[JSON_MODEL_NAME] not in [MODEL_NAME_BIG_SLEEP, MODEL_NAME_DEEP_DAZE, MODEL_NAME_DALL_E]:
+                if received_data[JSON_MODEL_NAME] not in ACCEPTABLE_MODEL:
                     logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> Invalid model name `{received_data[JSON_MODEL_NAME]}` requested")
-                    abort(400, f"Invalid model name {received_data[JSON_MODEL_NAME]}")
+                    raise AIconValueError(f"Invalid model name `{received_data[JSON_MODEL_NAME]}` requested")
+
+                if received_data[JSON_BACKBONE] not in ACCEPTABLE_BACKBONE:
+                    logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> Invalid backbone name `{received_data[JSON_BACKBONE]}` requested")
+                    raise AIconValueError(f"Invalid model name `{received_data[JSON_BACKBONE]}` requested")
 
                 _client_data[client_uuid] = {
                     RECEIVED_DATA: received_data,
@@ -319,6 +324,7 @@ class AIconInterface(Resource):
                 JSON_COMPLETE: False,
                 JSON_IMG_PATH: None,
                 JSON_MP4_PATH: None,
+                JSON_MODEL_STATUS: False,
             }
 
             return jsonify(res)
@@ -359,6 +365,7 @@ class AIconInterface(Resource):
                 JSON_COMPLETE: False,
                 JSON_IMG_PATH: None,
                 JSON_MP4_PATH: None,
+                JSON_MODEL_STATUS: False,
             }
     
             if client_priority == 1:
@@ -378,6 +385,7 @@ class AIconInterface(Resource):
                     res[JSON_IMG_PATH] = get_data[JSON_IMG_PATH]
                     res[JSON_MP4_PATH] = get_data[JSON_MP4_PATH]
                     res[JSON_COMPLETE] = get_data[JSON_COMPLETE]
+                    res[JSON_MODEL_STATUS] = get_data[JSON_MODEL_STATUS]
 
                     if get_data[JSON_CURRENT_ITER] is not None:
                         _valid_response[JSON_CURRENT_ITER] = get_data[JSON_CURRENT_ITER]
@@ -385,6 +393,8 @@ class AIconInterface(Resource):
                         _valid_response[JSON_IMG_PATH] = get_data[JSON_IMG_PATH]
                     if get_data[JSON_MP4_PATH] is not None:
                         _valid_response[JSON_MP4_PATH] = get_data[JSON_MP4_PATH]
+                    if get_data[JSON_MODEL_STATUS]:
+                        _valid_response[JSON_MODEL_STATUS] = get_data[JSON_MODEL_STATUS]
 
                     if get_data[JSON_COMPLETE]:
                         if self._remove_client_data(client_uuid):
@@ -419,9 +429,12 @@ class AIconInterface(Resource):
                     res[JSON_CURRENT_ITER] = _valid_response[JSON_CURRENT_ITER]
                     res[JSON_IMG_PATH] = _valid_response[JSON_IMG_PATH]
                     res[JSON_MP4_PATH] = _valid_response[JSON_MP4_PATH]
+                    res[JSON_MODEL_STATUS] = _valid_response[JSON_MODEL_STATUS]
         else:
             logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> Invalid UUID")
             abort(403, f"Invalid UUID: {client_uuid}")
+
+        pprint(res)
 
         return jsonify(res)
 
