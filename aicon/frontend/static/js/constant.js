@@ -27,17 +27,17 @@ var MODEL_PARAM = {
     },
     BigSleep: {
         low: {
-            iter: 600,
+            iter: 100,
             gae: 1,
             backbone: 'RN50x4'
         },
         middle: {
-            iter: 800,
+            iter: 250,
             gae: 1,
             backbone: 'ViT-B32'
         },
         high: {
-            iter: 1000,
+            iter: 400,
             gae: 1,
             backbone: 'ViT-B32'
         },

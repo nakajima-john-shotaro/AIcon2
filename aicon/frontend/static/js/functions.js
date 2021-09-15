@@ -82,6 +82,8 @@ function change_advanced_param(model_button_id , param_button_id) {
         for (let i = 0; i < setting_param_key.length; i++) {
             $('#' + setting_param_key[i]).fadeIn(400);
         };
+        $('#seed').fadeIn(400);
+        $('#source_img').fadeIn(400);
         $('#iter_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["iter"]);
         $('#num_layer_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["num_layer"]);
         $('#hidden_size_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["hidden_size"]);
@@ -95,6 +97,10 @@ function change_advanced_param(model_button_id , param_button_id) {
         for (let i = 0; i < setting_param_key.length; i++) {
             $('#' + setting_param_key[i]).fadeIn(400);
         };
+        $('#seed').fadeIn(400);
+        $('#carrot').fadeIn(400);
+        $('#stick').fadeIn(400);
+        $('#source_img').fadeIn(400);
         $('#iter_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["iter"]);
         $('#gae_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["gae"]);
         $('.backbone_button').removeClass('add_Color');
@@ -119,7 +125,7 @@ function get_slider_values() {
 // バックボーンに関するボタンです
 $('#ResNet50').addClass('add_Color');
 var backbone = 'ResNet50';
-$('.backbone_button').click(function () {
+$('.backbone_button').click(function() {
     if (!communicate_status) {
     backbone = this.id;
     $('.backbone_button').removeClass('add_Color');
@@ -127,20 +133,50 @@ $('.backbone_button').click(function () {
     }
 });
 
-// 入力する文に関しての関数です
-var text_length = 0;
-$('#textarea').on('input', function () {
-    text_length = $('#textarea').val().length;
-    check()
+
+// seedのボタンに関する関数です
+var seed_buttun_status = 'random';
+$(function (){
+    $('#seed_button_specify').on('click', function() {
+        if (!communicate_status) {
+            $('#seed_value').prop('disabled', false);
+            $('#seed_value').focus();
+            seed_buttun_status = 'specify';
+        }
+    })
+    $('#seed_button_random').on('click', function() {
+        if (!communicate_status) {
+            $('#seed_value').prop('disabled', true);
+            $('#seed_value').prop('value', null);
+            seed_buttun_status = 'random';
+        }
+    })
 });
+
+function get_seed_value() {
+    let seed_value = null;
+    if (seed_buttun_status === 'random') {
+        seed_value = null;
+    } 
+    else if (seed_buttun_status === 'specify') {
+        if ($('#seed_value').attr('value') === undefined) {
+            seed_value = null;
+        }
+        else {
+        seed_value = $('#seed_value').attr('value');
+        }
+    }
+    return seed_value;
+};
+
 
 // 画像のドラッグ＆ドロップに関する関数です
 $(function () {
     
-        // クリックで画像を選択する場合
-        $('#drop_area').on('click', function () {
-            if (!communicate_status) {
-                $('#input_file').click();
+    // クリックで画像を選択する場合
+    $('#drop_area').on('click', function () {
+        if (!communicate_status) {
+            $('#input_file').click();
             }
         });
         $('#input_file').on('change', function () {
@@ -152,18 +188,18 @@ $(function () {
             }
             handleFiles(this.files);
         });
-});
+    });
+    
+    // ドラッグしている要素がドロップ領域に入ったとき・領域にある間
+    $('#drop_area').on('dragenter dragover', function (event) {
+        if (!communicate_status) {
+            event.stopPropagation();
+            event.preventDefault();
+            $('#drop_area').css('border', '5px solid #333');  // 枠を実線にする
+        }
+    });
 
-// ドラッグしている要素がドロップ領域に入ったとき・領域にある間
-$('#drop_area').on('dragenter dragover', function (event) {
-    if (!communicate_status) {
-        event.stopPropagation();
-        event.preventDefault();
-        $('#drop_area').css('border', '5px solid #333');  // 枠を実線にする
-    }
-});
-
-// ドラッグしている要素がドロップ領域から外れたとき
+    // ドラッグしている要素がドロップ領域から外れたとき
 $('#drop_area').on('dragleave', function (event) {
     if (!communicate_status) {
         event.stopPropagation();
@@ -191,7 +227,7 @@ $('#drop_area').on('drop', function (event) {
 function handleFiles(files) {
     var file = files[0];
     var imageType = 'image.*';
-
+    
     // ファイルが画像が確認する
     if (!file.type.match(imageType)) {
         alert('画像ファイルではありません。\n画像を選択してください');
@@ -199,10 +235,10 @@ function handleFiles(files) {
         $('#drop_area').css('border', '5px dashed #ccc');
         return;
     }
-
+    
     $('#drop_area').hide();  // いちばん上のdrop_areaを非表示にします
     $('#img_delete_button').show();
-
+    
     let img = document.createElement('img');  // <img>をつくります
     img.id = 'upload_img';
     img.width = $('#drop_area').outerWidth();
@@ -246,6 +282,37 @@ $(document).on('drop', function (event) {
     event.preventDefault();
 });
 
+// 入力する文に関しての関数です
+var text_length = 0;
+$('#textarea').on('input', function() {
+    let remove_space_text = ($('#textarea').val()).replace(/\s+/g, '');
+    text_length = remove_space_text.length;
+    check();
+});
+
+function text_check(text) {
+    let modify_text = '';
+    if (!text){
+        modify_text = '';
+    }
+    else {
+        modify_text = text;
+    }
+    return modify_text;
+};
+
+// 画像サイズに関するボタンです
+$('#size_256').addClass('add_Color');
+var img_size = '256';
+$('.set_size_button').click(function () {
+    if (!communicate_status) {
+        let img_size_button_id = this.id;
+        $('.set_size_button').removeClass('add_Color');
+        $('#' + img_size_button_id).addClass('add_Color');
+        let img_size_split = img_size_button_id.split('_');
+        img_size = img_size_split[1];
+    }
+});
 
 // 選択の確認
 function check() {
@@ -263,11 +330,11 @@ function check() {
 function stop_input() {
     let advanced_param_list = Object.keys(MODEL_PARAM[model_button_id][param_button_id])
     for (let i = 0; i < advanced_param_list.length; i++) {
-        console.log( advanced_param_list[i])
         $('#' + advanced_param_list[i] + '_slider').prop('disabled', true);
     };
-    // $('#').prop('disabled', true);
     $('#textarea').prop('disabled', true);
+    $('#carrot_textarea').prop('disabled', true);
+    $('#stick_textarea').prop('disabled', true);
     $('#start_quit_button').addClass('red accent-2')
     $('#start_quit_icon').text('cancel');
     $('#start_quit_text').text('Quit');
@@ -275,13 +342,23 @@ function stop_input() {
 
 // 中止ボタンを押された際に送信データを変更する
 function abort_signal() {
+    const slider_vals = get_slider_values();
+    const seed_value = get_seed_value();
     send_data = {
         model_name: model_button_id,
         text: $('#textarea').val(),
-        total_iter: parseInt(get_range_value()),
-        size: 256,
+        total_iter: parseInt(slider_vals['iter']),
+        num_layer: parseInt(slider_vals['num_layer']),
+        hidden_size: parseInt(slider_vals['hidden_size']),
+        batch_size: parseInt(slider_vals['batch_size']),
+        gae: parseInt(slider_vals['gae']),
+        backbone: backbone_model,
+        seed: seed_value,
+        size: parseInt(img_size),
         hash: hash,
-        abort: true,
+        abort: false,
+        carrot: text_check($('#carrot_textarea').val()),
+        stick: text_check($('#stick_textarea').val())
     };
     console.log('中止信号が押されました')
     let send_json_data = JSON.stringify(send_data)
@@ -302,7 +379,9 @@ function start() {
     
     // スライダーの値を取得
     const slider_vals = get_slider_values();
- 
+    const seed_value = get_seed_value();
+
+
     console.log(slider_vals);
     // 送信するデータ
     send_data = {
@@ -314,13 +393,15 @@ function start() {
         batch_size: parseInt(slider_vals['batch_size']),
         gae: parseInt(slider_vals['gae']),
         backbone: backbone_model,
-        size: 256,
+        seed: seed_value,
+        size: parseInt(img_size),
         hash: hash,
         abort: false,
-
+        carrot: text_check($('#carrot_textarea').val()),
+        stick: text_check($('#stick_textarea').val())
     };
     let send_json_data = JSON.stringify(send_data)
-    console.log('s_data')
+    console.log('スタート直後の送信データ')
     console.log(send_data)
     communicate(send_json_data)
 };

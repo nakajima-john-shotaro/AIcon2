@@ -18,7 +18,7 @@
       <nav>
         <div class="nav-wrapper  light-blue darken-1">
           <h href="#!" class="brand-logo center" id="nico_font">
-            AIcon
+            AIcon<sup id="sup">2</sup>
           </h>
           <a href="#" data-target="mobile-demo" class="sidenav-trigger">
             <i class="material-icons">
@@ -132,13 +132,12 @@
                     <div class="advanced_params" id="iter">
                       <div class="row">
                         <br>
-                        <h7>イテレーション数を設定。</h7>
+                        <h7>イテレーション数の設定。</h7>
                         <br>
                       </div>
                       <div class="row center">
                         <div class="row">
                           <div class="col s2">
-                            <b>Iteration</b>
                           </div>
                           <div class="col s8">
                             <form sction="#">
@@ -151,17 +150,16 @@
                         </div>
                       </div>
                     </div>
-                    
+
                     <div class="advanced_params" id="num_layer">
                       <div class="row">
                         <br>
-                        <h7>レイヤーの数を設定。</h7>
+                        <h7>レイヤー数の設定。</h7>
                         <br>
                       </div>
                       <div class="row center">
                         <div class="row">
                           <div class="col s2">
-                            <b>Num_layer</b>
                           </div>
                           <div class="col s8">
                             <form sction="#">
@@ -184,7 +182,6 @@
                       <div class="row center">
                         <div class="row">
                           <div class="col s2">
-                            <b>Hidden_layer</b>
                           </div>
                           <div class="col s8">
                             <form sction="#">
@@ -201,13 +198,12 @@
                     <div class="advanced_params" id="batch_size">
                       <div class="row">
                         <br>
-                        <h7>バッチサイズを設定。</h7>
+                        <h7>バッチサイズの設定。</h7>
                         <br>
                       </div>
                       <div class="row center">
                         <div class="row">
                           <div class="col s2">
-                            <b>Batchsize</b>
                           </div>
                           <div class="col s8">
                             <form sction="#">
@@ -224,13 +220,12 @@
                     <div class="advanced_params" id="gae">
                       <div class="row">
                         <br>
-                        <h7>勾配更新回数/iter。</h7>
+                        <h7>１ステップ毎の勾配更新回数の設定。</h7>
                         <br>
                       </div>
                       <div class="row center">
                         <div class="row">
                           <div class="col s2">
-                            <b>gradient_accumulate_every</b>
                           </div>
                           <div class="col s8">
                             <form sction="#">
@@ -274,44 +269,149 @@
                       </div>
                     </div>
 
-                    <div class="row">
-                      <br>
-                      <h7>基にする画像。(option)</h7>
-                      <br>
-                    </div>
-                    <div class="row">
-                      <a class="modal-trigger" href="#image_description">基にする画像とは？</a>
-                      <div id="image_description" class="modal">
-                        <div class="modal-content">
-                          <h4>基にする画像とは</h4>
-                          <div class="conteiner">
-                            <p>アップロードされた画像を基にして画像を作ります。</p>
+                    <div class="advanced_params" id="seed">
+                      <div class="row">
+                        <br>
+                        <h7>seedの選択。</h7>
+                        <br>
+                      </div>
+                      <div class="row center">
+                        <form action="#">
+                          <div class="col s1"></div>
+                          <div class="col s4 seed_box">
+                            <p>
+                              <label>
+                                <input name="seed" type="radio" id="seed_button_random" checked />
+                                <span>Random</span>
+                              </label>
+                            </p>
                           </div>
-                        </div>
-                        <div class="modal-footer">
-                          <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
-                        </div>
+                          <div class="col s4 seed_box" id="seed_box_fix">
+                            <p>
+                              <label>
+                                <input name="seed" type="radio" id="seed_button_specify" />
+                                <span>Specify</span>
+                              </label>
+                            </p>
+                          </div>
+                          <div class="input-field  left s2">
+                            <input id="seed_value" type="number" class="validate"  disabled/>
+                            <label for="seed_value">seed value</label>
+                          </div>
+                        </form>
                       </div>
                     </div>
-                    <div class="row">
-                      <div class="col s3"></div>
-                      <div class="col s6 user-icon-dnd-wrapper">
-                        <input type="file" name="icon" id="input_file" accept="image/*">
-                        <div id="preview_field"></div>
-                        <div id="drop_area">
-                          <div id="image_upload_text">
-                            Drop Image Here<br>or<br>Click Here.
+
+                    <div class="advanced_params" id="carrot">
+                      <div class="row">
+                        <br>
+                        <h7>要求する内容。(optional)</h7>
+                        <br>
+                      </div>
+                      <div class="row">
+                        <div class="col s3"></div>
+                        <form class="col s6">
+                          <div class="row">
+                            <div class="input-field col s12">
+                              <i class="material-icons prefix">sentiment_very_satisfied</i>
+                              <input id="carrot_textarea" class="materialize-textarea cancelEnter" type="search"></input>
+                              <label for="carrot_textarea">(e.g.: zoom, red)</label>
+                            </div>
+                          </div>
+                        </form>
+                        <div class="col s3"></div>
+                      </div>
+                    </div>
+
+                    <div class="advanced_params" id="stick">
+                      <div class="row">
+                        <br>
+                        <h7>除外したい内容。(optional)</h7>
+                        <br>
+                      </div>
+                      <div class="row">
+                        <div class="col s3"></div>
+                        <form class="col s6">
+                          <div class="row">
+                            <div class="input-field col s12">
+                              <i class="material-icons prefix">sentiment_very_dissatisfied</i>
+                              <input id="stick_textarea" class="materialize-textarea cancelEnter" type="search"></input>
+                              <label for="stick_textarea">(e.g.: blur, white)</label>
+                            </div>
+                          </div>
+                        </form>
+                        <div class="col s3"></div>
+                      </div>
+                    </div>
+
+                    <div class="advanced_params" id="source_img">
+                      <div class="row">
+                        <br>
+                        <h7>基にする画像。(optional)</h7>
+                        <br>
+                      </div>
+                      <div class="row">
+                        <a class="modal-trigger" href="#image_description">基にする画像とは？</a>
+                        <div id="image_description" class="modal">
+                          <div class="modal-content">
+                            <h4>基にする画像とは</h4>
+                            <div class="conteiner">
+                              <p>アップロードされた画像を基にして画像を作ります。</p>
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
                           </div>
                         </div>
-                        <i class="material-icons prefix" id="img_delete_button">delete</i>
                       </div>
-                      <div class="col s3"></div>
+
+                      <div class="row">
+                        <div class="col s3"></div>
+                        <div class="col s6 user-icon-dnd-wrapper">
+                          <input type="file" name="icon" id="input_file" accept="image/*">
+                          <div id="preview_field"></div>
+                          <div id="drop_area">
+                            <div id="image_upload_text">
+                              Drop Image Here<br>or<br>Click Here.
+                            </div>
+                          </div>
+                          <i class="material-icons prefix" id="img_delete_button">delete</i>
+                        </div>
+                        <div class="col s3"></div>
+                      </div>
                     </div>
 
                   </div><!-- collapsible-body -->
                 </li>
               </ul>
             </div>
+
+            <div class="border_sample"></div>
+            
+            
+            <div class="row">
+              <br>
+              <h7>画像サイズの選択。</h7>
+              <br>
+            </div>
+            <div class="row center">
+              <div class="col s4">
+                <div id="size_128" class="set_size_button">
+                  <p class="not_select_text center">128 × 128</p>
+                </div><!-- size_128 -->
+              </div>
+              <div class="col s4">
+                <div id="size_256" class="set_size_button">
+                  <p class="not_select_text center">256 × 256</p>
+                </div><!-- size_256 -->
+              </div>
+              <div class="col s4">
+                <div id="size_512" class="set_size_button">
+                  <p class="not_select_text center">512 × 512</p>
+                </div><!-- size_512 -->
+              </div>
+            </div>
+
 
             <div class="border_sample"><br></div>
             

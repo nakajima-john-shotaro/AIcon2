@@ -7,6 +7,12 @@
 #nico_font {
 	font-family: NicoKaku;
 }
+
+#sup {
+	font-size: large;
+}
+
+
 /* 設定関連 */
 .carousel .carousel-item{
 	width:100%;
@@ -76,6 +82,21 @@ border-bottom:1px solid #ccc;
 	border: solid 1px;
 }
 
+/* -----画像サイズ設定選択ボタン関係----- */
+.set_size_button {
+	padding: 5px;
+	border: solid 1px #ccc;
+	width: 95%;
+	border-radius: 10px;
+	cursor: pointer;
+	cursor: hand;
+	margin: 0 auto;
+}
+
+.set_size_button:hover{
+	border: solid 1px;
+}
+
 /* -----パラメータ設定選択ボタン関係----- */
 .backbone_button {
 	padding: 5px;
@@ -97,6 +118,13 @@ border-bottom:1px solid #ccc;
 	box-shadow: 0 1px 10px rgba(52, 162, 212, 0.993), 0 0 50px rgba(128, 128, 128, 0.1) ;
 }
 
+/* seedのボタンとテキストの関係 */
+.seed_box {
+	transform: translateY(30%);
+}
+#seed_box_fix {
+	border-left: 2px dashed rgb(212, 212, 212);
+}
 
 /* -----写真のドラッグ＆ドロップ関係 -----*/
 .user-icon-dnd-wrapper {
