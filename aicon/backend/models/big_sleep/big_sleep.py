@@ -314,7 +314,8 @@ class Imagine(nn.Module):
             JSON_CURRENT_ITER: None,
             JSON_IMG_PATH: None,
             JSON_MP4_PATH: None,
-            JSON_COMPLETE: False
+            JSON_COMPLETE: False,
+            JSON_MODEL_STATUS: False,
         }
 
 
@@ -497,6 +498,9 @@ class Imagine(nn.Module):
     def forward(self) -> None:      
         with torch.no_grad():
             self.model(self.encoded_texts["max"][0]) # one warmup step due to issue with CLIP and CUDA
+
+        self.put_data[JSON_MODEL_STATUS] = True
+        self.c2i_queue.put_nowait(self.put_data)
 
         try:
             for epoch in range(self.epochs):
