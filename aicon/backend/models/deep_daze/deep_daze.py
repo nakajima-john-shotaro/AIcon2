@@ -265,15 +265,15 @@ class Imagine(nn.Module):
 
         self.writer: imageio.core.Format.Writer = get_writer(save_mp4_path, fps=10)
 
-        text: str = self.client_data[JSON_TEXT]
-        seed: Optional[int] = self.client_data[JSON_SEED]
-        image_width: int = int(self.client_data[JSON_SIZE])
-        iterations: int = int(self.client_data[JSON_TOTAL_ITER])
-        batch_size: int = int(self.client_data[JSON_BATCH_SIZE])
-        gradient_accumulate_every: int = int(self.client_data[JSON_GAE])
-        num_layers: int = int(self.client_data[JSON_NUM_LAYER])
-        hidden_size: int = int(self.client_data[JSON_HIDDEN_SIZE])
-        model_name: str = str(self.client_data[JSON_BACKBONE])
+        text: str = self.client_data[RECEIVED_DATA][JSON_TEXT]
+        seed: Optional[int] = self.client_data[RECEIVED_DATA][JSON_SEED]
+        image_width: int = int(self.client_data[RECEIVED_DATA][JSON_SIZE])
+        iterations: int = int(self.client_data[RECEIVED_DATA][JSON_TOTAL_ITER])
+        batch_size: int = int(self.client_data[RECEIVED_DATA][JSON_BATCH_SIZE])
+        gradient_accumulate_every: int = int(self.client_data[RECEIVED_DATA][JSON_GAE])
+        num_layers: int = int(self.client_data[RECEIVED_DATA][JSON_NUM_LAYER])
+        hidden_size: int = int(self.client_data[RECEIVED_DATA][JSON_HIDDEN_SIZE])
+        model_name: str = str(self.client_data[RECEIVED_DATA][JSON_BACKBONE])
 
         self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
         self.i2c_queue: Queue = self.client_data[CORE_I2C_QUEUE]
@@ -569,7 +569,6 @@ class Imagine(nn.Module):
                     try:
                         get_data: Dict[str, bool] = self.i2c_queue.get_nowait()
                         if get_data[JSON_ABORT]:
-                            logger.warning(f"[{self.client_uuid}]: <<AIcon Core>> Abort signal detected")
                             raise AIconAbortedError("Abort signal detected")
                     except Empty:
                         pass
