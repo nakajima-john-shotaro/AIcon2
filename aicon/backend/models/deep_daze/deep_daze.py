@@ -273,7 +273,7 @@ class Imagine(nn.Module):
         gradient_accumulate_every: int = int(self.client_data[JSON_GAE])
         num_layers: int = int(self.client_data[JSON_NUM_LAYER])
         hidden_size: int = int(self.client_data[JSON_HIDDEN_SIZE])
-        model_name: str = str(self.client_data[JSON_BACK_BONE])
+        model_name: str = str(self.client_data[JSON_BACKBONE])
 
         self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
         self.i2c_queue: Queue = self.client_data[CORE_I2C_QUEUE]

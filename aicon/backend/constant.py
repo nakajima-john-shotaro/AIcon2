@@ -24,7 +24,7 @@ JSON_MP4_PATH: str = "mp4_path"
 JSON_GAE: int = "gae"
 JSON_SEED: int = "seed"
 JSON_TOTAL_ITER: str = "total_iter"
-JSON_BACK_BONE: str = "back_bone"
+JSON_BACKBONE: str = "backbone"
 
 JSON_NUM_LAYER: int = "num_layer"
 JSON_HIDDEN_SIZE: int = "hidden_size"

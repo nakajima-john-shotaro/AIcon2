@@ -304,7 +304,7 @@ class Imagine(nn.Module):
         image_width: int = int(self.client_data[JSON_SIZE])
         iterations: int = int(self.client_data[JSON_TOTAL_ITER])
         gradient_accumulate_every: int = int(self.client_data[JSON_GAE])
-        model_name: str = self.client_data[JSON_BACK_BONE]
+        model_name: str = self.client_data[JSON_BACKBONE]
 
         self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
         self.i2c_queue: Queue = self.client_data[CORE_I2C_QUEUE]
