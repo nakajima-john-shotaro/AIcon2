@@ -326,7 +326,7 @@ class Imagine(nn.Module):
             random.seed(seed)
             torch.backends.cudnn.deterministic = True
         else:
-            self.seed = random.randint(-sys.maxint - 1, sys.minsize)
+            self.seed = random.randint(-sys.maxsize - 1, sys.maxsize)
             logger.info(f"[{self.client_uuid}]: <<AIcon Core>> No seed is specified. It will automatically be set to {self.seed}")
             torch.backends.cudnn.benchmark = True
 
