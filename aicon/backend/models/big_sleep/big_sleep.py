@@ -298,13 +298,13 @@ class Imagine(nn.Module):
 
         self.writer: imageio.core.Format.Writer = get_writer(save_mp4_path, fps=10)
 
-        text: str = f"{self.client_data[JSON_TEXT]}|{self.client_data[JSON_CARROT]}"
-        stick: str = self.client_data[JSON_STICK]
-        seed: Optional[int] = self.client_data[JSON_SEED]
-        image_width: int = int(self.client_data[JSON_SIZE])
-        iterations: int = int(self.client_data[JSON_TOTAL_ITER])
-        gradient_accumulate_every: int = int(self.client_data[JSON_GAE])
-        model_name: str = self.client_data[JSON_BACKBONE]
+        text: str = f"{self.client_data[RECEIVED_DATA][JSON_TEXT]}|{self.client_data[RECEIVED_DATA][JSON_CARROT]}"
+        stick: str = self.client_data[RECEIVED_DATA][JSON_STICK]
+        seed: Optional[int] = self.client_data[RECEIVED_DATA][JSON_SEED]
+        image_width: int = int(self.client_data[RECEIVED_DATA][JSON_SIZE])
+        iterations: int = int(self.client_data[RECEIVED_DATA][JSON_TOTAL_ITER])
+        gradient_accumulate_every: int = int(self.client_data[RECEIVED_DATA][JSON_GAE])
+        model_name: str = self.client_data[RECEIVED_DATA][JSON_BACKBONE]
 
         self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
         self.i2c_queue: Queue = self.client_data[CORE_I2C_QUEUE]
@@ -326,7 +326,7 @@ class Imagine(nn.Module):
             random.seed(seed)
             torch.backends.cudnn.deterministic = True
         else:
-            self.seed = random.randint(-sys.maxint - 1, sys.minsize)
+            self.seed = random.randint(-sys.maxsize - 1, sys.maxsize)
             logger.info(f"[{self.client_uuid}]: <<AIcon Core>> No seed is specified. It will automatically be set to {self.seed}")
             torch.backends.cudnn.benchmark = True
 
@@ -504,7 +504,6 @@ class Imagine(nn.Module):
                     try:
                         get_data: Dict[str, bool] = self.i2c_queue.get_nowait()
                         if get_data[JSON_ABORT]:
-                            logger.warning(f"[{self.client_uuid}]: <<AIcon Core>> Abort signal detected")
                             raise AIconAbortedError("Abort signal detected")
                     except Empty:
                         pass

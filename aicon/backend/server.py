@@ -185,7 +185,7 @@ class AIconCore:
         client_data: Dict[str, Union[str, Queue]],
         client_uuid: str,
     ) -> None:
-        self.model_name: str = client_data[JSON_MODEL_NAME]
+        self.model_name: str = client_data[RECEIVED_DATA][JSON_MODEL_NAME]
         self.client_uuid: str = client_uuid
 
         p: Process = Process(target=self.run, args=(client_data, ), daemon=True)
@@ -231,7 +231,7 @@ class AIconInterface(Resource):
     def _set_path(self, client_uuid: str) -> None:
         global _client_data
 
-        model_name: str = _client_data[client_uuid][JSON_MODEL_NAME]
+        model_name: str = _client_data[client_uuid][RECEIVED_DATA][JSON_MODEL_NAME]
 
         img_path: str = os.path.join(self.base_img_path, model_name, client_uuid)
         mp4_path: str = os.path.join(self.base_mp4_path, model_name, client_uuid)
@@ -267,12 +267,18 @@ class AIconInterface(Resource):
 
             try:
                 logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translating input text")
-                translated_text: str = self.translator.translate(received_data[JSON_TEXT])
+                received_data[JSON_TEXT] = self.translator.translate(received_data[JSON_TEXT])
+                logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated input text to `{received_data[JSON_TEXT]}`")
+
                 if received_data[JSON_CARROT] != "":
+                    logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translating carrot")
                     received_data[JSON_CARROT] = self.translator.translate(received_data[JSON_CARROT])
+                    logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated carrot to `{received_data[JSON_TEXT]}`")
+
                 if received_data[JSON_STICK] != "":
+                    logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translating stick")
                     received_data[JSON_STICK] = self.translator.translate(received_data[JSON_STICK])
-                logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated text `{received_data[JSON_TEXT]}` to `{translated_text}`")
+                    logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated stick to `{received_data[JSON_TEXT]}`")
 
                 c2i_queue: Queue = Queue()
                 i2c_queue: Queue = Queue(maxsize=1)
@@ -282,18 +288,7 @@ class AIconInterface(Resource):
                     abort(400, f"Invalid model name {received_data[JSON_MODEL_NAME]}")
 
                 _client_data[client_uuid] = {
-                    JSON_MODEL_NAME: received_data[JSON_MODEL_NAME],
-                    JSON_TEXT: translated_text,
-                    JSON_TOTAL_ITER: received_data[JSON_TOTAL_ITER],
-                    JSON_SEED: received_data[JSON_SEED],
-                    JSON_SIZE: received_data[JSON_SIZE],
-                    JSON_BACKBONE: received_data[JSON_BACKBONE],
-                    JSON_GAE: received_data[JSON_GAE],
-                    JSON_BATCH_SIZE: received_data[JSON_BATCH_SIZE],
-                    JSON_HIDDEN_SIZE: received_data[JSON_HIDDEN_SIZE],
-                    JSON_NUM_LAYER: received_data[JSON_NUM_LAYER],
-                    JSON_CARROT: received_data[JSON_CARROT],
-                    JSON_STICK: received_data[JSON_STICK],
+                    RECEIVED_DATA: received_data,
                     JSON_COMPLETE: False,
                     CORE_C2I_QUEUE: c2i_queue,
                     CORE_I2C_QUEUE: i2c_queue,

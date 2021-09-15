@@ -9,6 +9,8 @@ from typing import List
 RATE_LIMIT: str = "1000 per minute"
 PORT: int = 5050
 
+RECEIVED_DATA: str = "received_data"
+
 JSON_MODEL_NAME: str = "model_name"
 JSON_TEXT: str = "text"
 JSON_CURRENT_ITER: str = "current_iter"
@@ -37,7 +39,7 @@ MODEL_NAME_BIG_SLEEP: str = "BigSleep"
 MODEL_NAME_DEEP_DAZE: str = "DeepDaze"
 MODEL_NAME_DALL_E: str = "DALL-E"
 
-ACCEPTABLE_BACK_BONE: List[str] = ["RN50", "RN101", "RN50x4", "ViT-B/32"]
+ACCEPTABLE_BACK_BONE: List[str] = ["RN50", "RN101", "RN50x4", "ViT-B32"]
 
 IF_HASH_INIT: str = "00000000-0000-0000-0000-000000000000"
 IF_BASE_IMG_PATH: str = "../frontend/static/dst_img"
