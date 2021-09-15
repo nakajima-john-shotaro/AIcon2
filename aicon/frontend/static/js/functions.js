@@ -9,8 +9,9 @@ $(window).on('load resize', function () {
     }
 });
 
-$(window).load(function () {
+$(window).load(function () {    
     change_advanced_param(model_button_id, param_button_id);
+    
     $('html,body').animate({ scrollTop: 0 }, '1');
 });
 
@@ -365,12 +366,34 @@ function abort_signal() {
     communicate(send_json_data);
 };
 
+function wait_display() {
+    const top_list = [10, 14, 19, 27, 38];
+    const fontsize_list = [70, 85, 110, 150, 200];
+    const color_list = ['rgba(0, 0, 0, 1)', 'rgba(20, 20, 20, 1)', 'rgba(40, 40, 40, 1)', 'rgba(60, 60, 60, 1)', 'rgba(70, 70, 70, 1)']
+    $('#loader_wrap').css('display', 'block');
+    for (let i = 0; i < 5; i++) {
+        let css_lib = {
+            'font-size': fontsize_list[i],
+            'top': top_list[i] + '%',
+            'position': 'fixed',
+            'display': 'flex',
+            'width': '100vw',
+            'height': '100vh',
+            'align-items': 'center',
+            'justify-content': 'center',
+            'color': color_list[i]
+        }
+        $('#waiting_num_display').append('<i class="material-icons" id="waiter_' + i + '">person</i>')
+        $('#waiter_' + i).css(css_lib);
+    };
+};
 
 // 生成開始ボタンに関しての関数
 var communicate_status = false;
 var hash = '00000000-0000-0000-0000-000000000000';
 function start() {
     stop_input();
+    wait_display();
     communicate_status = true;
 
     $('#img_make_container').fadeIn(0);
@@ -473,3 +496,9 @@ function PushNotification() {
         }
     });
 }
+
+// loading画面に関する関数です
+// $('#fullOverlay').css({
+//     'display': 'block',
+//     'z-index': 2147483647
+// });

@@ -14,6 +14,7 @@
   </head>
 
   <body>
+    
     <div class="navbar-fixed">
       <nav>
         <div class="nav-wrapper  light-blue darken-1">
@@ -310,15 +311,15 @@
                       </div>
                       <div class="row">
                         <div class="col s3"></div>
-                        <form class="col s6">
-                          <div class="row">
-                            <div class="input-field col s12">
+                        <div class="col s6">
+                          <form>
+                            <div class="input-field">
                               <i class="material-icons prefix">sentiment_very_satisfied</i>
-                              <input id="carrot_textarea" class="materialize-textarea cancelEnter" type="search"></input>
+                              <input id="carrot_textarea" class="materialize-textarea cancelEnter" type="text">
                               <label for="carrot_textarea">(e.g.: zoom, red)</label>
                             </div>
-                          </div>
-                        </form>
+                          </form>
+                        </div>
                         <div class="col s3"></div>
                       </div>
                     </div>
@@ -332,12 +333,10 @@
                       <div class="row">
                         <div class="col s3"></div>
                         <form class="col s6">
-                          <div class="row">
-                            <div class="input-field col s12">
-                              <i class="material-icons prefix">sentiment_very_dissatisfied</i>
-                              <input id="stick_textarea" class="materialize-textarea cancelEnter" type="search"></input>
-                              <label for="stick_textarea">(e.g.: blur, white)</label>
-                            </div>
+                          <div class="input-field">
+                            <i class="material-icons prefix">sentiment_very_dissatisfied</i>
+                            <input id="stick_textarea" class="materialize-textarea cancelEnter" type="text">
+                            <label for="stick_textarea">(e.g.: blur, white)</label>
                           </div>
                         </form>
                         <div class="col s3"></div>
@@ -423,15 +422,13 @@
             <div class="row">
               <div class="col s3"></div>
               <form class="col s6">
-                <div class="row">
-                  <div class="input-field col s12">
-                    <i class="material-icons prefix">mode_edit</i>
-                    <input id="textarea" class="materialize-textarea cancelEnter" type="search"></input>
-                    <label for="textarea">Input Text</label>
-                  </div>
+                <div class="input-field">
+                  <i class="material-icons prefix">mode_edit</i>
+                  <input id="textarea" class="materialize-textarea cancelEnter" type="search">
+                  <label for="textarea">Input Text</label>
                 </div>
               </form>
-            <div class="col s3"></div>
+              <div class="col s3"></div>
             </div>
             
             <br><br>
@@ -484,6 +481,17 @@
 
       </div> <!-- scroll_container -->
     </div> <!-- wrapper -->
+
+    <!-- 待機中の画面 -->
+    <!-- <div id="fullOverlay"> -->
+      <div id="loader_wrap">
+        <div class="loader">Loading...</div>
+        <div id="waiting_num_display">
+          <!-- <i class="material-icons" id="my_position">person</i> -->
+        </div>
+      </div>
+    <!-- </div> -->
+
 
     <!-- 通信を開始した際に以下のコンテナを出現させる -->
     <div class="container" id="img_make_container" hidden>
