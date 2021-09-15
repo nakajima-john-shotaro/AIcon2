@@ -3,7 +3,6 @@ import sys
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import imageio
-from torchvision.transforms.transforms import Compose
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 import random
@@ -23,6 +22,7 @@ from torch import nn
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn.parameter import Parameter
 from torch_optimizer import AdamP, DiffGrad
+from torchvision.transforms.transforms import Compose
 
 from .clip import load, tokenize
 
@@ -81,13 +81,13 @@ def norm_siren_output(img):
     return ((img + 1) * 0.5).clamp(0.0, 1.0)
 
 
-def create_text_path(context_length: int, text: Optional[str] = None, img: Optional[str] = None, separator: Optional[str] = None) -> str:
+def create_text_path(context_length: int, text: Optional[str] = None, target_img: Optional[str] = None, separator: Optional[str] = None) -> str:
     if text is not None:
         if separator is not None and separator in text:
             text = text[:text.index(separator, )]
         input_name = text.replace(" ", "_")[:context_length]
-    elif img is not None:
-        input_name = "".join(img.replace(" ", "_").split(".")[:-1])
+    elif target_img is not None:
+        input_name = "".join(target_img.replace(" ", "_").split(".")[:-1])
     else:
         input_name = "your_encoding"
 
@@ -227,20 +227,15 @@ class Imagine(nn.Module):
             self,
             client_uuid: str,
             client_data: Dict[str, Union[str, Queue]],
-            img: Optional[str] = None,
+            target_img: Optional[str] = None,
+            start_image_path: Optional[str] = None,
             lr: float = 0.0001,
-            batch_size: int = 12,
-            gradient_accumulate_every: int = 4,
-            num_layers: int = 16,
-            hidden_size: int = 256,
-            model_name: str = "ViT-B/32",
             optimizer: str = "AdamP",
             center_bias: bool = True,
             center_focus: int = 2,
             jit: bool = True,
             epochs: int = 1,
-            start_image_path: Optional[str] = None,
-            start_image_train_iters: int = 10,
+            start_image_train_iters: int = 20,
             start_image_lr: float = 3e-4,
             theta_initial: Optional[float] = None,
             theta_hidden: Optional[float] = None,
@@ -270,13 +265,24 @@ class Imagine(nn.Module):
 
         self.writer: imageio.core.Format.Writer = get_writer(save_mp4_path, fps=10)
 
-        text: str = self.client_data[JSON_TEXT]
-
         # For debug
         self.client_data[JSON_SEED] = 42
-        seed: int = self.client_data[JSON_SEED]
+        self.client_data[JSON_SIZE] = 256
+        self.client_data[JSON_BATCH_SIZE] = 12
+        self.client_data[JSON_GAE] = 4
+        self.client_data[JSON_NUM_LAYER] = 16
+        self.client_data[JSON_HIDDEN_SIZE] = 256
+        self.client_data[JSON_BACK_BONE] = "ViT-B/32"
+
+        text: str = self.client_data[JSON_TEXT]
+        seed: Optional[int] = self.client_data[JSON_SEED]
         image_width: int = int(self.client_data[JSON_SIZE])
-        iterations: int = self.client_data[JSON_TOTAL_ITER]
+        iterations: int = int(self.client_data[JSON_TOTAL_ITER])
+        batch_size: int = int(self.client_data[JSON_BATCH_SIZE])
+        gradient_accumulate_every: int = int(self.client_data[JSON_GAE])
+        num_layers: int = int(self.client_data[JSON_NUM_LAYER])
+        hidden_size: int = int(self.client_data[JSON_HIDDEN_SIZE])
+        model_name: str = str(self.client_data[JSON_BACK_BONE])
 
         self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
         self.i2c_queue: Queue = self.client_data[CORE_I2C_QUEUE]
@@ -365,7 +371,7 @@ class Imagine(nn.Module):
         self.image_width: int = image_width
         total_batches: int = self.epochs * self.iterations * batch_size * gradient_accumulate_every
 
-        model: nn.Module = DeepDaze(
+        model: DeepDaze = DeepDaze(
             self.perceptor,
             norm,
             input_res,
@@ -388,7 +394,7 @@ class Imagine(nn.Module):
             averaging_weight=averaging_weight,
         ).to(self.device)
 
-        self.model: nn.Module = model
+        self.model: DeepDaze = model
         self.scaler: GradScaler = GradScaler()
         siren_params: Iterator[Parameter] = model.model.parameters()
 
@@ -401,12 +407,12 @@ class Imagine(nn.Module):
 
         self.gradient_accumulate_every: int = gradient_accumulate_every
         self.text: Optional[str] = text
-        self.image: Optional[str] = img
-        self.textpath: str = create_text_path(self.perceptor.context_length, text=text, img=img, separator=story_separator)
+        self.image: Optional[str] = target_img
+        self.textpath: str = create_text_path(self.perceptor.context_length, text=text, target_img=target_img, separator=story_separator)
         self.response_filename: Optional[Path] = None
         
         # create coding to optimize for
-        self.clip_encoding: torch.Tensor = self.create_clip_encoding(text=text, img=img, encoding=clip_encoding)
+        self.clip_encoding: torch.Tensor = self.create_clip_encoding(text=text, target_img=target_img, encoding=clip_encoding)
 
         self.start_image: Optional[torch.Tensor] = None
         self.start_image_train_iters: int = start_image_train_iters
@@ -426,20 +432,20 @@ class Imagine(nn.Module):
             image_tensor: torch.Tensor = start_img_transform(image).unsqueeze(0).to(self.device)
             self.start_image: torch.Tensor = image_tensor
             
-    def create_clip_encoding(self, text: Optional[str] = None, img: Optional[str] = None, encoding: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def create_clip_encoding(self, text: Optional[str] = None, target_img: Optional[str] = None, encoding: Optional[torch.Tensor] = None) -> torch.Tensor:
         self.text: Optional[str] = text
-        self.img: Optional[str] = img
+        self.target_img: Optional[str] = target_img
 
         if encoding is not None:
             encoding = encoding.to(self.device)
         elif self.create_story:
             encoding = self.update_story_encoding()
-        elif text is not None and img is not None:
-            encoding = (self.create_text_encoding(text) + self.create_img_encoding(img)) / 2
+        elif text is not None and target_img is not None:
+            encoding = (self.create_text_encoding(text) + self.create_img_encoding(target_img)) / 2
         elif text is not None:
             encoding = self.create_text_encoding(text)
-        elif img is not None:
-            encoding = self.create_img_encoding(img)
+        elif target_img is not None:
+            encoding = self.create_img_encoding(target_img)
 
         return encoding
 
@@ -451,17 +457,17 @@ class Imagine(nn.Module):
 
         return text_encoding
     
-    def create_img_encoding(self, img: str) -> torch.Tensor:
-        img: Image = Image.open(img)
-        normed_img: torch.Tensor = self.clip_transform(img).unsqueeze(0).to(self.device)
+    def create_img_encoding(self, target_img: str) -> torch.Tensor:
+        target_img: Image = Image.open(target_img)
+        normed_img: torch.Tensor = self.clip_transform(target_img).unsqueeze(0).to(self.device)
 
         with torch.no_grad():
             img_encoding: torch.Tensor = self.perceptor.encode_image(normed_img).detach()
 
         return img_encoding
     
-    def set_clip_encoding(self, text: Optional[str] = None, img: Optional[str] = None, encoding: Optional[torch.Tensor] = None) -> torch.Tensor:
-        encoding: torch.Tensor = self.create_clip_encoding(text=text, img=img, encoding=encoding)
+    def set_clip_encoding(self, text: Optional[str] = None, target_img: Optional[str] = None, encoding: Optional[torch.Tensor] = None) -> torch.Tensor:
+        encoding: torch.Tensor = self.create_clip_encoding(text=text, target_img=target_img, encoding=encoding)
         self.clip_encoding: torch.Tensor = encoding.to(self.device)
     
     def index_of_first_separator(self) -> int:
@@ -500,36 +506,29 @@ class Imagine(nn.Module):
         return encoding
 
     def get_output_img_path(self, sequence_number: Optional[int]) -> Tuple[Path, Path]:
-        """
-        Returns underscore separated Path.
-        :rtype: Path
-        """
         output_path: str = self.textpath
         save_output_path: str = os.path.join(self.save_img_path, f"{output_path}.{sequence_number:06d}")
         response_output_path: str = os.path.join(self.response_img_path, f"{output_path}.{sequence_number:06d}")
 
         return (Path(f"{save_output_path}.png"), Path(f"{response_output_path}.png"))
 
-    def train_step(self, epoch, iteration):
-        total_loss: float = 0.
-
+    def train_step(self, epoch: int, iteration: int) -> None:
         for _ in range(self.gradient_accumulate_every):
             with autocast(enabled=True):
                 out: torch.Tensor
                 loss: torch.Tensor
                 out, loss = self.model(self.clip_encoding)
             loss = loss / self.gradient_accumulate_every
-            total_loss += loss
             self.scaler.scale(loss).backward()
+
+            del loss
    
         out = out.cpu().float().clamp(0., 1.)
         self.scaler.step(self.optimizer)
         self.scaler.update()
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
 
         self.save_image(epoch, iteration, img=out)
-
-        return out, total_loss
     
     def get_img_sequence_number(self, epoch: int, iteration: int) -> int:
         sequence_number: int = epoch * self.iterations + iteration
@@ -586,7 +585,7 @@ class Imagine(nn.Module):
 
                     sequence_number: int = self.get_img_sequence_number(epoch, iteration)
 
-                    _, loss = self.train_step(epoch, iteration)
+                    self.train_step(epoch, iteration)
 
                     self.put_data[JSON_CURRENT_ITER] = int(sequence_number)
                     self.put_data[JSON_IMG_PATH] = str(self.response_filename)
