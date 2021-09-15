@@ -401,7 +401,13 @@ class AIconInterface(Resource):
                             _client_data[client_uuid][CORE_I2C_QUEUE].put_nowait(put_data)
                         except Full:
                             pass
+
                         res[JSON_COMPLETE] = True
+
+                        if self._remove_client_data(client_uuid):
+                            logger.info(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. Removed the client data.")
+                        else:
+                            logger.warn(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. But failed to remove the client data.")
 
                     res[JSON_CURRENT_ITER] = _valid_response[JSON_CURRENT_ITER]
                     res[JSON_IMG_PATH] = _valid_response[JSON_IMG_PATH]
