@@ -299,17 +299,18 @@ class Imagine(nn.Module):
         self.writer: imageio.core.Format.Writer = get_writer(save_mp4_path, fps=10)
 
         # For debug
-        self.client_data[JSON_CARROT] = "zoom"
+        self.client_data[JSON_CARROT] = "yellow"
         self.client_data[JSON_STICK] = "dark"
         self.client_data[JSON_SEED] = 42
-        self.client_data[JSON_SIZE] = 256
-        self.client_data[JSON_TOTAL_ITER] = 300
         self.client_data[JSON_GAE] = 1
+        self.client_data[JSON_SIZE] = 256
+        self.client_data[JSON_TOTAL_ITER] = 550
         self.client_data[JSON_BACK_BONE] = "ViT-B/32"
+
 
         text: str = f"{self.client_data[JSON_TEXT]}|{self.client_data[JSON_CARROT]}"
         stick: str = self.client_data[JSON_STICK]
-        seed: int = int(self.client_data[JSON_SEED])
+        seed: Optional[int] = self.client_data[JSON_SEED]
         image_width: int = int(self.client_data[JSON_SIZE])
         iterations: int = int(self.client_data[JSON_TOTAL_ITER])
         gradient_accumulate_every: int = int(self.client_data[JSON_GAE])
