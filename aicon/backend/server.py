@@ -268,6 +268,10 @@ class AIconInterface(Resource):
             try:
                 logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translating input text")
                 translated_text: str = self.translator.translate(received_data[JSON_TEXT])
+                if received_data[JSON_CARROT] != "":
+                    received_data[JSON_CARROT] = self.translator.translate(received_data[JSON_CARROT])
+                if received_data[JSON_STICK] != "":
+                    received_data[JSON_STICK] = self.translator.translate(received_data[JSON_STICK])
                 logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated text `{received_data[JSON_TEXT]}` to `{translated_text}`")
 
                 c2i_queue: Queue = Queue()
