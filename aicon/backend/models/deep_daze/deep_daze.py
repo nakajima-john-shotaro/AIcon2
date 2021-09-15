@@ -265,15 +265,6 @@ class Imagine(nn.Module):
 
         self.writer: imageio.core.Format.Writer = get_writer(save_mp4_path, fps=10)
 
-        # For debug
-        self.client_data[JSON_SEED] = 42
-        self.client_data[JSON_SIZE] = 256
-        self.client_data[JSON_BATCH_SIZE] = 12
-        self.client_data[JSON_GAE] = 4
-        self.client_data[JSON_NUM_LAYER] = 16
-        self.client_data[JSON_HIDDEN_SIZE] = 256
-        self.client_data[JSON_BACK_BONE] = "ViT-B/32"
-
         text: str = self.client_data[JSON_TEXT]
         seed: Optional[int] = self.client_data[JSON_SEED]
         image_width: int = int(self.client_data[JSON_SIZE])
