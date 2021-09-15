@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
 
     <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stickyfill/2.1.0/stickyfill.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/push.js/0.0.11/push.min.js"></script>
   </head>
@@ -19,7 +18,7 @@
       <nav>
         <div class="nav-wrapper  light-blue darken-1">
           <h href="#!" class="brand-logo center" id="nico_font">
-            AIcon
+            AIcon<sup id="sup">2</sup>
           </h>
           <a href="#" data-target="mobile-demo" class="sidenav-trigger">
             <i class="material-icons">
@@ -105,19 +104,19 @@
             </div>
             <div class="row center">
               <div class="col s4">
-                <div id="set_param_low" class="set_param_button">
+                <div id="low" class="set_param_button">
                   <p class="not_select_text center">Low</p>
-                </div><!-- set_param_low -->
+                </div><!-- low -->
               </div>
               <div class="col s4">
-                <div id="set_param_middle" class="set_param_button">
+                <div id="middle" class="set_param_button">
                   <p class="not_select_text center">Middle</p>
-                </div><!-- set_param_middle -->
+                </div><!-- middle -->
               </div>
               <div class="col s4">
-                <div id="set_param_high" class="set_param_button">
+                <div id="high" class="set_param_button">
                   <p class="not_select_text center">High</p>
-                </div><!-- set_param_high -->
+                </div><!-- high -->
               </div>
             </div>
             
@@ -127,35 +126,292 @@
                 <li>
                   <div class="collapsible-header">
                     <i class="material-icons">settings</i>
-                    Detailed Settings
-                  </div>
+                    Advanced Settings
+                  </div><!-- collapsible-header -->
                   <div class="collapsible-body">
-                    <div class="row">
-                      <br>
-                      <h7>仕上がりを調整。</h7>
-                      <br>
-                    </div>
-                    <div class="row center" id="srider">
+                    <div class="advanced_params" id="iter">
                       <div class="row">
-                        <div class="col s2">
-                          <b>Speedy</b>
-                        </div>
-                        <div class="col s8">
-                          <form sction="#">
-                              <p class="range-field ">
-                                <input type="range" min="30" max="1000" value="515" style="width: 100%" id="slider">
-                              </p>
-                          </form>
-                        </div>
-                        <div class="col s2">
-                          <b>High Quality</b>
+                        <br>
+                        <h7>イテレーション数の設定。</h7>
+                        <br>
+                      </div>
+                      <div class="row center">
+                        <div class="row">
+                          <div class="col s2">
+                          </div>
+                          <div class="col s8">
+                            <form sction="#">
+                                <p class="range-field ">
+                                  <input type="range" min="100" max="1000" value="515" style="width: 100%" id="iter_slider">
+                                </p>
+                            </form>
+                          </div>
+                          <div class="col s2"></div>
                         </div>
                       </div>
                     </div>
-                  </div>
+
+                    <div class="advanced_params" id="num_layer">
+                      <div class="row">
+                        <br>
+                        <h7>レイヤー数の設定。</h7>
+                        <br>
+                      </div>
+                      <div class="row center">
+                        <div class="row">
+                          <div class="col s2">
+                          </div>
+                          <div class="col s8">
+                            <form sction="#">
+                                <p class="range-field ">
+                                  <input type="range" min="1" max="128" value="64" style="width: 100%" id="num_layer_slider">
+                                </p>
+                            </form>
+                          </div>
+                          <div class="col s2"></div>
+                          </div>
+                      </div>
+                    </div>
+
+                    <div class="advanced_params" id="hidden_size">
+                      <div class="row">
+                        <br>
+                        <h7>隠し層の数の設定。</h7>
+                        <br>
+                      </div>
+                      <div class="row center">
+                        <div class="row">
+                          <div class="col s2">
+                          </div>
+                          <div class="col s8">
+                            <form sction="#">
+                              <p class="range-field ">
+                                <input type="range" min="1" max="1024" value="256" style="width: 100%" id="hidden_size_slider">
+                              </p>
+                            </form>
+                          </div>
+                          <div class="col s2"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="advanced_params" id="batch_size">
+                      <div class="row">
+                        <br>
+                        <h7>バッチサイズの設定。</h7>
+                        <br>
+                      </div>
+                      <div class="row center">
+                        <div class="row">
+                          <div class="col s2">
+                          </div>
+                          <div class="col s8">
+                            <form sction="#">
+                              <p class="range-field ">
+                                <input type="range" min="1" max="128" value="515" style="width: 100%" id="batch_size_slider">
+                              </p>
+                            </form>
+                          </div>
+                          <div class="col s2"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="advanced_params" id="gae">
+                      <div class="row">
+                        <br>
+                        <h7>１ステップ毎の勾配更新回数の設定。</h7>
+                        <br>
+                      </div>
+                      <div class="row center">
+                        <div class="row">
+                          <div class="col s2">
+                          </div>
+                          <div class="col s8">
+                            <form sction="#">
+                              <p class="range-field ">
+                                <input type="range" min="1" max="5" value="3" style="width: 100%" id="gae_slider">
+                              </p>
+                            </form>
+                          </div>
+                          <div class="col s2"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="advanced_params" id="backbone">
+                      <div class="row">
+                        <br>
+                        <h7>バックボーンの選択。</h7>
+                        <br>
+                      </div>
+                      <div class="row center">
+                        <div class="col s3">
+                          <div id="RN50" class="backbone_button">
+                            <p class="not_select_text center">ResNet50</p>
+                          </div><!-- ResNet50 -->
+                        </div>
+                        <div class="col s3">
+                          <div id="RN50x4" class="backbone_button">
+                            <p class="not_select_text center">ResNet50x4</p>
+                          </div><!-- ResNet50x4 -->
+                        </div>
+                        <div class="col s3">
+                          <div id="RN101" class="backbone_button">
+                            <p class="not_select_text center">ResNet101</p>
+                          </div><!-- ResNet101 -->
+                        </div>
+                        <div class="col s3">
+                          <div id="ViT-B32" class="backbone_button">
+                            <p class="not_select_text center">ViT-B32</p>
+                          </div><!-- ViT -->
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="advanced_params" id="seed">
+                      <div class="row">
+                        <br>
+                        <h7>seedの選択。</h7>
+                        <br>
+                      </div>
+                      <div class="row center">
+                        <form action="#">
+                          <div class="col s1"></div>
+                          <div class="col s4 seed_box">
+                            <p>
+                              <label>
+                                <input name="seed" type="radio" id="seed_button_random" checked />
+                                <span>Random</span>
+                              </label>
+                            </p>
+                          </div>
+                          <div class="col s4 seed_box" id="seed_box_fix">
+                            <p>
+                              <label>
+                                <input name="seed" type="radio" id="seed_button_specify" />
+                                <span>Specify</span>
+                              </label>
+                            </p>
+                          </div>
+                          <div class="input-field  left s2">
+                            <input id="seed_value" type="number" class="validate"  disabled/>
+                            <label for="seed_value">seed value</label>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+
+                    <div class="advanced_params" id="carrot">
+                      <div class="row">
+                        <br>
+                        <h7>要求する内容。(optional)</h7>
+                        <br>
+                      </div>
+                      <div class="row">
+                        <div class="col s3"></div>
+                        <form class="col s6">
+                          <div class="row">
+                            <div class="input-field col s12">
+                              <i class="material-icons prefix">sentiment_very_satisfied</i>
+                              <input id="carrot_textarea" class="materialize-textarea cancelEnter" type="search"></input>
+                              <label for="carrot_textarea">(e.g.: zoom, red)</label>
+                            </div>
+                          </div>
+                        </form>
+                        <div class="col s3"></div>
+                      </div>
+                    </div>
+
+                    <div class="advanced_params" id="stick">
+                      <div class="row">
+                        <br>
+                        <h7>除外したい内容。(optional)</h7>
+                        <br>
+                      </div>
+                      <div class="row">
+                        <div class="col s3"></div>
+                        <form class="col s6">
+                          <div class="row">
+                            <div class="input-field col s12">
+                              <i class="material-icons prefix">sentiment_very_dissatisfied</i>
+                              <input id="stick_textarea" class="materialize-textarea cancelEnter" type="search"></input>
+                              <label for="stick_textarea">(e.g.: blur, white)</label>
+                            </div>
+                          </div>
+                        </form>
+                        <div class="col s3"></div>
+                      </div>
+                    </div>
+
+                    <div class="advanced_params" id="source_img">
+                      <div class="row">
+                        <br>
+                        <h7>基にする画像。(optional)</h7>
+                        <br>
+                      </div>
+                      <div class="row">
+                        <a class="modal-trigger" href="#image_description">基にする画像とは？</a>
+                        <div id="image_description" class="modal">
+                          <div class="modal-content">
+                            <h4>基にする画像とは</h4>
+                            <div class="conteiner">
+                              <p>アップロードされた画像を基にして画像を作ります。</p>
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="row">
+                        <div class="col s3"></div>
+                        <div class="col s6 user-icon-dnd-wrapper">
+                          <input type="file" name="icon" id="input_file" accept="image/*">
+                          <div id="preview_field"></div>
+                          <div id="drop_area">
+                            <div id="image_upload_text">
+                              Drop Image Here<br>or<br>Click Here.
+                            </div>
+                          </div>
+                          <i class="material-icons prefix" id="img_delete_button">delete</i>
+                        </div>
+                        <div class="col s3"></div>
+                      </div>
+                    </div>
+
+                  </div><!-- collapsible-body -->
                 </li>
               </ul>
             </div>
+
+            <div class="border_sample"></div>
+            
+            
+            <div class="row">
+              <br>
+              <h7>画像サイズの選択。</h7>
+              <br>
+            </div>
+            <div class="row center">
+              <div class="col s4">
+                <div id="size_128" class="set_size_button">
+                  <p class="not_select_text center">128 × 128</p>
+                </div><!-- size_128 -->
+              </div>
+              <div class="col s4">
+                <div id="size_256" class="set_size_button">
+                  <p class="not_select_text center">256 × 256</p>
+                </div><!-- size_256 -->
+              </div>
+              <div class="col s4">
+                <div id="size_512" class="set_size_button">
+                  <p class="not_select_text center">512 × 512</p>
+                </div><!-- size_512 -->
+              </div>
+            </div>
+
 
             <div class="border_sample"><br></div>
             
@@ -176,41 +432,6 @@
                 </div>
               </form>
             <div class="col s3"></div>
-            </div>
-
-            <div class="border_sample"></div>
-            <div class="row">
-              <br>
-              <h7>基にする画像。</h7>
-              <br>
-            </div>
-            <div class="row">
-              <a class="modal-trigger" href="#image_description">基にする画像とは？</a>
-              <div id="image_description" class="modal">
-                <div class="modal-content">
-                  <h4>基にする画像とは</h4>
-                  <div class="conteiner">
-                    <p>アップロードされた画像を基にして画像を作ります。</p>
-                  </div>
-                </div>
-                <div class="modal-footer">
-                  <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col s3"></div>
-              <div class="col s6 user-icon-dnd-wrapper">
-                <input type="file" name="icon" id="input_file" accept="image/*">
-                <div id="preview_field"></div>
-                <div id="drop_area">
-                  <div id="image_upload_text">
-                    Drop Image Here<br>or<br>Click Here.
-                  </div>
-                </div>
-                <i class="material-icons prefix" id="img_delete_button" >delete</i>
-              </div>
-              <div class="col s3"></div>
             </div>
             
             <br><br>
@@ -242,7 +463,7 @@
 
             <div class="row">
               <div class="col s2"></div>
-              <div class="col s4">
+              <div class="col s4 button_interval">
                 <a class="waves-effect waves-light btn-large disabled" id="start_quit_button" onclick="start()">
                   <i class="material-icons left" id="start_quit_icon">play_arrow</i>
                   <h id="start_quit_text">Play</h>
@@ -265,21 +486,22 @@
     </div> <!-- wrapper -->
 
     <!-- 通信を開始した際に以下のコンテナを出現させる -->
-    <div class="container" id="img_make_container" hidden>
-      <img id="result_img" src="../static/img/Fire_in_the_sky.000092.png">
-      <!-- <div class="row" style="text-align: center;">
-      </div> -->
-
-      <!-- <div id="img_field">
-        ブロック
-      </div> -->
-      <!-- <div class="row center" id="output_img_field">
-        <div id="display_img">
-          <img id="result_img" src="https://lorempixel.com/250/250/cats/0">
+    <div class="container">
+      <div class="row" id="img_make_container">
+        <img id="result_img" src="../static/img/Fire_in_the_sky.000092.png">
+        <div class="waves-effect waves-light btn-large center-align">
+          <i class="material-icons left">cancel</i>
         </div>
-      </div> -->
+      </div>
     </div>
-  </div> <!-- overall -->
+    <!-- <div class="row"> -->
+      <footer class="page-footer blue darken-2">
+          <div class="container">
+            © 2014 Copyright Text
+            <a class="grey-text text-lighten-4 right" href="#!">More Links</a>
+          </div>
+      </footer>
+    <!-- </div> -->
 
   <script>
     $(document).ready(function(){
@@ -316,11 +538,9 @@
       $('.collapsible').collapsible();
     });
   </script>
-
-    <!-- <script type=text/javascript src="{{ url_for('static', filename='../static/js/functions.js') }}"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script type=text/javascript src="{{ url_for('static', filename='../static/js/constant.js') }}"></script>
     <script type=text/javascript src="{{ url_for('static', filename='../static/js/functions.js') }}"></script>
-    <!-- <script type="text/javascript" src="function.js"></script> -->
-
   </body>
 
   <script type="module">

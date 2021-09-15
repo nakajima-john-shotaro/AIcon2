@@ -7,6 +7,12 @@
 #nico_font {
 	font-family: NicoKaku;
 }
+
+#sup {
+	font-size: large;
+}
+
+
 /* 設定関連 */
 .carousel .carousel-item{
 	width:100%;
@@ -76,11 +82,49 @@ border-bottom:1px solid #ccc;
 	border: solid 1px;
 }
 
+/* -----画像サイズ設定選択ボタン関係----- */
+.set_size_button {
+	padding: 5px;
+	border: solid 1px #ccc;
+	width: 95%;
+	border-radius: 10px;
+	cursor: pointer;
+	cursor: hand;
+	margin: 0 auto;
+}
+
+.set_size_button:hover{
+	border: solid 1px;
+}
+
+/* -----パラメータ設定選択ボタン関係----- */
+.backbone_button {
+	padding: 5px;
+	border: solid 1px #ccc;
+	width: 95%;
+	border-radius: 10px;
+	cursor: pointer;
+	cursor: hand;
+	margin: 0 auto;
+
+}
+
+.backbone_button:hover{
+	border: solid 1px;
+}
+
 /* -----ボタンの背景色を付与----- */
 .add_Color {
 	box-shadow: 0 1px 10px rgba(52, 162, 212, 0.993), 0 0 50px rgba(128, 128, 128, 0.1) ;
 }
 
+/* seedのボタンとテキストの関係 */
+.seed_box {
+	transform: translateY(30%);
+}
+#seed_box_fix {
+	border-left: 2px dashed rgb(212, 212, 212);
+}
 
 /* -----写真のドラッグ＆ドロップ関係 -----*/
 .user-icon-dnd-wrapper {
@@ -105,7 +149,7 @@ border-bottom:1px solid #ccc;
 	width: 100%;
 	height: 0;
 	padding-bottom: 100%;
-	border: 5px dashed #ccc;
+	border: 3px dashed #888;
 	cursor: pointer;
 }
 
@@ -113,6 +157,7 @@ border-bottom:1px solid #ccc;
 	font-weight: bold;
 	font-size: large;
 	text-align: center;
+	color: #888;
 	transform: translate(0%, 100%);
 }
 
@@ -137,6 +182,14 @@ border-bottom:1px solid #ccc;
 	opacity: 1;
 }
 
+/* 開始ボタン、リロードボタン関係 */
+#reload, #start_quit_button {
+	min-width: 153;
+}
+
+.button_interval {
+	min-width: 180;
+}
 
 /* 出力画像関係 */
 /* -----出力画像を可変に----- */
@@ -148,14 +201,6 @@ border-bottom:1px solid #ccc;
 	text-align: center;
 }
 
-#img_field {
-	background: bisque;
-	display: block;
-	margin: auto;
-	width: 70%;
-	height: 50%;
-}
-
 #result_img {
 	position: static;
 	/* top: 10%; */
@@ -163,8 +208,14 @@ border-bottom:1px solid #ccc;
 	width: 60%;
 	height: auto;
 	margin: auto;
+	max-width: 600;
 }
 
+
+/* フッターの設定 */
+.page-footer{
+	width: 100vw;
+}
 
 /* 全体構成関係 */
 /*左と右を囲う全体のエリア*/
@@ -198,7 +249,8 @@ border-bottom:1px solid #ccc;
 	#fixed-area{
 		position:relative!important;/*position stickyを解除*/
 		width:100%;/*横幅を100%にして1列に見せる*/
-		height: 30vh;/*縦幅を100vh⇒40vh ※任意の高さに設定可能*/
+		height: 40vh;/*縦幅を100vh⇒40vh ※任意の高さに設定可能*/
+		min-height: 350;
 	}
 	#scroll_container{
 		width:100%;/*横幅を100%にして1列に見せる*/
