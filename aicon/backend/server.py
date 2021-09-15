@@ -23,6 +23,7 @@ from werkzeug.exceptions import (BadRequest, Forbidden, HTTPException,
 
 from constant import *
 from models.deep_daze import deep_daze
+from models.big_sleep import big_sleep
 from translation import Translation, install_webdriver
 
 app: Flask = Flask(
@@ -74,7 +75,7 @@ class GarbageCollector:
                         now: float = time.time()
 
                         if now - mtime > GC_TIMEOUT:
-                            logger.warn(
+                            logger.info(
                                 f"[{dir.stem}]: <<Garbage Collector>> Removed outdated directory {dir}"
                             )
                             shutil.rmtree(dir)
@@ -94,6 +95,7 @@ class ConnectionHealthChecker:
         interval: float,
     ) -> None:
         empty_counter: int = 0
+    
         while True:
             try:
                 _client_data: Dict[str, Dict[str, Union[str, Queue]]] = _client_data_queue_chc.get_nowait()
@@ -132,7 +134,10 @@ class ConnectionHealthChecker:
                             put_data: Dict[str, bool] = {
                                 JSON_ABORT: True,
                             }
-                            client_data[CORE_I2C_QUEUE].put_nowait(put_data)
+                            try:
+                                client_data[CORE_I2C_QUEUE].put(put_data, block=True, timeout=1.)
+                            except Full:
+                                pass
                             result = _client_data.pop(client_uuid, None)
                             _lock.release()
 
@@ -190,7 +195,10 @@ class AIconCore:
         logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Start image generation with {self.model_name}")
 
         if self.model_name == MODEL_NAME_BIG_SLEEP:
-            raise NotImplementedError
+            try:
+                big_sleep.Imagine(self.client_uuid, client_data)()
+            except (AIconOutOfMemoryError, AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
+                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> {e}")
 
         elif self.model_name == MODEL_NAME_DEEP_DAZE:
             try:
@@ -260,6 +268,10 @@ class AIconInterface(Resource):
             try:
                 logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translating input text")
                 translated_text: str = self.translator.translate(received_data[JSON_TEXT])
+                if received_data[JSON_CARROT] != "":
+                    received_data[JSON_CARROT] = self.translator.translate(received_data[JSON_CARROT])
+                if received_data[JSON_STICK] != "":
+                    received_data[JSON_STICK] = self.translator.translate(received_data[JSON_STICK])
                 logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated text `{received_data[JSON_TEXT]}` to `{translated_text}`")
 
                 c2i_queue: Queue = Queue()
@@ -389,8 +401,17 @@ class AIconInterface(Resource):
                         put_data: Dict[str, bool] = {
                             JSON_ABORT: True,
                         }
-                        _client_data[client_uuid][CORE_I2C_QUEUE].put_nowait(put_data)
+                        try:
+                            _client_data[client_uuid][CORE_I2C_QUEUE].put_nowait(put_data)
+                        except Full:
+                            pass
+
                         res[JSON_COMPLETE] = True
+
+                        if self._remove_client_data(client_uuid):
+                            logger.info(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. Removed the client data.")
+                        else:
+                            logger.warn(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. But failed to remove the client data.")
 
                     res[JSON_CURRENT_ITER] = _valid_response[JSON_CURRENT_ITER]
                     res[JSON_IMG_PATH] = _valid_response[JSON_IMG_PATH]

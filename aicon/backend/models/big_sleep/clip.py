@@ -17,7 +17,6 @@ from torchvision.transforms import Compose, Normalize
 
 logger: Logger = get_logger()
 
-
 _MODELS = {
     "RN50": "https://openaipublic.azureedge.net/clip/models/afeb0e10f9e5a86da6080e35cf09123aca3b358a0c3e3b6c78a7b63bc04b6762/RN50.pt",
     "RN101": "https://openaipublic.azureedge.net/clip/models/8fa8567bab74a42d41c5915025a8e4538c3bdbe8804a470a72f30b0d94fab599/RN101.pt",
@@ -101,7 +100,7 @@ def load(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_a
 
     try:
         # loading JIT archive
-        model: nn.Module = torch.jit.load(model_path, map_location=device if jit else "cpu").eval()
+        model = torch.jit.load(model_path, map_location=device if jit else "cpu").eval()
         state_dict = None
     except RuntimeError:
         # loading saved state dict
@@ -616,7 +615,9 @@ def build_model(state_dict: dict):
     model.load_state_dict(state_dict)
     return model.eval()
 
+import gzip
 import html
+import os
 from functools import lru_cache
 
 import ftfy
@@ -746,5 +747,6 @@ class SimpleTokenizer(object):
         text = ''.join([self.decoder[token] for token in tokens])
         text = bytearray([self.byte_decoder[c] for c in text]).decode('utf-8', errors="replace").replace('</w>', ' ')
         return text
+        import gzip
 
 _tokenizer = SimpleTokenizer()
