@@ -287,7 +287,7 @@ class AIconInterface(Resource):
                     JSON_TOTAL_ITER: received_data[JSON_TOTAL_ITER],
                     JSON_SEED: received_data[JSON_SEED],
                     JSON_SIZE: received_data[JSON_SIZE],
-                    JSON_BACK_BONE: received_data[JSON_BACK_BONE],
+                    JSON_BACKBONE: received_data[JSON_BACKBONE],
                     JSON_GAE: received_data[JSON_GAE],
                     JSON_BATCH_SIZE: received_data[JSON_BATCH_SIZE],
                     JSON_HIDDEN_SIZE: received_data[JSON_HIDDEN_SIZE],
