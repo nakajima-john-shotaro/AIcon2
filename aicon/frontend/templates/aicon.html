@@ -208,7 +208,7 @@
                           <div class="col s8">
                             <form sction="#">
                               <p class="range-field ">
-                                <input type="range" min="1" max="128" value="515" style="width: 100%" id="batch_size_slider">
+                                <input type="range" min="1" max="128" value="32" style="width: 100%" id="batch_size_slider">
                               </p>
                             </form>
                           </div>
@@ -230,7 +230,7 @@
                           <div class="col s8">
                             <form sction="#">
                               <p class="range-field ">
-                                <input type="range" min="1" max="5" value="3" style="width: 100%" id="gae_slider">
+                                <input type="range" min="1" max="12" value="6" style="width: 100%" id="gae_slider">
                               </p>
                             </form>
                           </div>
@@ -464,9 +464,9 @@
             <div class="row">
               <div class="col s2"></div>
               <div class="col s4 button_interval">
-                <a class="waves-effect waves-light btn-large disabled" id="start_quit_button" onclick="start()">
-                  <i class="material-icons left" id="start_quit_icon">play_arrow</i>
-                  <h id="start_quit_text">Play</h>
+                <a class="waves-effect waves-light btn-large disabled" id="start_button" onclick="start()">
+                  <i class="material-icons left">play_arrow</i>
+                  Play
                 </a>
               </div>
               <div class="col s4">  
@@ -486,11 +486,14 @@
     </div> <!-- wrapper -->
 
     <!-- 通信を開始した際に以下のコンテナを出現させる -->
-    <div class="container">
-      <div class="row" id="img_make_container">
-        <img id="result_img" src="../static/img/Fire_in_the_sky.000092.png">
-        <div class="waves-effect waves-light btn-large center-align">
-          <i class="material-icons left">cancel</i>
+    <div class="container" id="img_make_container" hidden>
+      <div class="row">
+        <img id="result_img" src="../static/demo_img/Alice_in_wonderland.png" alt="Can't load image.">
+        <div class="row">
+          <a class="waves-effect waves-light btn-large red accent-2" id="quit_button" onclick="abort_signal()">
+            <i class="material-icons left">cancel</i>
+            Stop
+          </a>
         </div>
       </div>
     </div>

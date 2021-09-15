@@ -87,7 +87,7 @@ function change_advanced_param(model_button_id , param_button_id) {
         $('#iter_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["iter"]);
         $('#num_layer_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["num_layer"]);
         $('#hidden_size_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["hidden_size"]);
-        $('#batchsize_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["batch_size"]);
+        $('#batch_size_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["batch_size"]);
         $('#gae_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["gae"]);
         $('.backbone_button').removeClass('add_Color');
         $('#' + MODEL_PARAM[model_button_id][param_button_id]["backbone"]).addClass('add_Color');
@@ -319,10 +319,10 @@ function check() {
     let text_length_status = (text_length > 0 ? true : false);
     let start_status = text_length_status;
     if (start_status) {
-        $('#start_quit_button').removeClass('disabled');
+        $('#start_button').removeClass('disabled');
     }
     else {
-        $('#start_quit_button').addClass('disabled');
+        $('#start_button').addClass('disabled');
     }
 };
 
@@ -332,12 +332,11 @@ function stop_input() {
     for (let i = 0; i < advanced_param_list.length; i++) {
         $('#' + advanced_param_list[i] + '_slider').prop('disabled', true);
     };
+    $('#start_button').fadeOut(0);
+    $('#reload').fadeOut(0);
     $('#textarea').prop('disabled', true);
     $('#carrot_textarea').prop('disabled', true);
     $('#stick_textarea').prop('disabled', true);
-    $('#start_quit_button').addClass('red accent-2')
-    $('#start_quit_icon').text('cancel');
-    $('#start_quit_text').text('Quit');
 }
 
 // 中止ボタンを押された際に送信データを変更する
@@ -356,24 +355,28 @@ function abort_signal() {
         seed: seed_value,
         size: parseInt(img_size),
         hash: hash,
-        abort: false,
+        abort: true,
         carrot: text_check($('#carrot_textarea').val()),
         stick: text_check($('#stick_textarea').val())
     };
-    console.log('中止信号が押されました')
-    let send_json_data = JSON.stringify(send_data)
-    communicate(send_json_data)
+    $('#quit_button').fadeOut(0);
+    console.log('中止信号が押されました');
+    let send_json_data = JSON.stringify(send_data);
+    communicate(send_json_data);
 };
 
+
+// 生成開始ボタンに関しての関数
 var communicate_status = false;
 var hash = '00000000-0000-0000-0000-000000000000';
 function start() {
-    console.log("start直下")
-    stop_input()
+    stop_input();
     communicate_status = true;
 
-    $('#start_quit_button').attr("onclick", "abort_signal()")
-    $('#img_make_container').fadeIn('1000');
+    $('#img_make_container').fadeIn(0);
+    $('#result_img').attr("src", "../static/demo_img/Alice_in_wonderland.png").on("scroll", function () {
+        $('#result_img').fadeIn();
+    });
     const target = $('#img_make_container').get(0).offsetTop;
     $('body,html').animate({ scrollTop: target }, 500, 'swing');
     
@@ -400,10 +403,10 @@ function start() {
         carrot: text_check($('#carrot_textarea').val()),
         stick: text_check($('#stick_textarea').val())
     };
-    let send_json_data = JSON.stringify(send_data)
-    console.log('スタート直後の送信データ')
-    console.log(send_data)
-    communicate(send_json_data)
+    let send_json_data = JSON.stringify(send_data);
+    console.log('スタート直後の送信データ');
+    console.log(send_data);
+    communicate(send_json_data);
 };
 
 // 通信に関しての関数
@@ -425,9 +428,11 @@ function communicate(s_data) {
             console.log(s_data);
             tmp_data = JSON.parse(s_data);
 
-            $('#result_img').attr("src", r_data["img_path"]).on("load", function () {
-                $('#result_img').fadeIn();
-            });
+            if (!(r_data["img_path"] === null)) {
+                $('#result_img').attr("src", r_data["img_path"]).on("load", function () {
+                    $('#result_img').fadeIn();
+                });
+            }
             // 通信継続の確認
             if (!r_data["complete"]) {
                 wait(300).done(function () {
