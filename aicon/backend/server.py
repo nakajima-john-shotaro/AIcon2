@@ -434,8 +434,6 @@ class AIconInterface(Resource):
             logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> Invalid UUID")
             abort(403, f"Invalid UUID: {client_uuid}")
 
-        pprint(res)
-
         return jsonify(res)
 
     
