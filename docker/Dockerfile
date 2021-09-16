@@ -139,4 +139,11 @@ RUN echo "export PS1='\[\033[01;32m\]aicon@${HOSTNAME}\[\033[00m\]:\[\033[01;34m
     echo 'alias python="python3"' >> /home/user/.bashrc && \
     echo 'alias pip="pip3"' >> /home/user/.bashrc
 
+RUN mkdir ${HOME}/.cache && \
+    cd ${HOME}/.cache && \
+    curl -O https://openaipublic.azureedge.net/clip/models/afeb0e10f9e5a86da6080e35cf09123aca3b358a0c3e3b6c78a7b63bc04b6762/RN50.pt && \
+    curl -O https://openaipublic.azureedge.net/clip/models/8fa8567bab74a42d41c5915025a8e4538c3bdbe8804a470a72f30b0d94fab599/RN101.pt && \
+    curl -O https://openaipublic.azureedge.net/clip/models/7e526bd135e493cef0776de27d5f42653e6b4c8bf9e0f653bb11773263205fdd/RN50x4.pt && \
+    curl -O https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt
+
 ENV DEBIAN_FRONTEND=newt
