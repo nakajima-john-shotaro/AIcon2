@@ -6,6 +6,7 @@ from logging import (
 )
 from typing import List
 
+
 RATE_LIMIT: str = "1000 per minute"
 PORT: int = 5050
 
@@ -19,10 +20,11 @@ JSON_HASH: str = "hash"
 JSON_COMPLETE: str = "complete"
 JSON_ABORT: str = "abort"
 JSON_PRIORITY: str = "priority"
-JSON_NUM_CLIENTS: str = "num_clients"
 JSON_IMG_PATH: str = "img_path"
 JSON_MP4_PATH: str = "mp4_path"
 JSON_MODEL_STATUS: str = "model_status"
+JSON_TARGET_IMG: str = "target_img"
+JSON_SOURCE_IMG: str = "source_img"
 
 JSON_GAE: int = "gae"
 JSON_SEED: int = "seed"
@@ -47,6 +49,8 @@ BACKBONE_NAME_RN101: str = "RN101"
 BACKBONE_NAME_RN50x4: str = "RN50x4"
 BACKBONE_NAME_ViTB32: str = "ViT-B32"
 
+PRETRAINED_BACKBONE_MODEL_PATH: str = "~/.cache"
+
 ACCEPTABLE_BACKBONE: List[str] = [BACKBONE_NAME_RN50, BACKBONE_NAME_RN101, BACKBONE_NAME_RN50x4, BACKBONE_NAME_ViTB32]
 
 IF_HASH_INIT: str = "00000000-0000-0000-0000-000000000000"
@@ -57,13 +61,27 @@ IF_EMPTY_TOLERANCE: int = 100
 
 CORE_COMPATIBLE_PYTORCH_VERSION: str = "1.7.1"
 CORE_C2I_QUEUE: str = "c2i_queue"
-CORE_I2C_QUEUE: str = "i2c_queue"
+CORE_I2C_EVENT: str = "i2c_event"
 
 CHC_TIMEOUT: float = 7.0
 CHC_EMPTY_TOLERANCE: int = 5
 CHC_LAST_CONNECTION_TIME: str = "last_connection_time"
 
 GC_TIMEOUT: int = 3600
+
+TWITTER_CONSUMER_KEY: str = "CONSUMER_KEY"
+TWITTER_CONSUMER_SECRET: str = "CONSUMER_SECRET"
+TWITTER_ACCESS_TOKEN: str = "ACCESS_TOKEN"
+TWITTER_ACCESS_TOKEN_SECRET: str = "ACCESS_TOKEN_SECRET"
+TWITTER_AUTHORIZATION_URL: str = "authorization_url"
+TWITTER_OAUTH_TOKEN: str = "oauth_token" 
+TWITTER_OAUTH_VERIFIER: str = "oauth_verifier"
+TWITTER_OAUTH_TOKEN_SECRET: str = "oauth_token_secret"
+TWITTER_IMG_PATH: str = JSON_IMG_PATH
+TWITTER_MODE: str = "mode"
+
+TWITTER_MODE_ICON: str = "icon"
+TWITTER_MODE_TWEET: str = "tweet"
 
 
 class CustomFormatter(Formatter):
@@ -139,5 +157,15 @@ class AIconFileNotFoundError(AIconBaseException):
 
 
 class AIconAbortedError(AIconBaseException):
+    def __str__(self):
+        return f"{self.arg}"
+
+
+class AIconEnvVarNotFindError(AIconBaseException):
+    def __str__(self):
+        return f"{self.arg}"
+
+
+class AIconCookiyNotFindError(AIconBaseException):
     def __str__(self):
         return f"{self.arg}"

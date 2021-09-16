@@ -3,9 +3,11 @@ import sys
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import imageio
+from torch import optim
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 import random
+from multiprocessing import synchronize
 from multiprocessing import Queue
 from pathlib import Path
 from queue import Empty
@@ -276,7 +278,7 @@ class Imagine(nn.Module):
         model_name: str = str(self.client_data[RECEIVED_DATA][JSON_BACKBONE])
 
         self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
-        self.i2c_queue: Queue = self.client_data[CORE_I2C_QUEUE]
+        self.i2c_event: synchronize.Event = self.client_data[CORE_I2C_EVENT]
 
         self.put_data: Dict[str, Optional[Union[str, bool]]] = {
             JSON_HASH: self.client_uuid,
@@ -391,9 +393,9 @@ class Imagine(nn.Module):
         siren_params: Iterator[Parameter] = model.model.parameters()
 
         if optimizer == "AdamP":
-            self.optimizer: Union[AdamP, torch.optim.Adam, DiffGrad] = AdamP(siren_params, lr)
+            self.optimizer: Union[AdamP, optim.Adam, DiffGrad] = AdamP(siren_params, lr)
         elif optimizer == "Adam":
-            self.optimizer = torch.optim.Adam(siren_params, lr)
+            self.optimizer = optim.Adam(siren_params, lr)
         elif optimizer == "DiffGrad":
             self.optimizer = DiffGrad(siren_params, lr)
 
@@ -570,12 +572,8 @@ class Imagine(nn.Module):
         try:
             for epoch in range(self.epochs):
                 for iteration in range(self.iterations):
-                    try:
-                        get_data: Dict[str, bool] = self.i2c_queue.get_nowait()
-                        if get_data[JSON_ABORT]:
-                            raise AIconAbortedError("Abort signal detected")
-                    except Empty:
-                        pass
+                    if self.i2c_event.is_set():
+                        raise AIconAbortedError("Abort signal detected")
 
                     sequence_number: int = self.get_img_sequence_number(epoch, iteration)
 

@@ -24,7 +24,7 @@ _MODELS = {
     BACKBONE_NAME_ViTB32: "https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt",
 }
 
-def _download(url: str, root: str = os.path.expanduser("/workspace/backend/.cache/clip")):
+def _download(url: str, root: str = os.path.expanduser(PRETRAINED_BACKBONE_MODEL_PATH)):
     os.makedirs(root, exist_ok=True)
     filename = os.path.basename(url)
 
