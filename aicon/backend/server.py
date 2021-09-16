@@ -25,6 +25,7 @@ from constant import *
 from models.deep_daze import deep_daze
 from models.big_sleep import big_sleep
 from translation import Translation, install_webdriver
+from twitter import Authorization, Callback, Executor
 
 app: Flask = Flask(
     import_name=__name__, 
@@ -437,26 +438,25 @@ class AIconInterface(Resource):
         return jsonify(res)
 
     
-    @app.errorhandler(BadRequest)
-    @app.errorhandler(Forbidden)
-    @app.errorhandler(InternalServerError)
-    def handle_exception(e: HTTPException):
-        """Return JSON instead of HTML for HTTP errors."""
+@app.errorhandler(BadRequest)
+@app.errorhandler(Forbidden)
+@app.errorhandler(InternalServerError)
+def handle_exception(e: HTTPException):
+    """Return JSON instead of HTML for HTTP errors."""
 
-        response: Response = e.get_response()
-        response.data = json.dumps({
-            "code": e.code,
-            "name": e.name,
-            "description": e.description,
-        })
-        response.content_type = "application/json"
+    response: Response = e.get_response()
+    response.data = json.dumps({
+        "code": e.code,
+        "name": e.name,
+        "description": e.description,
+    })
+    response.content_type = "application/json"
 
-        return response
+    return response
 
-
-    @app.route("/")
-    def index():
-        return render_template("aicon.html", title="AIcon", name="AIcon")
+@app.route('/')
+def index() -> Response:
+    return render_template("aicon.html", title="AIcon", name="AIcon")
 
 
 if __name__ == "__main__":
@@ -471,8 +471,6 @@ if __name__ == "__main__":
         Path(IF_BASE_IMG_PATH)/Path(MODEL_NAME_BIG_SLEEP),
         Path(IF_BASE_IMG_PATH)/Path(MODEL_NAME_DEEP_DAZE),
         Path(IF_BASE_IMG_PATH)/Path(MODEL_NAME_DALL_E),
-    ])
-    GarbageCollector(target_dirs=[
         Path(IF_BASE_MP4_PATH)/Path(MODEL_NAME_BIG_SLEEP),
         Path(IF_BASE_MP4_PATH)/Path(MODEL_NAME_DEEP_DAZE),
         Path(IF_BASE_MP4_PATH)/Path(MODEL_NAME_DALL_E),
@@ -481,7 +479,13 @@ if __name__ == "__main__":
     ConnectionHealthChecker()
 
     AIconInterface()
+    Authorization()
+    Callback()
+    Executor()
     api.add_resource(AIconInterface, '/service')
+    api.add_resource(Authorization, '/twitter/auth')
+    api.add_resource(Callback, '/twitter/callback')
+    api.add_resource(Executor, '/twitter/send')
 
     logger.info(f"<<AIcon>> Running on http://localhost:{PORT}/")
 
