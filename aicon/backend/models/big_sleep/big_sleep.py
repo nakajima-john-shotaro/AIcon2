@@ -8,7 +8,7 @@ from torch import optim
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 import random
-from multiprocessing import Queue
+from multiprocessing import Queue, synchronize
 from pathlib import Path
 
 import imageio
@@ -307,7 +307,7 @@ class Imagine(nn.Module):
         model_name: str = self.client_data[RECEIVED_DATA][JSON_BACKBONE]
 
         self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
-        self.i2c_queue: Queue = self.client_data[CORE_I2C_QUEUE]
+        self.i2c_event: synchronize.Event = self.client_data[CORE_I2C_EVENT]
 
         self.put_data: Dict[str, Optional[Union[str, bool]]] = {
             JSON_HASH: self.client_uuid,
@@ -493,7 +493,7 @@ class Imagine(nn.Module):
         pil_img: Image = T.ToPILImage()(img.squeeze())
         pil_img.save(save_filename)
 
-        self.writer.append_data(np.uint8(np.array(pil_img) * 255.))
+        self.writer.append_data(np.uint8(np.array(pil_img)[:, :, ::-1] * 255.))
 
     def forward(self) -> None:      
         with torch.no_grad():
@@ -505,12 +505,8 @@ class Imagine(nn.Module):
         try:
             for epoch in range(self.epochs):
                 for iteration in range(self.iterations):
-                    try:
-                        get_data: Dict[str, bool] = self.i2c_queue.get_nowait()
-                        if get_data[JSON_ABORT]:
-                            raise AIconAbortedError("Abort signal detected")
-                    except Empty:
-                        pass
+                    if self.i2c_event.is_set():
+                        raise AIconAbortedError("Abort signal detected")
 
                     sequence_number: int = self.get_img_sequence_number(epoch, iteration)
     
