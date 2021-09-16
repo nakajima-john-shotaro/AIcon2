@@ -366,36 +366,61 @@ function abort_signal() {
     communicate(send_json_data);
 };
 
+// 待機の場合に表示する関数
 function wait_display() {
     const top_list = [10, 14, 19, 27, 38];
     const fontsize_list = [70, 85, 110, 150, 200];
-    const color_list = ['rgba(0, 0, 0, 1)', 'rgba(20, 20, 20, 1)', 'rgba(40, 40, 40, 1)', 'rgba(60, 60, 60, 1)', 'rgba(70, 70, 70, 1)']
-    $('#loader_wrap').css('display', 'block');
-    for (let i = 0; i < 5; i++) {
+    const color_list = ['rgba(0, 0, 0, 1)', 'rgba(20, 20, 20, 1)', 'rgba(40, 40, 40, 1)', 'rgba(60, 60, 60, 1)', 'rgba(70, 70, 70, 1)'];
+    // $('#loader_wrap').css('display', 'block');
+    $('#loader_wrap').fadeIn(0);
+    for (i = 1; i < 6; i++) {
         let css_lib = {
-            'font-size': fontsize_list[i],
-            'top': top_list[i] + '%',
+            'font-size': fontsize_list[i-1],
+            'top': top_list[i-1] + '%',
             'position': 'fixed',
             'display': 'flex',
             'width': '100vw',
             'height': '100vh',
             'align-items': 'center',
             'justify-content': 'center',
-            'color': color_list[i]
+            'color': color_list[i-1]
         }
         $('#waiting_num_display').append('<i class="material-icons" id="waiter_' + i + '">person</i>')
         $('#waiter_' + i).css(css_lib);
     };
 };
 
+// 待機の状態に自分の位置を知らせる関数
+function sort_order(priority, model_status) {
+    const color_list_ = ['rgba(0, 0, 0, 1)', 'rgba(20, 20, 20, 1)', 'rgba(40, 40, 40, 1)', 'rgba(60, 60, 60, 1)', 'rgba(70, 70, 70, 1)'];
+    if ((priority === 1) && model_status) {
+        $('#loader_wrap').fadeOut(0);
+        console.log('=========================')
+    }
+    else {
+        for (let i = 1; i < 6; i++) {
+            console.log('unti')
+            $('#waiter_' + i).addClass('color', color_list_[i-1]);
+        };
+        if (priority < 5) {
+            console.log('dagawkoeng')
+            $('#waiter_' + priority).css('color', 'rgba(221, 23, 30, 1)');
+        }
+        else {
+            console.log('aga6gy4e5s4hs3b1d5a4ha56')
+            $('#waiter_5').css('color', 'rgba(221, 23, 30, 1)');
+        }
+    }
+};
+
+
 // 生成開始ボタンに関しての関数
 var communicate_status = false;
 var hash = '00000000-0000-0000-0000-000000000000';
 function start() {
     stop_input();
-    wait_display();
     communicate_status = true;
-
+    wait_display();
     $('#img_make_container').fadeIn(0);
     $('#result_img').attr("src", "../static/demo_img/Alice_in_wonderland.png").on("scroll", function () {
         $('#result_img').fadeIn();
@@ -444,6 +469,7 @@ function communicate(s_data) {
         contentType: "application/json; charset=utf-8",
     })
         .done(function (r_data, textStatus, xhr) {
+            sort_order(r_data["priority"], r_data["model_status"]);
             console.log("Communication success");
             console.log("r_data");
             console.log(r_data);
