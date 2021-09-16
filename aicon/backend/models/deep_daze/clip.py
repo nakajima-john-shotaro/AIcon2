@@ -17,7 +17,6 @@ from torchvision.transforms import Compose, Normalize
 
 logger: Logger = get_logger()
 
-
 _MODELS = {
     BACKBONE_NAME_RN50: "https://openaipublic.azureedge.net/clip/models/afeb0e10f9e5a86da6080e35cf09123aca3b358a0c3e3b6c78a7b63bc04b6762/RN50.pt",
     BACKBONE_NAME_RN101: "https://openaipublic.azureedge.net/clip/models/8fa8567bab74a42d41c5915025a8e4538c3bdbe8804a470a72f30b0d94fab599/RN101.pt",
@@ -25,7 +24,7 @@ _MODELS = {
     BACKBONE_NAME_ViTB32: "https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt",
 }
 
-def _download(url: str, root: str = os.path.expanduser("/workspace/backend/.cache/clip")):
+def _download(url: str, root: str = os.path.expanduser(PRETRAINED_BACKBONE_MODEL_PATH)):
     os.makedirs(root, exist_ok=True)
     filename = os.path.basename(url)
 

@@ -3,7 +3,7 @@ import multiprocessing
 import os
 import shutil
 import time
-from multiprocessing import Process, Queue
+from multiprocessing import Event, Process, Queue, synchronize
 from pathlib import Path
 from pprint import pprint  # pylint: disable=unused-import
 from queue import Empty, Full
@@ -22,8 +22,8 @@ from werkzeug.exceptions import (BadRequest, Forbidden, HTTPException,
                                  InternalServerError)
 
 from constant import *
-from models.deep_daze import deep_daze
 from models.big_sleep import big_sleep
+from models.deep_daze import deep_daze
 from translation import Translation, install_webdriver
 from twitter import Authorization, Callback, Executor
 
@@ -41,9 +41,9 @@ api: Api = Api(app)
 
 logger: Logger = get_logger()
 
-_client_data: Dict[str, Dict[str, Union[str, Queue]]] = {}
-_client_data_queue_chc: Queue_ = Queue_(maxsize=1)
-_client_data_queue_pm: Queue_ = Queue_(maxsize=1)
+_client_data: Dict[str, Dict[str, Union[bool, int, float, str, Queue, synchronize.Event]]] = {}
+_chc_queue: Queue_ = Queue_(maxsize=1)
+_pm_queue: Queue_ = Queue_(maxsize=1)
 _valid_response: Dict[str, Union[str, bool, int]] = {
     JSON_CURRENT_ITER: None,
     JSON_IMG_PATH: None,
@@ -51,6 +51,26 @@ _valid_response: Dict[str, Union[str, bool, int]] = {
     JSON_MODEL_STATUS: False,
 }
 _lock: Lock = Lock()
+
+_translator: Translation = Translation("deepl")
+
+
+def _reset_valid_response() -> None:
+        _valid_response[JSON_CURRENT_ITER] = None
+        _valid_response[JSON_IMG_PATH] = None
+        _valid_response[JSON_MP4_PATH] = None
+        _valid_response[JSON_MODEL_STATUS] = False
+
+
+def _remove_client_data(client_uuid: str) -> bool:
+    global _client_data
+
+    result = _client_data.pop(client_uuid, None)
+
+    if result is None:
+        return False
+    else:
+        return True
 
 
 class GarbageCollector:
@@ -62,11 +82,7 @@ class GarbageCollector:
         p: Thread = Thread(target=self.run, args=(interval, target_dirs, ), daemon=True)
         p.start()
 
-    def run(
-        self,
-        interval: float,
-        target_dirs: List[Path],
-    ) -> None:
+    def run(self, interval: float, target_dirs: List[Path]) -> None:
         while True:
             for target_dir in target_dirs:
                 if target_dir.exists():
@@ -92,63 +108,46 @@ class ConnectionHealthChecker:
         p: Thread = Thread(target=self.run, args=(interval, ), daemon=True)
         p.start()
 
-    def run(
-        self,
-        interval: float,
-    ) -> None:
-        empty_counter: int = 0
+    def run(self, interval: float) -> None:
+        _empty_counter: int = 0
     
         while True:
             try:
-                _client_data: Dict[str, Dict[str, Union[str, Queue]]] = _client_data_queue_chc.get_nowait()
+                _client_data: Dict[str, Dict[str, Union[bool, int, float, str, Queue, synchronize.Event]]] = _chc_queue.get_nowait()
+
+                _empty_counter = 0
+
                 if _client_data:
                     for client_uuid, client_data in list(_client_data.items()):
                         last_connection_time: float = client_data[CHC_LAST_CONNECTION_TIME]
 
-                        logger.debug(f"[{client_uuid}]: <<Connection Health Checker>> Checking connection health")
-
                         if time.time() - last_connection_time > CHC_TIMEOUT:
+                            client_data[CORE_I2C_EVENT].set()
+
                             _lock.acquire()
-                            put_data: Dict[str, bool] = {
-                                JSON_ABORT: True,
-                            }
-                            client_data[CORE_I2C_QUEUE].put_nowait(put_data)
-                            result = _client_data.pop(client_uuid, None)
+                            _remove_client_data(client_data)
                             _lock.release()
 
-                            if result is None:
-                                pass
-                            else:
-                                logger.error(
-                                    f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause the connection has timed out {CHC_TIMEOUT}s"
-                                )
-                        else:
-                            logger.debug(f"[{client_uuid}]: <<Connection Health Checker>> No problem was found")
-                empty_counter = 0
-
+                            logger.error(
+                                f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause the connection has timed out {CHC_TIMEOUT}s"
+                            )
             except Empty:
-                empty_counter += 1
-                
-                if empty_counter > CHC_EMPTY_TOLERANCE:
+                _empty_counter += 1
+
+                if _empty_counter > CHC_EMPTY_TOLERANCE:
                     try:
                         for client_uuid, client_data in list(_client_data.items()):
+                            client_data[CORE_I2C_EVENT].set()
+
                             _lock.acquire()
-                            put_data: Dict[str, bool] = {
-                                JSON_ABORT: True,
-                            }
-                            try:
-                                client_data[CORE_I2C_QUEUE].put(put_data, block=True, timeout=1.)
-                            except Full:
-                                pass
-                            result = _client_data.pop(client_uuid, None)
+                            _remove_client_data(client_data)
                             _lock.release()
 
-                            if result is None:
-                                pass
-                            else:
-                                logger.error(f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause there was no connection for a long time.")
+                            logger.error(
+                                f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause there was no connection for a long time."
+                            )
                     except UnboundLocalError:
-                        pass             
+                        pass
 
             time.sleep(interval)
 
@@ -156,25 +155,22 @@ class ConnectionHealthChecker:
 class PriorityMonitor:
     def __init__(
         self,
-        interval: float = 2.,
+        interval: float = .3,
     ) -> None:
         p: Thread = Thread(target=self.run, args=(interval, ), daemon=True)
         p.start()
 
-    def run(
-        self,
-        interval: float,
-    ) -> None:
+    def run(self, interval: float) -> None:
         started_clients: List[str] = []
+
         while True:
             try:
-                _client_data: dict = _client_data_queue_pm.get_nowait()
+                _client_data: dict = _pm_queue.get_nowait()
                 if _client_data:
                     for client_uuid, client_data in _client_data.items():
-                        if client_data[JSON_PRIORITY] == 1:
-                            if client_uuid not in started_clients:
-                                _: AIconCore = AIconCore(client_data, client_uuid)
-                                started_clients.append(client_uuid)
+                        if (client_data[JSON_PRIORITY] == 1) and (client_uuid not in started_clients):
+                            AIconCore(client_data, client_uuid)
+                            started_clients.append(client_uuid)
             except Empty:
                 pass
 
@@ -207,6 +203,7 @@ class AIconCore:
                 deep_daze.Imagine(self.client_uuid, client_data)()
             except (AIconOutOfMemoryError, AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
                 logger.error(f"[{self.client_uuid}]: <<AIcon Core>> {e}")
+
         elif self.model_name == MODEL_NAME_DALL_E:
             raise NotImplementedError
 
@@ -214,29 +211,26 @@ class AIconCore:
 
 
 class AIconInterface(Resource):
-    def __init__(
-        self,
-        translator_name: str = "deepl",
-    ) -> None:
-        super().__init__()
+    def _translate(self, input_text: str, client_uuid: int) -> str:
+        if input_text != "":
+            logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translating input text")
+            output_text: str = _translator.translate(input_text)
+            logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated input text `{input_text}` to `{output_text}`")
 
-        self.translator: Translation = Translation(translator_name)
+            input_text = output_text
+        
+        return input_text
 
-        self.base_img_path: str = IF_BASE_IMG_PATH
-        self.base_mp4_path: str = IF_BASE_MP4_PATH
-
-    def _get_client_priority(self, client_uuid: str) -> int:
-        global _client_data
-
-        return list(_client_data.keys()).index(client_uuid) + 1
+    def _get_client_priority(self, client_data: Dict[str, Dict[str, Union[bool, int, float, str, Queue, synchronize.Event]]], client_uuid: str) -> int:
+        return list(client_data.keys()).index(client_uuid) + 1
 
     def _set_path(self, client_uuid: str) -> None:
         global _client_data
 
         model_name: str = _client_data[client_uuid][RECEIVED_DATA][JSON_MODEL_NAME]
 
-        img_path: str = os.path.join(self.base_img_path, model_name, client_uuid)
-        mp4_path: str = os.path.join(self.base_mp4_path, model_name, client_uuid)
+        img_path: str = os.path.join(IF_BASE_IMG_PATH, model_name, client_uuid)
+        mp4_path: str = os.path.join(IF_BASE_MP4_PATH, model_name, client_uuid)
 
         os.makedirs(img_path, exist_ok=True)
         os.makedirs(mp4_path, exist_ok=True)
@@ -244,141 +238,104 @@ class AIconInterface(Resource):
         _client_data[client_uuid][JSON_IMG_PATH] = img_path
         _client_data[client_uuid][JSON_MP4_PATH] = mp4_path
 
-    def _remove_client_data(self, client_uuid: str) -> bool:
-        global _client_data
-
-        result = _client_data.pop(client_uuid, None)
-
-        if result is None:
-            return False
-        else:
-            return True
-        
     def post(self):
         global _client_data
 
         received_data: Dict[str, Union[str, bool]] = request.get_json(force=True)
-        logger.debug(f"<<AIcon I/F >> Requested from {request.remote_addr} | {request.method} {str(request.url_rule)} {request.environ.get('SERVER_PROTOCOL')} {request.environ.get('HTTP_CONNECTION')}")
 
         client_uuid: str = received_data[JSON_HASH]
+
+        res: Dict[str, Optional[Union[str, bool]]] = {
+            JSON_HASH: None,
+            JSON_PRIORITY: None,
+            JSON_CURRENT_ITER: None,
+            JSON_COMPLETE: False,
+            JSON_IMG_PATH: None,
+            JSON_MP4_PATH: None,
+            JSON_MODEL_STATUS: False,
+        }
 
         if client_uuid == IF_HASH_INIT:
             client_uuid = str(uuid4())
 
             logger.info(f"[{IF_HASH_INIT}]: <<AIcon I/F >> Connection requested from an anonymous client. UUID {client_uuid} is assined.")
 
+            received_data[JSON_TEXT] = self._translate(received_data[JSON_TEXT], client_uuid)
+            received_data[JSON_CARROT] = self._translate(received_data[JSON_CARROT], client_uuid)
+            received_data[JSON_STICK] = self._translate(received_data[JSON_STICK], client_uuid)
+
+            c2i_stack: Queue = Queue()
+            i2c_event: synchronize.Event = Event()
+
+            _client_data[client_uuid] = {
+                RECEIVED_DATA: received_data,
+                JSON_COMPLETE: False,
+                CORE_C2I_QUEUE: c2i_stack,
+                CORE_I2C_EVENT: i2c_event,
+                CHC_LAST_CONNECTION_TIME: time.time(),
+                IF_QUEUE_EMPTY_COUNTER: 0,
+            }
+
+            client_priority: int = self._get_client_priority(_client_data, client_uuid)
+            _client_data[client_uuid][JSON_PRIORITY] = client_priority
+
             try:
-                logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translating input text")
-                received_data[JSON_TEXT] = self.translator.translate(received_data[JSON_TEXT])
-                logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated input text to `{received_data[JSON_TEXT]}`")
-
-                if received_data[JSON_CARROT] != "":
-                    logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translating carrot")
-                    received_data[JSON_CARROT] = self.translator.translate(received_data[JSON_CARROT])
-                    logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated carrot to `{received_data[JSON_TEXT]}`")
-
-                if received_data[JSON_STICK] != "":
-                    logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translating stick")
-                    received_data[JSON_STICK] = self.translator.translate(received_data[JSON_STICK])
-                    logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated stick to `{received_data[JSON_TEXT]}`")
-
-                c2i_queue: Queue = Queue()
-                i2c_queue: Queue = Queue(maxsize=1)
-
-                if received_data[JSON_MODEL_NAME] not in ACCEPTABLE_MODEL:
-                    logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> Invalid model name `{received_data[JSON_MODEL_NAME]}` requested")
-                    raise AIconValueError(f"Invalid model name `{received_data[JSON_MODEL_NAME]}` requested")
-
-                if received_data[JSON_BACKBONE] not in ACCEPTABLE_BACKBONE:
-                    logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> Invalid backbone name `{received_data[JSON_BACKBONE]}` requested")
-                    raise AIconValueError(f"Invalid model name `{received_data[JSON_BACKBONE]}` requested")
-
-                _client_data[client_uuid] = {
-                    RECEIVED_DATA: received_data,
-                    JSON_COMPLETE: False,
-                    CORE_C2I_QUEUE: c2i_queue,
-                    CORE_I2C_QUEUE: i2c_queue,
-                    CHC_LAST_CONNECTION_TIME: time.time(),
-                    IF_QUEUE_EMPTY_COUNTER: 0,
-                }
-
-                client_priority: int = self._get_client_priority(client_uuid)
-                _client_data[client_uuid][JSON_PRIORITY] = client_priority
-
-                try:
-                    _client_data_queue_chc.put_nowait(_client_data)
-                    _client_data_queue_pm.put_nowait(_client_data)
-                except Full:
-                    pass
-
-            except KeyError as error_state:
-                logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> {error_state}")
-                abort(400, error_state)
+                _chc_queue.put_nowait(_client_data)
+                _pm_queue.put_nowait(_client_data)
+            except Full:
+                pass
 
             self._set_path(client_uuid)
 
-            res: Dict[str, Optional[Union[str, bool]]] = {
-                JSON_HASH: client_uuid,
-                JSON_PRIORITY: client_priority,
-                JSON_NUM_CLIENTS: len(_client_data),
-                JSON_CURRENT_ITER: None,
-                JSON_COMPLETE: False,
-                JSON_IMG_PATH: None,
-                JSON_MP4_PATH: None,
-                JSON_MODEL_STATUS: False,
-            }
+            res[JSON_HASH] = client_uuid
+            res[JSON_PRIORITY] = client_priority
 
             return jsonify(res)
 
         if client_uuid in _client_data.keys():
-            client_priority = self._get_client_priority(client_uuid)
+            client_priority: int = self._get_client_priority(_client_data, client_uuid)
 
-            logger.info(f"[{client_uuid}]: <<AIcon I/F >> Connection requested from a registered client. Queued Clients: {len(_client_data)} Priority: #{client_priority}")
-
-            put_data: Dict[str, bool] = {
-                JSON_ABORT: received_data[JSON_ABORT],
-            }
-
-            def _put_data(put_data: Dict[str, bool]) -> None:
-                try:
-                    _client_data[client_uuid][CORE_I2C_QUEUE].put_nowait(put_data)
-                except Full:
-                    try:
-                        _ = _client_data[client_uuid][CORE_I2C_QUEUE].get_nowait()
-                    except Empty:
-                        _put_data(put_data)
-
-            _put_data(put_data)
+            res[JSON_HASH] = client_uuid
+            res[JSON_PRIORITY] = client_priority
 
             _client_data[client_uuid][JSON_PRIORITY] = client_priority
             _client_data[client_uuid][CHC_LAST_CONNECTION_TIME] = time.time()
 
             try:
-                _client_data_queue_chc.put_nowait(_client_data)
+                _chc_queue.put_nowait(_client_data)
             except Full:
                 pass
 
-            res: Dict[str, Optional[Union[str, bool]]] = {
-                JSON_HASH: client_uuid,
-                JSON_PRIORITY: client_priority,
-                JSON_NUM_CLIENTS: len(_client_data),
-                JSON_CURRENT_ITER: None,
-                JSON_COMPLETE: False,
-                JSON_IMG_PATH: None,
-                JSON_MP4_PATH: None,
-                JSON_MODEL_STATUS: False,
-            }
-    
-            if client_priority == 1:
+            if received_data[JSON_ABORT]:
+                _client_data[client_uuid][CORE_I2C_EVENT].set()
+
+                res[JSON_CURRENT_ITER] = _valid_response[JSON_CURRENT_ITER]
+                res[JSON_COMPLETE] = True
+                res[JSON_IMG_PATH] = _valid_response[JSON_IMG_PATH]
+                res[JSON_MP4_PATH] = _valid_response[JSON_MP4_PATH]
+                res[JSON_MODEL_STATUS] = True
+
+                _reset_valid_response()
+
                 try:
-                    _client_data_queue_pm.put_nowait(_client_data)
+                    _pm_queue.put(_client_data, block=True, timeout=3.)
                 except Full:
                     pass
 
-                client_data: Dict[str, Union[str, Queue]] = _client_data[client_uuid]
+                _lock.acquire()
+                _remove_client_data(client_uuid)
+                _lock.release()
+
+                return jsonify(res)
+
+            if client_priority == 1:
+                try:
+                    _pm_queue.put_nowait(_client_data)
+                except Full:
+                    pass
 
                 try:
-                    get_data: Dict[str, Union[str, bool, int]] = client_data[CORE_C2I_QUEUE].get_nowait()
+                    get_data: Dict[str, Union[str, bool, int]] = _client_data[client_uuid][CORE_C2I_QUEUE].get_nowait()
 
                     _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] = 0
 
@@ -398,13 +355,21 @@ class AIconInterface(Resource):
                         _valid_response[JSON_MODEL_STATUS] = get_data[JSON_MODEL_STATUS]
 
                     if get_data[JSON_COMPLETE]:
-                        if self._remove_client_data(client_uuid):
-                            logger.info(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. Removed the client data.")
-                        else:
-                            logger.warn(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. But failed to remove the client data.")
+                        _lock.acquire()
+                        _remove_client_data(client_uuid)
+                        _lock.release()
+
+                        logger.info(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. Removed the client data.")
+
+                        _reset_valid_response()
 
                 except Empty:
                     _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] += 1
+
+                    res[JSON_CURRENT_ITER] = _valid_response[JSON_CURRENT_ITER]
+                    res[JSON_IMG_PATH] = _valid_response[JSON_IMG_PATH]
+                    res[JSON_MP4_PATH] = _valid_response[JSON_MP4_PATH]
+                    res[JSON_MODEL_STATUS] = _valid_response[JSON_MODEL_STATUS]
 
                     if IF_EMPTY_TOLERANCE >= _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] > 3 * IF_EMPTY_TOLERANCE / 4:
                         logger.warning(f"[{client_uuid}]: <<AIcon I/F >> No data has been sent from AIcon Core for a long time. AIcon Core may have crashed.")
@@ -412,25 +377,15 @@ class AIconInterface(Resource):
                     elif _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] > IF_EMPTY_TOLERANCE:
                         logger.error(f"[{client_uuid}]: <<AIcon I/F >> AIcon Core crashed. Sending an abort signal.")
 
-                        put_data: Dict[str, bool] = {
-                            JSON_ABORT: True,
-                        }
-                        try:
-                            _client_data[client_uuid][CORE_I2C_QUEUE].put_nowait(put_data)
-                        except Full:
-                            pass
+                        _client_data[client_uuid][CORE_I2C_EVENT].set()
 
                         res[JSON_COMPLETE] = True
 
-                        if self._remove_client_data(client_uuid):
-                            logger.info(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. Removed the client data.")
-                        else:
-                            logger.warn(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. But failed to remove the client data.")
+                        _lock.acquire()
+                        _remove_client_data(client_uuid)
+                        _lock.release()
 
-                    res[JSON_CURRENT_ITER] = _valid_response[JSON_CURRENT_ITER]
-                    res[JSON_IMG_PATH] = _valid_response[JSON_IMG_PATH]
-                    res[JSON_MP4_PATH] = _valid_response[JSON_MP4_PATH]
-                    res[JSON_MODEL_STATUS] = _valid_response[JSON_MODEL_STATUS]
+                        _reset_valid_response()
         else:
             logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> Invalid UUID")
             abort(403, f"Invalid UUID: {client_uuid}")

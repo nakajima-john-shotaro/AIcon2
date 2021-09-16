@@ -5,8 +5,6 @@ from logging import (
     getLogger, DEBUG, INFO, WARNING, ERROR, CRITICAL
 )
 from typing import List
-from multiprocessing.managers import BaseManager
-from queue import LifoQueue
 
 
 RATE_LIMIT: str = "1000 per minute"
@@ -22,10 +20,11 @@ JSON_HASH: str = "hash"
 JSON_COMPLETE: str = "complete"
 JSON_ABORT: str = "abort"
 JSON_PRIORITY: str = "priority"
-JSON_NUM_CLIENTS: str = "num_clients"
 JSON_IMG_PATH: str = "img_path"
 JSON_MP4_PATH: str = "mp4_path"
 JSON_MODEL_STATUS: str = "model_status"
+JSON_TARGET_IMG: str = "target_img"
+JSON_SOURCE_IMG: str = "source_img"
 
 JSON_GAE: int = "gae"
 JSON_SEED: int = "seed"
@@ -50,6 +49,8 @@ BACKBONE_NAME_RN101: str = "RN101"
 BACKBONE_NAME_RN50x4: str = "RN50x4"
 BACKBONE_NAME_ViTB32: str = "ViT-B32"
 
+PRETRAINED_BACKBONE_MODEL_PATH: str = "~/.cache"
+
 ACCEPTABLE_BACKBONE: List[str] = [BACKBONE_NAME_RN50, BACKBONE_NAME_RN101, BACKBONE_NAME_RN50x4, BACKBONE_NAME_ViTB32]
 
 IF_HASH_INIT: str = "00000000-0000-0000-0000-000000000000"
@@ -60,7 +61,7 @@ IF_EMPTY_TOLERANCE: int = 100
 
 CORE_COMPATIBLE_PYTORCH_VERSION: str = "1.7.1"
 CORE_C2I_QUEUE: str = "c2i_queue"
-CORE_I2C_QUEUE: str = "i2c_queue"
+CORE_I2C_EVENT: str = "i2c_event"
 
 CHC_TIMEOUT: float = 7.0
 CHC_EMPTY_TOLERANCE: int = 5
@@ -123,13 +124,6 @@ def get_logger(name: str = "aicon", level: int = INFO):
         logger.setLevel(level)
 
     return logger
-
-
-class AIconManager(BaseManager):
-    pass
-
-AIconManager.register('LifoQueue', LifoQueue)
-
 
 
 class AIconBaseException(Exception):
