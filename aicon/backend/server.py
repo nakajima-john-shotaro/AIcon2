@@ -1,26 +1,31 @@
-import os
-import time
 import json
-import functools
-from typing import Any, Dict, Optional, Union
+import multiprocessing
+import os
+import shutil
+import time
+from multiprocessing import Event, Process, Queue, synchronize
+from pathlib import Path
+from pprint import pprint  # pylint: disable=unused-import
+from queue import Empty, Full
+from queue import Queue as Queue_
+from threading import Lock, Thread
+from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
-from multiprocessing import Process, Queue
-from queue import Empty
-from pprint import pprint # pylint: disable=unused-import
-from logging import StreamHandler, Logger, getLogger, DEBUG
 
-import chromedriver_binary # pylint: disable=unused-import
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from flask import Flask, Response, jsonify, render_template, abort, request
+from flask import Flask, Response, abort, jsonify, render_template, request
 from flask_cors import CORS
-from flask_restful import Api, Resource, reqparse
-from werkzeug.exceptions import HTTPException, BadRequest, Forbidden, InternalServerError
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_restful import Api, Resource
 from waitress import serve
-from googletrans import Translator
+from werkzeug.exceptions import (BadRequest, Forbidden, HTTPException,
+                                 InternalServerError)
 
 from constant import *
-
+from models.big_sleep import big_sleep
+from models.deep_daze import deep_daze
+from translation import Translation, install_webdriver
+from twitter import Authorization, Callback, Executor
 
 app: Flask = Flask(
     import_name=__name__, 
@@ -29,306 +34,414 @@ app: Flask = Flask(
 )
 app.config["JSON_AS_ASCII"] = False
 app.config["JSON_SORT_KEYS"] = False
+app.config['RATELIMIT_HEADERS_ENABLED'] = True
+Limiter(app, key_func=get_remote_address, default_limits=[RATE_LIMIT])
 CORS(app)
 api: Api = Api(app)
 
-stream_handler: StreamHandler = StreamHandler()
-stream_handler.setLevel(DEBUG)
-stream_handler.setFormatter(CustomFormatter())
-logger: Logger = getLogger()
-logger.addHandler(stream_handler)
-logger.setLevel(DEBUG)
+logger: Logger = get_logger()
 
-_client_data: Dict[str, Dict[str, Union[str, Queue]]] = {}
+_client_data: Dict[str, Dict[str, Union[bool, int, float, str, Queue, synchronize.Event]]] = {}
+_chc_queue: Queue_ = Queue_(maxsize=1)
+_pm_queue: Queue_ = Queue_(maxsize=1)
+_valid_response: Dict[str, Union[str, bool, int]] = {
+    JSON_CURRENT_ITER: None,
+    JSON_IMG_PATH: None,
+    JSON_MP4_PATH: None,
+    JSON_MODEL_STATUS: False,
+}
+_lock: Lock = Lock()
+
+_translator: Translation = Translation("deepl")
 
 
-class Translation(object):
+def _reset_valid_response() -> None:
+        _valid_response[JSON_CURRENT_ITER] = None
+        _valid_response[JSON_IMG_PATH] = None
+        _valid_response[JSON_MP4_PATH] = None
+        _valid_response[JSON_MODEL_STATUS] = False
+
+
+def _remove_client_data(client_uuid: str) -> bool:
+    global _client_data
+
+    result = _client_data.pop(client_uuid, None)
+
+    if result is None:
+        return False
+    else:
+        return True
+
+
+class GarbageCollector:
     def __init__(
         self,
-        translator: str = "google"
+        target_dirs: List[Path],
+        interval: float = 60.,
     ) -> None:
-        super().__init__()
+        p: Thread = Thread(target=self.run, args=(interval, target_dirs, ), daemon=True)
+        p.start()
 
-        if translator in ["google", "deepl"]:
-            self.translator: str = translator
-            self.g_translator: Translator = Translator()
-            self.d_options: Options = Options()
-        else:
-            raise ValueError("Expected translator is `google` or `deepl` but got {translator}")
+    def run(self, interval: float, target_dirs: List[Path]) -> None:
+        while True:
+            for target_dir in target_dirs:
+                if target_dir.exists():
+                    dir_list: List[Path] = [p for p in target_dir.iterdir() if p.is_dir()]
 
-    def translate(self, text: str) -> str:
-        lang = self.g_translator.detect(text).lang
+                    for dir in dir_list:
+                        mtime: float = dir.stat().st_mtime
+                        now: float = time.time()
 
-        if not lang == "en":
-            if self.translator == "google":
-                output_text = self.g_translator.translate(text, src=lang, dest="en").text
-            elif self.translator == "deepl":
-                self.d_options.add_argument('--headless')
-                self.d_options.add_argument('--no-sandbox')
-
-                driver: webdriver.Chrome = webdriver.Chrome(options=self.d_options)
-                driver.get("https://www.deepl.com/ja/translator")
-
-                input_selector = driver.find_element_by_css_selector(".lmt__textarea.lmt__source_textarea.lmt__textarea_base_style")
-                input_selector.send_keys(text)
-
-                while True:
-                    output_selector: str = ".lmt__textarea.lmt__target_textarea.lmt__textarea_base_style"
-                    output_text: str = driver.find_element_by_css_selector(output_selector).get_property("value")
-                    if output_text != "":
-                        break
-                    time.sleep(1)
-
-                driver.close()
-        else:
-            output_text = text
-
-        for i, char in enumerate(output_text):
-            list(output_text)[i] = char.translate(str.maketrans({
-                '\u3000': ' ',
-                ' ': ' ',
-                '　': ' ',
-                '\t': '',
-                '\r': '',
-                '\x0c': '',
-                '\x0b': '',
-                '\xa0': '',
-            }))
-        output_text = "".join(output_text)
-
-        return output_text
+                        if now - mtime > GC_TIMEOUT:
+                            logger.info(
+                                f"[{dir.stem}]: <<Garbage Collector>> Removed outdated directory {dir}"
+                            )
+                            shutil.rmtree(dir)
+            time.sleep(interval)
 
 
-# debag
-class DeepDaze():
+class ConnectionHealthChecker:
     def __init__(
         self,
-        client_uuid: str,
-        queue: Queue,
+        interval: float = 1.,
     ) -> None:
-        self.client_uuid: str = client_uuid
-        self.queue: Queue = queue
+        p: Thread = Thread(target=self.run, args=(interval, ), daemon=True)
+        p.start()
 
-    def run(self):
-        for i in range(10):
-            data: Dict[str, str] = {
-                "client_uuid": self.client_uuid,
-                JSON_CURRENT_ITER: str(i),
-                JSON_IMG_PATH: f"/home/aicon/img/{self.client_uuid}/{i}",
-                JSON_GIF_PATH: f"/home/aicon/gif/{self.client_uuid}/{i}",
-                JSON_COMPLETE: False
-            }
-            self.queue.put(data)
-            time.sleep(2)
-        
-        data: Dict[str, str] = {
-            "client_uuid": self.client_uuid,
-            JSON_CURRENT_ITER: "10",
-            JSON_IMG_PATH: f"/home/aicon/img/{self.client_uuid}/{i}",
-            JSON_GIF_PATH: f"/home/aicon/gif/{self.client_uuid}/{i}",
-            JSON_COMPLETE: True
-        }
-        self.queue.put(data)
+    def run(self, interval: float) -> None:
+        _empty_counter: int = 0
+    
+        while True:
+            try:
+                _client_data: Dict[str, Dict[str, Union[bool, int, float, str, Queue, synchronize.Event]]] = _chc_queue.get_nowait()
 
-        logger.info(f"[{self.client_uuid}]: Completed image generation")
+                _empty_counter = 0
+
+                if _client_data:
+                    for client_uuid, client_data in list(_client_data.items()):
+                        last_connection_time: float = client_data[CHC_LAST_CONNECTION_TIME]
+
+                        if time.time() - last_connection_time > CHC_TIMEOUT:
+                            client_data[CORE_I2C_EVENT].set()
+
+                            _lock.acquire()
+                            _remove_client_data(client_data)
+                            _lock.release()
+
+                            logger.error(
+                                f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause the connection has timed out {CHC_TIMEOUT}s"
+                            )
+            except Empty:
+                _empty_counter += 1
+
+                if _empty_counter > CHC_EMPTY_TOLERANCE:
+                    try:
+                        for client_uuid, client_data in list(_client_data.items()):
+                            client_data[CORE_I2C_EVENT].set()
+
+                            _lock.acquire()
+                            _remove_client_data(client_data)
+                            _lock.release()
+
+                            logger.error(
+                                f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause there was no connection for a long time."
+                            )
+                    except UnboundLocalError:
+                        pass
+
+            time.sleep(interval)
+
+
+class PriorityMonitor:
+    def __init__(
+        self,
+        interval: float = .3,
+    ) -> None:
+        p: Thread = Thread(target=self.run, args=(interval, ), daemon=True)
+        p.start()
+
+    def run(self, interval: float) -> None:
+        started_clients: List[str] = []
+
+        while True:
+            try:
+                _client_data: dict = _pm_queue.get_nowait()
+                if _client_data:
+                    for client_uuid, client_data in _client_data.items():
+                        if (client_data[JSON_PRIORITY] == 1) and (client_uuid not in started_clients):
+                            AIconCore(client_data, client_uuid)
+                            started_clients.append(client_uuid)
+            except Empty:
+                pass
+
+            time.sleep(interval)
 
 
 class AIconCore:
     def __init__(
         self,
-        model_name: str,
+        client_data: Dict[str, Union[str, Queue]],
         client_uuid: str,
-        args: Any,
-        queue: Queue = Queue(),
     ) -> None:
-        self.model_name: str = model_name
+        self.model_name: str = client_data[RECEIVED_DATA][JSON_MODEL_NAME]
         self.client_uuid: str = client_uuid
 
-        p: Process = Process(target=self.run, args=(queue, args, ), daemon=True)
+        p: Process = Process(target=self.run, args=(client_data, ), daemon=True)
         p.start()
 
-    def run(self, queue: Queue, args: Any) -> None:
-        logger.info(f"[{self.client_uuid}]: Start image generation with {self.model_name}")
+    def run(self, client_data: Any) -> None:
+        logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Start image generation with {self.model_name}")
 
-        model = DeepDaze(self.client_uuid, queue)
-        if self.model_name == MODEL_NAME_BID_SLEEP:
-            model.run()
+        if self.model_name == MODEL_NAME_BIG_SLEEP:
+            try:
+                big_sleep.Imagine(self.client_uuid, client_data)()
+            except (AIconOutOfMemoryError, AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
+                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> {e}")
+
         elif self.model_name == MODEL_NAME_DEEP_DAZE:
-            model.run()
+            try:
+                deep_daze.Imagine(self.client_uuid, client_data)()
+            except (AIconOutOfMemoryError, AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
+                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> {e}")
+
         elif self.model_name == MODEL_NAME_DALL_E:
-            model.run()
-        else:
-            logger.fatal(f"[{self.client_uuid}]: Invalid model name `{self.model_name}` requested")
-            abort(BadRequest, f"Invalid model name {self.model_name}")
+            raise NotImplementedError
+
+        logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Finished image generation")
 
 
-class AIcon(Resource):
-    def __init__(
-        self,
-        translator: str = "deepl",
-    ) -> None:
-        super().__init__()
+class AIconInterface(Resource):
+    def _translate(self, input_text: str, client_uuid: int) -> str:
+        if input_text != "":
+            logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translating input text")
+            output_text: str = _translator.translate(input_text)
+            logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated input text `{input_text}` to `{output_text}`")
 
-        self.translator: Translation = Translation(translator)
+            input_text = output_text
+        
+        return input_text
 
-        self.base_img_path: str = "../frontend/static/dst_img"
-        self.base_gif_path: str = "../frontend/static/dst_gif"
-
-    def _get_client_priority(self, client_uuid: str) -> int:
-        global _client_data
-
-        return list(_client_data.keys()).index(client_uuid) + 1
+    def _get_client_priority(self, client_data: Dict[str, Dict[str, Union[bool, int, float, str, Queue, synchronize.Event]]], client_uuid: str) -> int:
+        return list(client_data.keys()).index(client_uuid) + 1
 
     def _set_path(self, client_uuid: str) -> None:
         global _client_data
 
-        model_name: str = _client_data[client_uuid][JSON_MODEL_NAME]
+        model_name: str = _client_data[client_uuid][RECEIVED_DATA][JSON_MODEL_NAME]
 
-        img_path: str = os.path.join(self.base_img_path, model_name, client_uuid)
-        gif_path: str = os.path.join(self.base_gif_path, model_name, client_uuid)
+        img_path: str = os.path.join(IF_BASE_IMG_PATH, model_name, client_uuid)
+        mp4_path: str = os.path.join(IF_BASE_MP4_PATH, model_name, client_uuid)
 
         os.makedirs(img_path, exist_ok=True)
-        os.makedirs(gif_path, exist_ok=True)
+        os.makedirs(mp4_path, exist_ok=True)
 
         _client_data[client_uuid][JSON_IMG_PATH] = img_path
-        _client_data[client_uuid][JSON_GIF_PATH] = gif_path
+        _client_data[client_uuid][JSON_MP4_PATH] = mp4_path
 
-    def _remove_client_data(self, client_uuid: str) -> bool:
-        global _client_data
-
-        result = _client_data.pop(client_uuid, None)
-
-        if result is None:
-            return False
-        else:
-            return True
-        
     def post(self):
         global _client_data
 
-        received_data: Dict[str, Any] = request.get_json(force=True)
-        logger.info(f"[N/A]: Requested from {request.remote_addr} | {request.method} {str(request.url_rule)} {request.environ.get('SERVER_PROTOCOL')} {request.environ.get('HTTP_CONNECTION')}")
+        received_data: Dict[str, Union[str, bool]] = request.get_json(force=True)
 
         client_uuid: str = received_data[JSON_HASH]
 
-        if client_uuid == P_HASH_INIT:
+        res: Dict[str, Optional[Union[str, bool]]] = {
+            JSON_HASH: None,
+            JSON_PRIORITY: None,
+            JSON_CURRENT_ITER: None,
+            JSON_COMPLETE: False,
+            JSON_IMG_PATH: None,
+            JSON_MP4_PATH: None,
+            JSON_MODEL_STATUS: False,
+        }
+
+        if client_uuid == IF_HASH_INIT:
             client_uuid = str(uuid4())
 
-            logger.info(f"[{P_HASH_INIT}]: Connection requested from a non-registered client. UUID {client_uuid} is assined.")
+            logger.info(f"[{IF_HASH_INIT}]: <<AIcon I/F >> Connection requested from an anonymous client. UUID {client_uuid} is assined.")
+
+            received_data[JSON_TEXT] = self._translate(received_data[JSON_TEXT], client_uuid)
+            received_data[JSON_CARROT] = self._translate(received_data[JSON_CARROT], client_uuid)
+            received_data[JSON_STICK] = self._translate(received_data[JSON_STICK], client_uuid)
+
+            c2i_stack: Queue = Queue()
+            i2c_event: synchronize.Event = Event()
+
+            _client_data[client_uuid] = {
+                RECEIVED_DATA: received_data,
+                JSON_COMPLETE: False,
+                CORE_C2I_QUEUE: c2i_stack,
+                CORE_I2C_EVENT: i2c_event,
+                CHC_LAST_CONNECTION_TIME: time.time(),
+                IF_QUEUE_EMPTY_COUNTER: 0,
+            }
+
+            client_priority: int = self._get_client_priority(_client_data, client_uuid)
+            _client_data[client_uuid][JSON_PRIORITY] = client_priority
 
             try:
-                translated_text: str = self.translator.translate(received_data[JSON_TEXT])
-                logger.info(f"[{client_uuid}]: Translated text `{received_data[JSON_TEXT]}` to `{translated_text}`")
-
-                queue: Queue = Queue()
-
-                _client_data[client_uuid] = {
-                    JSON_MODEL_NAME: received_data[JSON_MODEL_NAME],
-                    JSON_TEXT: translated_text,
-                    JSON_TOTAL_ITER: received_data[JSON_TOTAL_ITER],
-                    JSON_SIZE: received_data[JSON_SIZE],
-                    JSON_ABORT: received_data[JSON_ABORT],
-                    JSON_COMPLETE: False,
-                    "queue": queue,
-                }
-
-                aicon_core: AIconCore = AIconCore(received_data[JSON_MODEL_NAME], client_uuid, translated_text, queue)
-
-            except KeyError as error_state:
-                logger.fatal(f"[{client_uuid}]: {error_state}")
-                abort(BadRequest, error_state)
+                _chc_queue.put_nowait(_client_data)
+                _pm_queue.put_nowait(_client_data)
+            except Full:
+                pass
 
             self._set_path(client_uuid)
 
-            res: Dict[str, Optional[Union[str, bool]]] = {
-                JSON_HASH: client_uuid,
-                JSON_PRIORITY: self._get_client_priority(client_uuid),
-                JSON_NUM_CLIENTS: len(_client_data),
-                JSON_CURRENT_ITER: "0",
-                JSON_COMPLETE: False,
-                JSON_IMG_PATH: None,
-                JSON_GIF_PATH: None,
-            }
+            res[JSON_HASH] = client_uuid
+            res[JSON_PRIORITY] = client_priority
 
             return jsonify(res)
 
         if client_uuid in _client_data.keys():
-            logger.info(f"[{client_uuid}]: Connection requested from a registered client")
+            client_priority: int = self._get_client_priority(_client_data, client_uuid)
 
-            _client_data[client_uuid][JSON_ABORT] = received_data[JSON_ABORT]
+            res[JSON_HASH] = client_uuid
+            res[JSON_PRIORITY] = client_priority
 
-            client_priority: int = self._get_client_priority(client_uuid)
-            if client_priority == 1:
-                logger.info(f"[{client_uuid}]: The client is #{client_priority}. Starting AIcon-core.")
+            _client_data[client_uuid][JSON_PRIORITY] = client_priority
+            _client_data[client_uuid][CHC_LAST_CONNECTION_TIME] = time.time()
 
-                client_data: Dict[str, Union[str, Queue]] = _client_data[client_uuid]
+            try:
+                _chc_queue.put_nowait(_client_data)
+            except Full:
+                pass
 
-                res: Dict[str, Optional[Union[str, bool]]] = {
-                    JSON_HASH: client_uuid,
-                    JSON_PRIORITY: client_priority,
-                    JSON_NUM_CLIENTS: len(_client_data),
-                    JSON_CURRENT_ITER: "0",
-                    JSON_COMPLETE: False,
-                    JSON_IMG_PATH: None,
-                    JSON_GIF_PATH: None,
-                }
+            if received_data[JSON_ABORT]:
+                _client_data[client_uuid][CORE_I2C_EVENT].set()
+
+                res[JSON_CURRENT_ITER] = _valid_response[JSON_CURRENT_ITER]
+                res[JSON_COMPLETE] = True
+                res[JSON_IMG_PATH] = _valid_response[JSON_IMG_PATH]
+                res[JSON_MP4_PATH] = _valid_response[JSON_MP4_PATH]
+                res[JSON_MODEL_STATUS] = True
+
+                _reset_valid_response()
 
                 try:
-                    queued_data: Dict[str, str] = client_data["queue"].get(timeout=1.)
+                    _pm_queue.put(_client_data, block=True, timeout=3.)
+                except Full:
+                    pass
 
-                    res[JSON_CURRENT_ITER] = queued_data[JSON_CURRENT_ITER]
-                    res[JSON_IMG_PATH] = queued_data[JSON_IMG_PATH]
-                    res[JSON_GIF_PATH] = queued_data[JSON_GIF_PATH]
-                    res[JSON_COMPLETE] = queued_data[JSON_COMPLETE]
+                _lock.acquire()
+                _remove_client_data(client_uuid)
+                _lock.release()
+
+                return jsonify(res)
+
+            if client_priority == 1:
+                try:
+                    _pm_queue.put_nowait(_client_data)
+                except Full:
+                    pass
+
+                try:
+                    get_data: Dict[str, Union[str, bool, int]] = _client_data[client_uuid][CORE_C2I_QUEUE].get_nowait()
+
+                    _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] = 0
+
+                    res[JSON_CURRENT_ITER] = get_data[JSON_CURRENT_ITER]
+                    res[JSON_IMG_PATH] = get_data[JSON_IMG_PATH]
+                    res[JSON_MP4_PATH] = get_data[JSON_MP4_PATH]
+                    res[JSON_COMPLETE] = get_data[JSON_COMPLETE]
+                    res[JSON_MODEL_STATUS] = get_data[JSON_MODEL_STATUS]
+
+                    if get_data[JSON_CURRENT_ITER] is not None:
+                        _valid_response[JSON_CURRENT_ITER] = get_data[JSON_CURRENT_ITER]
+                    if get_data[JSON_IMG_PATH] is not None:
+                        _valid_response[JSON_IMG_PATH] = get_data[JSON_IMG_PATH]
+                    if get_data[JSON_MP4_PATH] is not None:
+                        _valid_response[JSON_MP4_PATH] = get_data[JSON_MP4_PATH]
+                    if get_data[JSON_MODEL_STATUS]:
+                        _valid_response[JSON_MODEL_STATUS] = get_data[JSON_MODEL_STATUS]
+
+                    if get_data[JSON_COMPLETE]:
+                        _lock.acquire()
+                        _remove_client_data(client_uuid)
+                        _lock.release()
+
+                        logger.info(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. Removed the client data.")
+
+                        _reset_valid_response()
+
                 except Empty:
-                    logger.warning(f"[{client_uuid}]: Queue is empty")
+                    _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] += 1
 
-                if queued_data[JSON_COMPLETE]:
-                    self._remove_client_data(client_uuid)
-                    logger.info(f"[{client_uuid}]: Removed data from clients completed with the task")
-            else:
-                logger.warning(f"[{client_uuid}]: {len(_client_data)} clients are queued. The client is #{client_priority}. Skipping the task.")
+                    res[JSON_CURRENT_ITER] = _valid_response[JSON_CURRENT_ITER]
+                    res[JSON_IMG_PATH] = _valid_response[JSON_IMG_PATH]
+                    res[JSON_MP4_PATH] = _valid_response[JSON_MP4_PATH]
+                    res[JSON_MODEL_STATUS] = _valid_response[JSON_MODEL_STATUS]
 
-                res: Dict[str, Optional[Union[str, bool]]] = {
-                    JSON_HASH: client_uuid,
-                    JSON_PRIORITY: client_priority,
-                    JSON_NUM_CLIENTS: len(_client_data),
-                    JSON_CURRENT_ITER: "0",
-                    JSON_COMPLETE: False,
-                    JSON_IMG_PATH: None,
-                    JSON_GIF_PATH: None,
-                }
+                    if IF_EMPTY_TOLERANCE >= _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] > 3 * IF_EMPTY_TOLERANCE / 4:
+                        logger.warning(f"[{client_uuid}]: <<AIcon I/F >> No data has been sent from AIcon Core for a long time. AIcon Core may have crashed.")
+
+                    elif _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] > IF_EMPTY_TOLERANCE:
+                        logger.error(f"[{client_uuid}]: <<AIcon I/F >> AIcon Core crashed. Sending an abort signal.")
+
+                        _client_data[client_uuid][CORE_I2C_EVENT].set()
+
+                        res[JSON_COMPLETE] = True
+
+                        _lock.acquire()
+                        _remove_client_data(client_uuid)
+                        _lock.release()
+
+                        _reset_valid_response()
         else:
-            logger.fatal(f"[{client_uuid}]: Invalid UUID")
-            abort(Forbidden, f"Invalid UUID: {client_uuid}")
+            logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> Invalid UUID")
+            abort(403, f"Invalid UUID: {client_uuid}")
 
         return jsonify(res)
+
     
-    @app.errorhandler(BadRequest)
-    @app.errorhandler(Forbidden)
-    @app.errorhandler(InternalServerError)
-    def handle_exception(e: HTTPException):
-        """Return JSON instead of HTML for HTTP errors."""
+@app.errorhandler(BadRequest)
+@app.errorhandler(Forbidden)
+@app.errorhandler(InternalServerError)
+def handle_exception(e: HTTPException):
+    """Return JSON instead of HTML for HTTP errors."""
 
-        response: Response = e.get_response()
-        response.data = json.dumps({
-            "code": e.code,
-            "name": e.name,
-            "description": e.description,
-        })
-        response.content_type = "application/json"
+    response: Response = e.get_response()
+    response.data = json.dumps({
+        "code": e.code,
+        "name": e.name,
+        "description": e.description,
+    })
+    response.content_type = "application/json"
 
-        return response
+    return response
 
-    @app.route("/")
-    def index():
-        return render_template("aicon.html", title="AIcon", name="AIcon")
+@app.route('/')
+def index() -> Response:
+    return render_template("aicon.html", title="AIcon", name="AIcon")
 
 
 if __name__ == "__main__":
-    logger.info("Seesion started")
+    logger.info("<<AIcon>> Seesion started")
 
-    aicon: AIcon = AIcon()
-    api.add_resource(AIcon, '/service')
+    logger.info("<<AIcon>> Installing web driver. This may take some time.")
+    install_webdriver()
 
-    serve(app, host='0.0.0.0', port=5050, threads=10)
+    multiprocessing.set_start_method("spawn")
+
+    GarbageCollector(target_dirs=[
+        Path(IF_BASE_IMG_PATH)/Path(MODEL_NAME_BIG_SLEEP),
+        Path(IF_BASE_IMG_PATH)/Path(MODEL_NAME_DEEP_DAZE),
+        Path(IF_BASE_IMG_PATH)/Path(MODEL_NAME_DALL_E),
+        Path(IF_BASE_MP4_PATH)/Path(MODEL_NAME_BIG_SLEEP),
+        Path(IF_BASE_MP4_PATH)/Path(MODEL_NAME_DEEP_DAZE),
+        Path(IF_BASE_MP4_PATH)/Path(MODEL_NAME_DALL_E),
+    ])
+    PriorityMonitor()
+    ConnectionHealthChecker()
+
+    AIconInterface()
+    Authorization()
+    Callback()
+    Executor()
+    api.add_resource(AIconInterface, '/service')
+    api.add_resource(Authorization, '/twitter/auth')
+    api.add_resource(Callback, '/twitter/callback')
+    api.add_resource(Executor, '/twitter/send')
+
+    logger.info(f"<<AIcon>> Running on http://localhost:{PORT}/")
+
+    serve(app, host='0.0.0.0', port=PORT, threads=30)

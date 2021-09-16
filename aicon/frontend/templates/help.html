@@ -1,61 +1,116 @@
-<html>
-  <head>
-    <title>AIcon help</title>
-    <!-- MAterialize -->
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/icon?family=Material+Icons"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
-    />
-  </head>
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="utf-8">
+        <title>AIcon help</title>
 
-  <body>
-    <form action="#">
-      <p>
-        <label>
-          <input type="checkbox" />
-          <span>Red</span>
-        </label>
-      </p>
-      <p>
-        <label>
-          <input type="checkbox" checked="checked" />
-          <span>Yellow</span>
-        </label>
-      </p>
-      <p>
-        <label>
-          <input type="checkbox" class="filled-in" checked="checked" />
-          <span>Filled in</span>
-        </label>
-      </p>
-      <p>
-        <label>
-          <input id="indeterminate-checkbox" type="checkbox" />
-          <span>Indeterminate Style</span>
-        </label>
-      </p>
-      <p>
-        <label>
-          <input type="checkbox" checked="checked" disabled="disabled" />
-          <span>Green</span>
-        </label>
-      </p>
-      <p>
-        <label>
-          <input type="checkbox" disabled="disabled" />
-          <span>Brown</span>
-        </label>
-      </p>
-    </form>
+        <!--==============レイアウトを制御する独自のCSSを読み込み===============-->
+        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/multiscroll.js/0.2.2/jquery.multiscroll.css">
+        <link rel="stylesheet" type="text/css" href="../static/css/help.css">
 
-    <script
-      type="text/javascript"
-      src="https://code.jquery.com/jquery-2.1.1.min.js"
-    ></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  </body>
+        <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="  crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/multiscroll.js/0.2.2/jquery.multiscroll.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
+    </head>
+
+    <body>
+    <div id="header">
+        <h1>How to use AIcon</h1>
+        <nav>
+            <ul id="menu">
+                <li data-menuanchor="select_model" class="active"><a href="#Select_Model">Select Model</a></li>
+                <li data-menuanchor="slider"><a href="#slider">Slider</a></li>
+                <li data-menuanchor="input_text"><a href="#input_text">Input Text</a></li>
+                <li data-menuanchor="source_image"><a href="#source_image">Source Image</a></li>
+                <li data-menuanchor="option"><a href="#option">option</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div id="wrapper">
+
+    <div class="ms-left">
+        <section class="ms-section" id="left1">
+        <div class="sp-top"></div>
+        <div class="sp-bottom">
+        <h2>Select Model</h2>
+        <p>
+            <h2>
+                ・DeepDaze
+            </h2>
+            <h2>
+                ・BigSleep
+            </h2>
+        </p>
+        </div>
+        <!--/left1--></section>
+
+        <section class="ms-section" id="left2">
+        <div class="sp-top"></div>
+        <div class="sp-bottom">
+        <h2>Slider</h2>
+        <p>
+            <h2>
+                画像を生成するパラメータを設定します
+            </h2>
+        </p>
+        </div>
+        <!--/left2--></section>
+
+        <section class="ms-section" id="left3">
+        <div class="sp-top"></div>
+        <div class="sp-bottom">
+        <h2>Input Text</h2>
+        <p>
+            <h2>
+                ほしい画像を文字に起こす
+            </h2>
+        </p>
+        </div>
+        <!--/left3--></section>
+        
+        <section class="ms-section" id="left4">
+        <div class="sp-top"></div>
+        <div class="sp-bottom">
+        <h2>Source Image</h2>
+        <p>
+            <h2>
+                入力された画像を基に画像を作る
+                <br>※必須ではない
+            </h2>
+        </p>
+        </div>
+        <!--/left4--></section>
+        
+        <section class="ms-section" id="left5">
+        <div class="sp-top"></div>
+        <div class="sp-bottom">
+        <h2>Option</h2>
+        <p>
+            <h2>
+                ・通知の設定
+                <br>画像を作り終えたら通知を送ります
+                <br>・通信料の削減
+                <br>生成途中の画像を表示しない
+            </h2>
+        </p>
+        </div>
+        <!--/left5--></section>
+        
+    <!--/ms-left--></div>
+        
+    <div class="ms-right">
+        <div class="ms-section" id="right1"></div>
+        <div class="ms-section" id="right2"></div>
+        <div class="ms-section" id="right3"></div>
+        <div class="ms-section" id="right4"></div>
+        <div class="ms-section" id="right5"></div>
+        <div class="ms-section" id="right6"></div>
+        <!--/ms-right--></div>    
+        
+        <!--/wrapper--></div>
+        
+        
+        <script type=text/javascript src="../static/js/help.js"></script>
+    </body>
 </html>
