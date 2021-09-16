@@ -113,6 +113,7 @@ RUN pip3 install --verbose \
         boto3 \
         ftfy \
         regex \
+        tweepy \
         imageio \
         imageio_ffmpeg
 
