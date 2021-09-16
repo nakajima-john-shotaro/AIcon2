@@ -152,6 +152,15 @@ border-bottom:1px solid #ccc;
 	padding-bottom: 100%;
 }
 
+#target_preview_field {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 0;
+	padding-bottom: 100%;
+}
+
 #drop_area {
 	position: absolute;
 	top: 0;
@@ -163,7 +172,18 @@ border-bottom:1px solid #ccc;
 	cursor: pointer;
 }
 
-#text_position {
+#target_drop_area {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 0;
+	padding-bottom: 100%;
+	border: 3px dashed #888;
+	cursor: pointer;
+}
+
+.text_position {
 	top: 0;
 	left: 0;
 	width: 100%;
@@ -172,7 +192,7 @@ border-bottom:1px solid #ccc;
 	position: relative;
 }
 
-#image_upload_text {
+.image_upload_text {
 	font-weight: bold;
 	font-size: large;
 	color: #888;
@@ -197,6 +217,15 @@ border-bottom:1px solid #ccc;
 	height: 25px;
 	cursor: pointer;
 }
+#target_img_delete_button {
+	display: none;
+	position: absolute;
+	top: 5%;
+	right: 5%;
+	width: 25px;
+	height: 25px;
+	cursor: pointer;
+}
 
 #input_file {
 	width: 100%;
@@ -206,6 +235,17 @@ border-bottom:1px solid #ccc;
 }
 
 #input_file:focus {
+	opacity: 1;
+}
+
+#target_input_file {
+	width: 100%;
+	height: 0;
+	padding-bottom: 100%;
+	opacity: 0;
+}
+
+#target_input_file:focus {
 	opacity: 1;
 }
 
@@ -271,6 +311,14 @@ border-bottom:1px solid #ccc;
 	min-height: 100px;
 }
 
+#save_img, #save_mp4 {
+	font-size: 55px;
+	color: #303030;
+}
+
+#save_img_text, #save_mp4_text, #change_icon_text, #tweet_text {
+	color: #808080;
+}
 /* フッターの設定 */
 #footer {
 	min-height: 65px;
@@ -278,10 +326,14 @@ border-bottom:1px solid #ccc;
 
 .page-footer {
 	position:relative;
-	width: 100vw;
+	width: 100%;
 	bottom: 0;
 	display: flex;
 	flex-flow: column;
+}
+
+#communication_partner {
+	color: rgb(255, 255, 255);
 }
 
 /* 全体構成関係 */
@@ -327,24 +379,6 @@ border-bottom:1px solid #ccc;
 
 
 /* -----loading関係------ */
-/* #fullOverlay {
-	position: absolute;
-	left: 0; top: 0;
-	width: 100%; height: 100%;
-	background: rgba(100, 100, 100, .8);
-	z-index: 2147483647;
-}
-
-#fullOverlay .text {
-	position: absolute;
-	left: 50%; top: 50%;
-	width: 100%;
-	transform: translate(-50%, -50%);
-	color: rgba(250, 250, 250, 1);
-	font-size: 24px;
-	text-align: center;
-} */
-
 #loader_wrap {
 	position: fixed;
 	display: flex;
