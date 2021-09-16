@@ -541,7 +541,7 @@ class Imagine(nn.Module):
         pil_img: Image = T.ToPILImage()(img.squeeze())
         pil_img.save(save_filename)
 
-        self.writer.append_data(np.uint8(np.array(pil_img)[:, :, ::-1] * 255.))
+        self.writer.append_data(np.uint8(np.array(pil_img) * 255.))
 
     def forward(self):
         if exists(self.start_image):
