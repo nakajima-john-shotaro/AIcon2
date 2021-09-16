@@ -37,10 +37,14 @@ body {
 
 .gallery {
 	height: 50%;
-	min-height: 85%;
+	min-height: 100%;
 }
 
 /* 右関係 */
+#adjust_top_space {
+	height: 5vh;
+}
+
 .border_sample{
 border-bottom:1px solid #ccc;
 }
@@ -49,7 +53,8 @@ border-bottom:1px solid #ccc;
 /* コンテナの中身の位置を全体的に少し下げる */
 #right_container {
 	position: relative;
-	top: 7%;
+	top: 0;
+	height: min-content;
 }
 
 /* -----モデル選択ボタン関係----- */
@@ -126,11 +131,16 @@ border-bottom:1px solid #ccc;
 	border-left: 2px dashed rgb(212, 212, 212);
 }
 
+/* テキストボックスの高さ */
+.materialize-textarea {
+	min-height: 46px;
+}
+
+
 /* -----写真のドラッグ＆ドロップ関係 -----*/
 .user-icon-dnd-wrapper {
 	position: relative;
 	width: 100%;
-	/* height: 100%; */
 }
 
 #preview_field {
@@ -153,12 +163,29 @@ border-bottom:1px solid #ccc;
 	cursor: pointer;
 }
 
+#text_position {
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 0;
+	padding-bottom: 100%;
+	position: relative;
+}
+
 #image_upload_text {
 	font-weight: bold;
 	font-size: large;
-	text-align: center;
 	color: #888;
-	transform: translate(0%, 100%);
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	margin: auto;
+	width: 80%;
+	height: 3.2rem;
+	text-align: center;
+	transform: translate(0%, -35%);
 }
 
 #img_delete_button {
@@ -183,7 +210,7 @@ border-bottom:1px solid #ccc;
 }
 
 /* 開始ボタン、リロードボタン関係 */
-#reload, #start_quit_button {
+#reload, #start_button {
 	min-width: 153;
 }
 
@@ -208,25 +235,65 @@ border-bottom:1px solid #ccc;
 	width: 60%;
 	height: auto;
 	margin: auto;
-	max-width: 600;
+	max-width: 500;
+}
+
+/* プログレスバーの設定 */
+#progress_bar {
+	width: 39%;
+	top: 30px;
+	min-width: 280px;
 }
 
 
+/* 中止ボタンの設定 */
+#quit_button {
+	min-width: 153;
+	top: 40px;
+}
+
+/* -----生成画像保存とトゥイート、アイコン変更ボタン関係----- */
+.save_setting_button {
+	padding: 5px;
+	border: solid 1px #ddd;
+	width: 95%;
+	border-radius: 10px;
+	cursor: pointer;
+	cursor: hand;
+	margin: 0 auto;
+}
+
+.save_setting_button:hover{
+	border: solid 1px #ccc;
+}
+
+#save_buttons {
+	min-height: 100px;
+}
+
 /* フッターの設定 */
-.page-footer{
+#footer {
+	min-height: 65px;
+}
+
+.page-footer {
+	position:relative;
 	width: 100vw;
+	bottom: 0;
+	display: flex;
+	flex-flow: column;
 }
 
 /* 全体構成関係 */
 /*左と右を囲う全体のエリア*/
-#wrapper{
+#wrapper {
 	position: relative;/*position stickyの基点にするため relativeをかける*/
 	display: flex;/*左エリア、右エリア横並び指定*/
 	flex-wrap: wrap;/*ボックスの折り返し可*/
 }
 
 /*左エリア*/
-#fixed-area{
+#fixed-area {
 	position: -webkit-sticky;
 	position: sticky;
 	top:0;
@@ -235,24 +302,144 @@ border-bottom:1px solid #ccc;
 }
 
 /*右エリア*/
-#scroll_container{
+#scroll_container {
 	/*横半分50%にする*/
 	width:50%;
+	height: auto;
 }
 
 /*＝＝＝＝＝＝＝＝＝＝＝768px以下の見え方＝＝＝＝＝＝＝＝＝＝＝＝＝*/
 
-@media screen and (max-width:768px){
-	#wrapper{
-		display: block;/*display:flex;を解除*/
+@media screen and (max-width:768px) {
+	#wrapper {
+		display: block;
 	}
-	#fixed-area{
-		position:relative!important;/*position stickyを解除*/
-		width:100%;/*横幅を100%にして1列に見せる*/
-		height: 40vh;/*縦幅を100vh⇒40vh ※任意の高さに設定可能*/
+	#fixed-area {
+		position:relative!important;
+		width:100%;
+		height: 40vh;
 		min-height: 350;
 	}
-	#scroll_container{
-		width:100%;/*横幅を100%にして1列に見せる*/
+	#scroll_container {
+		width:100%;
+	}
 }
+
+
+/* -----loading関係------ */
+/* #fullOverlay {
+	position: absolute;
+	left: 0; top: 0;
+	width: 100%; height: 100%;
+	background: rgba(100, 100, 100, .8);
+	z-index: 2147483647;
+}
+
+#fullOverlay .text {
+	position: absolute;
+	left: 50%; top: 50%;
+	width: 100%;
+	transform: translate(-50%, -50%);
+	color: rgba(250, 250, 250, 1);
+	font-size: 24px;
+	text-align: center;
+} */
+
+#loader_wrap {
+	position: fixed;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100vw;
+	height: 100vh;
+	top: 0;
+	background: rgba(39, 39, 39, 0.808);
+	z-index: 2147483647;
+	display: none;
+}
+
+#my_position {
+	font-size: 128px;
+	color: #dd171e;
+}
+
+
+#waiting_num_display {
+	position: fixed;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100vw;
+	height: 100vh;
+	top:30%;
+}
+
+#other_person {
+	font-size: 100px;
+	color: #000000;
+	position: fixed;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	/* width: 100vw;
+	height: 100vh; */
+	top:10%;
+}
+.loader,
+.loader:before,
+.loader:after {
+	background: #00b3ff;;
+	-webkit-animation: load1 1s infinite ease-in-out;
+	animation: load1 1s infinite ease-in-out;
+	width: 1em;
+	height: 4em;
+}
+.loader {
+	color: #00b3ff;
+	text-indent: -9999em;
+	margin: 88px auto;
+	position: relative;
+	font-size: 200%;
+	-webkit-transform: translateZ(0);
+	-ms-transform: translateZ(0);
+	transform: translateZ(0);
+	-webkit-animation-delay: -0.16s;
+	animation-delay: -0.16s;
+}
+.loader:before,.loader:after {
+	position: absolute;
+	top: 0;
+	content: '';
+}
+.loader:before {
+	left: -1.5em;
+	-webkit-animation-delay: -0.32s;
+	animation-delay: -0.32s;
+}
+.loader:after {
+	left: 1.5em;
+}
+@-webkit-keyframes load1 {
+	0%,
+	80%,
+	100% {
+		box-shadow: 0 0;
+		height: 4em;
+	}
+	40% {
+		box-shadow: 0 -2em;
+		height: 5em;
+	}
+}
+@keyframes load1 {
+	0%,
+	80%,
+	100% {
+		box-shadow: 0 0;
+		height: 4em;
+	}
+	40% {
+		box-shadow: 0 -2em;
+		height: 5em;
+	}
 }

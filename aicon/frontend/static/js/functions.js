@@ -9,8 +9,9 @@ $(window).on('load resize', function () {
     }
 });
 
-$(window).load(function () {
+$(window).load(function () {    
     change_advanced_param(model_button_id, param_button_id);
+    
     $('html,body').animate({ scrollTop: 0 }, '1');
 });
 
@@ -335,6 +336,7 @@ function stop_input() {
     $('#start_button').fadeOut(0);
     $('#reload').fadeOut(0);
     $('#textarea').prop('disabled', true);
+    $('.seed_radio_button').prop('disabled', true);
     $('#carrot_textarea').prop('disabled', true);
     $('#stick_textarea').prop('disabled', true);
 }
@@ -360,9 +362,53 @@ function abort_signal() {
         stick: text_check($('#stick_textarea').val())
     };
     $('#quit_button').fadeOut(0);
+    $('#progress_bar').fadeOut(300);
     console.log('中止信号が押されました');
     let send_json_data = JSON.stringify(send_data);
     communicate(send_json_data);
+};
+
+// 待機の場合に表示する関数
+function wait_display() {
+    const top_list = [10, 14, 19, 27, 38];
+    const fontsize_list = [70, 85, 110, 150, 200];
+    const color_list = ['rgba(0, 0, 0, 1)', 'rgba(20, 20, 20, 1)', 'rgba(40, 40, 40, 1)', 'rgba(60, 60, 60, 1)', 'rgba(70, 70, 70, 1)'];
+    // $('#loader_wrap').css('display', 'block');
+    $('#loader_wrap').fadeIn(0);
+    for (i = 1; i < 6; i++) {
+        let css_lib = {
+            'font-size': fontsize_list[i-1],
+            'top': top_list[i-1] + '%',
+            'position': 'fixed',
+            'display': 'flex',
+            'width': '100vw',
+            'height': '100vh',
+            'align-items': 'center',
+            'justify-content': 'center',
+            'color': color_list[i-1]
+        }
+        $('#waiting_num_display').append('<i class="material-icons" id="waiter_' + i + '">person</i>')
+        $('#waiter_' + i).css(css_lib);
+    };
+};
+
+// 待機の状態に自分の位置を知らせる関数
+function sort_order(priority, model_status) {
+    const color_list_ = ['rgba(0, 0, 0, 1)', 'rgba(20, 20, 20, 1)', 'rgba(40, 40, 40, 1)', 'rgba(60, 60, 60, 1)', 'rgba(70, 70, 70, 1)'];
+    if ((priority === 1) && model_status) {
+        $('#loader_wrap').fadeOut(0);
+    }
+    else {
+        for (let i = 1; i < 6; i++) {
+            $('#waiter_' + i).addClass('color', color_list_[i-1]);
+        };
+        if (priority < 5) {
+            $('#waiter_' + priority).css('color', 'rgba(221, 23, 30, 1)');
+        }
+        else {
+            $('#waiter_5').css('color', 'rgba(221, 23, 30, 1)');
+        }
+    }
 };
 
 
@@ -372,13 +418,14 @@ var hash = '00000000-0000-0000-0000-000000000000';
 function start() {
     stop_input();
     communicate_status = true;
-
+    wait_display();
     $('#img_make_container').fadeIn(0);
+    $('#save_buttons').fadeOut(0);
     $('#result_img').attr("src", "../static/demo_img/Alice_in_wonderland.png").on("scroll", function () {
         $('#result_img').fadeIn();
     });
     const target = $('#img_make_container').get(0).offsetTop;
-    $('body,html').animate({ scrollTop: target }, 500, 'swing');
+    $('body,html').animate({ scrollTop: target }, 2000, 'swing');
     
     // スライダーの値を取得
     const slider_vals = get_slider_values();
@@ -421,6 +468,7 @@ function communicate(s_data) {
         contentType: "application/json; charset=utf-8",
     })
         .done(function (r_data, textStatus, xhr) {
+            sort_order(r_data["priority"], r_data["model_status"]);
             console.log("Communication success");
             console.log("r_data");
             console.log(r_data);
@@ -428,7 +476,12 @@ function communicate(s_data) {
             console.log(s_data);
             tmp_data = JSON.parse(s_data);
 
+            // プログレスバーの表示
+            $('.determinate').attr('style', 'width:' + 100 * r_data['current_iter']/tmp_data['total_iter'] + '%');
+
+            // 生成画像の表示
             if (!(r_data["img_path"] === null)) {
+                console.log();
                 $('#result_img').attr("src", r_data["img_path"]).on("load", function () {
                     $('#result_img').fadeIn();
                 });
@@ -442,7 +495,15 @@ function communicate(s_data) {
                 });
             } else {
                 console.log("Communication is finished")
-                PushNotification()
+                $('#quit_button').fadeOut(0);
+                $('#progress_bar').fadeOut(300, function(){
+                    $('#save_buttons').fadeIn(0);
+                });
+                $('#download_img').attr("href", r_data["img_path"]).attr("download", $("#textarea").val() + ".png");
+                $('#download_mp4').attr("href", r_data["mp4_path"]).attr("download", $("#textarea").val() + '.' +r_data['mp4_path'].split('.').pop());
+                if ($('#Notification_box').prop("checked") === true) {
+                    PushNotification()
+                }
             }
         })
         .fail(function (r_data, textStatus, error) {
@@ -460,6 +521,41 @@ function wait(msec) {
     return objDef.promise();
 }
 
+// 画像と動画に関する関数です
+$('.save_content').click(function() {
+    console.log(this.id)
+    $('#' + this.id)
+    let link = document.getElementById("download");
+    // link.href =  
+});
+
+
+// Twitterへの変更じ関する関数です
+$('.twitter').click(function () {
+    let twitter_button = this.id;
+    $.ajax({
+        url: "http://localhost:5050/twitter/auth",
+        method: "POST", //HTTPメソッドの種別
+        dataType: "json", //データの受信形式
+        timeout: 10000, //タイムアウト値（ミリ秒）
+        async: false, //同期通信  false:同期  true:非同期
+        contentType: "application/json; charset=utf-8",
+    })
+        .done(function (r_data, textStatus, xhr) {
+            if (twitter_button === "tweet") {
+                $.cookie("twitter_mode", "tweet");
+            }
+            else if (twitter_button === "change_icon") {
+                $.cookie("twitter_mode", "icon");
+            };
+            $.cookie("img_path", $("#download-origin").attr("href"));
+            window.open(r_data["auth_url"]);
+        })
+        .fail(function (r_data, textStatus, xhr) {
+            console.log('Fail to communication')
+        });
+});
+
 
 // 通知に関しての関数
 function PushNotification() {
@@ -473,3 +569,4 @@ function PushNotification() {
         }
     });
 }
+
