@@ -5,6 +5,9 @@ from logging import (
     getLogger, DEBUG, INFO, WARNING, ERROR, CRITICAL
 )
 from typing import List
+from multiprocessing.managers import BaseManager
+from queue import LifoQueue
+
 
 RATE_LIMIT: str = "1000 per minute"
 PORT: int = 5050
@@ -65,6 +68,20 @@ CHC_LAST_CONNECTION_TIME: str = "last_connection_time"
 
 GC_TIMEOUT: int = 3600
 
+TWITTER_CONSUMER_KEY: str = "CONSUMER_KEY"
+TWITTER_CONSUMER_SECRET: str = "CONSUMER_SECRET"
+TWITTER_ACCESS_TOKEN: str = "ACCESS_TOKEN"
+TWITTER_ACCESS_TOKEN_SECRET: str = "ACCESS_TOKEN_SECRET"
+TWITTER_AUTHORIZATION_URL: str = "authorization_url"
+TWITTER_OAUTH_TOKEN: str = "oauth_token" 
+TWITTER_OAUTH_VERIFIER: str = "oauth_verifier"
+TWITTER_OAUTH_TOKEN_SECRET: str = "oauth_token_secret"
+TWITTER_IMG_PATH: str = JSON_IMG_PATH
+TWITTER_MODE: str = "mode"
+
+TWITTER_MODE_ICON: str = "icon"
+TWITTER_MODE_TWEET: str = "tweet"
+
 
 class CustomFormatter(Formatter):
 
@@ -108,6 +125,13 @@ def get_logger(name: str = "aicon", level: int = INFO):
     return logger
 
 
+class AIconManager(BaseManager):
+    pass
+
+AIconManager.register('LifoQueue', LifoQueue)
+
+
+
 class AIconBaseException(Exception):
     def __init__(self, arg="AIcon internal error") -> None:
         self.arg = arg
@@ -139,5 +163,15 @@ class AIconFileNotFoundError(AIconBaseException):
 
 
 class AIconAbortedError(AIconBaseException):
+    def __str__(self):
+        return f"{self.arg}"
+
+
+class AIconEnvVarNotFindError(AIconBaseException):
+    def __str__(self):
+        return f"{self.arg}"
+
+
+class AIconCookiyNotFindError(AIconBaseException):
     def __str__(self):
         return f"{self.arg}"
