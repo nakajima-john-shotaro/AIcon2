@@ -44,11 +44,11 @@
       <!-- 左固定 -->
         <div class="container" id="fixed-area">
           <div class="container carousel col s12 gallery">
-              <img class="carousel-item" id="img1" src="https://lorempixel.com/250/250/cats/0" alt="Can't load image." width="512">
-              <img class="carousel-item" id="img2" src="https://lorempixel.com/250/250/cats/1" alt="Can't load image.">
-              <img class="carousel-item" id="img3" src="https://lorempixel.com/250/250/cats/2" alt="Can't load image.">
-              <img class="carousel-item" id="img4" src="https://lorempixel.com/250/250/cats/3" alt="Can't load image.">
-              <img class="carousel-item" id="img5" src="https://lorempixel.com/250/250/cats/4" alt="Can't load image.">
+              <img class="carousel-item" id="img1" src="../static/demo_img/Alice_in_wonderland.png" alt="Can't load image.">
+              <img class="carousel-item" id="img2" src="../static/demo_img/Demon_Slayer.png" alt="Can't load image.">
+              <img class="carousel-item" id="img3" src="../static/demo_img/cinderella.png" alt="Can't load image.">
+              <img class="carousel-item" id="img4" src="../static/demo_img/galaxy.png" alt="Can't load image.">
+              <img class="carousel-item" id="img5" src="../static/demo_img/lagoon.png" alt="Can't load image.">
           </div>
           <div class="text">
             
@@ -548,26 +548,30 @@
       <div class="row" id="save_buttons">
         <div class="col s6 m3">
           <a class="save_content" id="download_img">
-            <div class="save_setting_button" id="save_img">
-              <p class="not_select_text center">画像保存</p>
+            <div class="save_setting_button">
+              <i class="material-icons" id="save_img">image</i>
+              <p class="not_select_text center" id="save_img_text">画像保存</p>
             </div>
           </a>
         </div>
         <div class="col s6 m3">
           <a class="save_content" id="download_mp4">
-            <div class="save_setting_button" id="save_mp4">
-              <p class="not_select_text center">動画保存</p>
+            <div class="save_setting_button">
+              <i class="material-icons" id="save_mp4">movie</i>
+              <p class="not_select_text center" id="save_mp4_text">動画保存</p>
             </div>
           </a>
         </div>
         <div class="col s6 m3">
           <div class="save_setting_button twitter" id="change_icon">
-            <p class="not_select_text center">アイコン変更</p>
+            <i class="material-icons" id="twitter_icon">photo</i>
+            <p class="not_select_text center" id="change_icon_text">アイコン変更</p>
           </div>
         </div>
         <div class="col s6 m3">
           <div class="save_setting_button twitter" id="tweet">
-            <p class="not_select_text center">ツイート</p>
+            <i class="material-icons" id="tweet_icon">photo</i>
+            <p class="not_select_text center" id="tweet_text">ツイート</p>
           </div>
         </div>
       </div>
@@ -575,9 +579,18 @@
     <div class="blue darken-2" id="footer">
       <footer class="page-footer blue darken-2">
         <div class="container">
-          © 2014 Copyright Text
-          <a class="grey-text text-lighten-4 right" href="#!">More Links</a>
+          <div class="row">
+            <div class="col s4 left">
+            © 2021 Copyright Text
+            </div>
+            <div class="col s8 right">
+              <div class="input-field col s5 right">
+                <input class="right cancelEnter" id="communication_partner" type="text" value="localhost">
+                <label class="active" for="communication_partner">Server IP Address</label>
+              </div>
+            </div>
           </div>
+        </div>
       </footer>
     </div>
   <script>

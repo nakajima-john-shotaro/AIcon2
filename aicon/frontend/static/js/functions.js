@@ -369,6 +369,7 @@ function target_handleFiles(files) {
 
 
 $(window).resize(function () {
+    console.log($('#communication_partner').val())
     $('#upload_img').width($('#drop_area').outerWidth());
     $('#upload_img').height($('#drop_area').outerHeight());
     $('#target_upload_img').width($('#target_drop_area').outerWidth());
@@ -457,6 +458,7 @@ function stop_input() {
     $('.seed_radio_button').prop('disabled', true);
     $('#carrot_textarea').prop('disabled', true);
     $('#stick_textarea').prop('disabled', true);
+    $('#communication_partner').prop('disabled', true);
 }
 
 // 中止ボタンを押された際に送信データを変更する
@@ -582,7 +584,7 @@ function start() {
 // 通信に関しての関数
 function communicate(s_data) {
     $.ajax({
-        url: "http://localhost:5050/service",
+        url: "http://" + $('#communication_partner').val() + ":5050/service",
         method: "POST",
         data: s_data,
         dataType: "json", //データの受信形式
@@ -610,13 +612,16 @@ function communicate(s_data) {
 
             // 生成画像の表示
             if (!(r_data["img_path"] === null)) {
-                console.log();
-                $('#result_img').attr("src", r_data["img_path"]).on("load", function () {
+                let img_path = r_data["img_path"].replace('..', 'http://' + $('#communication_partner').val() + ':5050');
+                console.log(img_path)
+                $('#result_img').attr("src", img_path).on("load", function () {
                     $('#result_img').fadeIn();
                 });
             }
             // 通信継続の確認
             if (!r_data["complete"]) {
+                tmp_data["source_img"] = null;
+                tmp_data["target_img"] = null;
                 wait(300).done(function () {
                     tmp_data["hash"] = r_data["hash"];
                     hash = r_data["hash"];
@@ -628,8 +633,10 @@ function communicate(s_data) {
                 $('#progress_bar').fadeOut(300, function(){
                     $('#save_buttons').fadeIn(0);
                 });
-                $('#download_img').attr("href", r_data["img_path"]).attr("download", $("#textarea").val() + ".png");
-                $('#download_mp4').attr("href", r_data["mp4_path"]).attr("download", $("#textarea").val() + '.' +r_data['mp4_path'].split('.').pop());
+                let download_img_path = r_data["img_path"].replace('..', 'http://' + $('#communication_partner').val() + ':5050');
+                let download_mp4_path = r_data["mp4_path"].replace('..', 'http://' + $('#communication_partner').val() + ':5050');
+                $('#download_img').attr("href", download_img_path).attr("download", $("#textarea").val() + ".png");
+                $('#download_mp4').attr("href", download_mp4_path).attr("download", $("#textarea").val() + '.' +r_data['mp4_path'].split('.').pop());
                 if ($('#Notification_box').prop("checked") === true) {
                     PushNotification(r_data["img_path"])
                 }
@@ -663,7 +670,7 @@ $('.save_content').click(function() {
 $('.twitter').click(function () {
     let twitter_button = this.id;
     $.ajax({
-        url: "http://localhost:5050/twitter/auth",
+        url: "http://" + $('#communication_partner').val() + ":5050/twitter/auth",
         method: "POST", //HTTPメソッドの種別
         dataType: "json", //データの受信形式
         timeout: 10000, //タイムアウト値（ミリ秒）
