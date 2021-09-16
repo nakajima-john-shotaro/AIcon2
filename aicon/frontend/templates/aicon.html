@@ -59,6 +59,7 @@
       <!-- 右可変 -->
       <div class="container active" id="scroll_container">
         <div class="row" id="right_container">
+          <div id="adjust_top_space"></div>
           <div class="col s1"></div>
           <div class="col s10" id="param_space">
             <div class="row">
@@ -282,7 +283,7 @@
                           <div class="col s4 seed_box">
                             <p>
                               <label>
-                                <input name="seed" type="radio" id="seed_button_random" checked />
+                                <input name="seed" class="seed_radio_button" type="radio" id="seed_button_random" checked />
                                 <span>Random</span>
                               </label>
                             </p>
@@ -290,7 +291,7 @@
                           <div class="col s4 seed_box" id="seed_box_fix">
                             <p>
                               <label>
-                                <input name="seed" type="radio" id="seed_button_specify" />
+                                <input name="seed" class="seed_radio_button" type="radio" id="seed_button_specify" />
                                 <span>Specify</span>
                               </label>
                             </p>
@@ -370,8 +371,10 @@
                           <input type="file" name="icon" id="input_file" accept="image/*">
                           <div id="preview_field"></div>
                           <div id="drop_area">
-                            <div id="image_upload_text">
-                              Drop Image Here<br>or<br>Click Here.
+                            <div id="text_position">
+                              <div id="image_upload_text">
+                                Drop Image Here<br>or<br>Click Here.
+                              </div>
                             </div>
                           </div>
                           <i class="material-icons prefix" id="img_delete_button">delete</i>
@@ -431,7 +434,7 @@
               <div class="col s3"></div>
             </div>
             
-            <br><br>
+            <br>
             <div class="border_sample"></div>
 
             <br>
@@ -443,14 +446,8 @@
                 <form action="#">
                   <p>
                     <label>
-                      <input type="checkbox" />
+                      <input type="checkbox" checked="checked" id="Notification_box"/>
                       <span>Notification</span>
-                    </label>
-                  </p>
-                  <p>
-                    <label>
-                      <input type="checkbox" />
-                      <span>Reduce data traffic</span>
                     </label>
                   </p>
                 </form>
@@ -474,11 +471,10 @@
               </div>
               <div class="col s2"></div>
             </div>
+
           </div><!-- param_space -->
           <div class="col s1"></div>
         </div><!-- right_container -->
-        <br>
-
       </div> <!-- scroll_container -->
     </div> <!-- wrapper -->
 
@@ -497,6 +493,9 @@
     <div class="container" id="img_make_container" hidden>
       <div class="row">
         <img id="result_img" src="../static/demo_img/Alice_in_wonderland.png" alt="Can't load image.">
+        <div class="row progress" id="progress_bar">
+          <div class="determinate" style="width: 0%"></div>
+        </div>
         <div class="row">
           <a class="waves-effect waves-light btn-large red accent-2" id="quit_button" onclick="abort_signal()">
             <i class="material-icons left">cancel</i>
@@ -504,16 +503,41 @@
           </a>
         </div>
       </div>
+      <div class="row" id="save_buttons">
+        <div class="col s6 m3">
+          <a class="save_content" id="download_img">
+            <div class="save_setting_button" id="save_img">
+              <p class="not_select_text center">画像保存</p>
+            </div>
+          </a>
+        </div>
+        <div class="col s6 m3">
+          <a class="save_content" id="download_mp4">
+            <div class="save_setting_button" id="save_mp4">
+              <p class="not_select_text center">動画保存</p>
+            </div>
+          </a>
+        </div>
+        <div class="col s6 m3">
+          <div class="save_setting_button twitter" id="change_icon">
+            <p class="not_select_text center">アイコン変更</p>
+          </div>
+        </div>
+        <div class="col s6 m3">
+          <div class="save_setting_button twitter" id="tweet">
+            <p class="not_select_text center">ツイート</p>
+          </div>
+        </div>
+      </div>
     </div>
-    <!-- <div class="row"> -->
+    <div class="blue darken-2" id="footer">
       <footer class="page-footer blue darken-2">
-          <div class="container">
-            © 2014 Copyright Text
-            <a class="grey-text text-lighten-4 right" href="#!">More Links</a>
+        <div class="container">
+          © 2014 Copyright Text
+          <a class="grey-text text-lighten-4 right" href="#!">More Links</a>
           </div>
       </footer>
-    <!-- </div> -->
-
+    </div>
   <script>
     $(document).ready(function(){
       $('ul.tabs').tabs({
@@ -577,5 +601,11 @@
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
   </script>
-  
+  <noscript>
+    <h1>
+      お使いのブラウザは旧石器時代に開発されたものかテキストベースのもの，
+      またはAdBlockやサイトの設定などによってJavascriptが無効にされているようです。
+      現代の一般的なブラウザを用いるかJavascriptの実行を許可してください。
+    </h1>
+  </noscript>
 </html>

@@ -336,6 +336,7 @@ function stop_input() {
     $('#start_button').fadeOut(0);
     $('#reload').fadeOut(0);
     $('#textarea').prop('disabled', true);
+    $('.seed_radio_button').prop('disabled', true);
     $('#carrot_textarea').prop('disabled', true);
     $('#stick_textarea').prop('disabled', true);
 }
@@ -361,6 +362,7 @@ function abort_signal() {
         stick: text_check($('#stick_textarea').val())
     };
     $('#quit_button').fadeOut(0);
+    $('#progress_bar').fadeOut(300);
     console.log('中止信号が押されました');
     let send_json_data = JSON.stringify(send_data);
     communicate(send_json_data);
@@ -395,19 +397,15 @@ function sort_order(priority, model_status) {
     const color_list_ = ['rgba(0, 0, 0, 1)', 'rgba(20, 20, 20, 1)', 'rgba(40, 40, 40, 1)', 'rgba(60, 60, 60, 1)', 'rgba(70, 70, 70, 1)'];
     if ((priority === 1) && model_status) {
         $('#loader_wrap').fadeOut(0);
-        console.log('=========================')
     }
     else {
         for (let i = 1; i < 6; i++) {
-            console.log('unti')
             $('#waiter_' + i).addClass('color', color_list_[i-1]);
         };
         if (priority < 5) {
-            console.log('dagawkoeng')
             $('#waiter_' + priority).css('color', 'rgba(221, 23, 30, 1)');
         }
         else {
-            console.log('aga6gy4e5s4hs3b1d5a4ha56')
             $('#waiter_5').css('color', 'rgba(221, 23, 30, 1)');
         }
     }
@@ -422,11 +420,12 @@ function start() {
     communicate_status = true;
     wait_display();
     $('#img_make_container').fadeIn(0);
+    $('#save_buttons').fadeOut(0);
     $('#result_img').attr("src", "../static/demo_img/Alice_in_wonderland.png").on("scroll", function () {
         $('#result_img').fadeIn();
     });
     const target = $('#img_make_container').get(0).offsetTop;
-    $('body,html').animate({ scrollTop: target }, 500, 'swing');
+    $('body,html').animate({ scrollTop: target }, 2000, 'swing');
     
     // スライダーの値を取得
     const slider_vals = get_slider_values();
@@ -477,7 +476,12 @@ function communicate(s_data) {
             console.log(s_data);
             tmp_data = JSON.parse(s_data);
 
+            // プログレスバーの表示
+            $('.determinate').attr('style', 'width:' + 100 * r_data['current_iter']/tmp_data['total_iter'] + '%');
+
+            // 生成画像の表示
             if (!(r_data["img_path"] === null)) {
+                console.log();
                 $('#result_img').attr("src", r_data["img_path"]).on("load", function () {
                     $('#result_img').fadeIn();
                 });
@@ -491,7 +495,15 @@ function communicate(s_data) {
                 });
             } else {
                 console.log("Communication is finished")
-                PushNotification()
+                $('#quit_button').fadeOut(0);
+                $('#progress_bar').fadeOut(300, function(){
+                    $('#save_buttons').fadeIn(0);
+                });
+                $('#download_img').attr("href", r_data["img_path"]).attr("download", $("#textarea").val() + ".png");
+                $('#download_mp4').attr("href", r_data["mp4_path"]).attr("download", $("#textarea").val() + '.' +r_data['mp4_path'].split('.').pop());
+                if ($('#Notification_box').prop("checked") === true) {
+                    PushNotification()
+                }
             }
         })
         .fail(function (r_data, textStatus, error) {
@@ -509,6 +521,41 @@ function wait(msec) {
     return objDef.promise();
 }
 
+// 画像と動画に関する関数です
+$('.save_content').click(function() {
+    console.log(this.id)
+    $('#' + this.id)
+    let link = document.getElementById("download");
+    // link.href =  
+});
+
+
+// Twitterへの変更じ関する関数です
+$('.twitter').click(function () {
+    let twitter_button = this.id;
+    $.ajax({
+        url: "http://localhost:5050/twitter/auth",
+        method: "POST", //HTTPメソッドの種別
+        dataType: "json", //データの受信形式
+        timeout: 10000, //タイムアウト値（ミリ秒）
+        async: false, //同期通信  false:同期  true:非同期
+        contentType: "application/json; charset=utf-8",
+    })
+        .done(function (r_data, textStatus, xhr) {
+            if (twitter_button === "tweet") {
+                $.cookie("twitter_mode", "tweet");
+            }
+            else if (twitter_button === "change_icon") {
+                $.cookie("twitter_mode", "icon");
+            };
+            $.cookie("img_path", $("#download-origin").attr("href"));
+            window.open(r_data["auth_url"]);
+        })
+        .fail(function (r_data, textStatus, xhr) {
+            console.log('Fail to communication')
+        });
+});
+
 
 // 通知に関しての関数
 function PushNotification() {
@@ -523,8 +570,3 @@ function PushNotification() {
     });
 }
 
-// loading画面に関する関数です
-// $('#fullOverlay').css({
-//     'display': 'block',
-//     'z-index': 2147483647
-// });
