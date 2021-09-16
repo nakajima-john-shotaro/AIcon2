@@ -62,8 +62,29 @@
           <div id="adjust_top_space"></div>
           <div class="col s1"></div>
           <div class="col s10" id="param_space">
+
+          <div class="row">
+            <br>
+            <h7>理想の文。</h7>
+            <br>
+          </div>
+          <div class="row">
+            <div class="col s3"></div>
+            <form class="col s6">
+              <div class="input-field">
+                <i class="material-icons prefix">mode_edit</i>
+                <input id="textarea" class="materialize-textarea cancelEnter" type="search">
+                <label for="textarea">Input Text</label>
+              </div>
+            </form>
+            <div class="col s3"></div>
+          </div>
+          
+          <div class="border_sample"></div>
+          <br>
             <div class="row">
               <h7>モデルを選択。</h7>
+              <br>
             </div>
             <div class="row">
               <a class="modal-trigger" href="#fit_model_description">あなたに合ったモデルは？</a>
@@ -107,17 +128,17 @@
             <div class="row center">
               <div class="col s4">
                 <div id="low" class="set_param_button">
-                  <p class="not_select_text center">Low</p>
+                  <p class="not_select_text center">Middle</p>
                 </div><!-- low -->
               </div>
               <div class="col s4">
                 <div id="middle" class="set_param_button">
-                  <p class="not_select_text center">Middle</p>
+                  <p class="not_select_text center">High</p>
                 </div><!-- middle -->
               </div>
               <div class="col s4">
                 <div id="high" class="set_param_button">
-                  <p class="not_select_text center">High</p>
+                  <p class="not_select_text center">Extreme</p>
                 </div><!-- high -->
               </div>
             </div>
@@ -347,12 +368,12 @@
                     <div class="advanced_params" id="source_img">
                       <div class="row">
                         <br>
-                        <h7>基にする画像。(optional)</h7>
+                        <h7>基にする画像(source)。(optional)</h7>
                         <br>
                       </div>
                       <div class="row">
-                        <a class="modal-trigger" href="#image_description">基にする画像とは？</a>
-                        <div id="image_description" class="modal">
+                        <a class="modal-trigger" href="#source_image_description">基にする画像とは？</a>
+                        <div id="source_image_description" class="modal">
                           <div class="modal-content">
                             <h4>基にする画像とは</h4>
                             <div class="conteiner">
@@ -371,13 +392,52 @@
                           <input type="file" name="icon" id="input_file" accept="image/*">
                           <div id="preview_field"></div>
                           <div id="drop_area">
-                            <div id="text_position">
-                              <div id="image_upload_text">
+                            <div class="text_position">
+                              <div class="image_upload_text">
                                 Drop Image Here<br>or<br>Click Here.
                               </div>
                             </div>
                           </div>
                           <i class="material-icons prefix" id="img_delete_button">delete</i>
+                        </div>
+                        <div class="col s3"></div>
+                      </div>
+                    </div>
+
+                    <div class="advanced_params" id="target_img">
+                      <div class="row">
+                        <br>
+                        <h7>基にする画像(target)。(optional)</h7>
+                        <br>
+                      </div>
+                      <div class="row">
+                        <a class="modal-trigger" href="#target_image_description">基にする画像とは？</a>
+                        <div id="target_image_description" class="modal">
+                          <div class="modal-content">
+                            <h4>基にする画像とは</h4>
+                            <div class="conteiner">
+                              <p>アップロードされた画像を基にして画像を作ります。</p>
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="row">
+                        <div class="col s3"></div>
+                        <div class="col s6 user-icon-dnd-wrapper">
+                          <input type="file" name="icon" id="target_input_file" accept="image/*">
+                          <div id="target_preview_field"></div>
+                          <div id="target_drop_area">
+                            <div class="text_position">
+                              <div class="image_upload_text">
+                                Drop Image Here<br>or<br>Click Here.
+                              </div>
+                            </div>
+                          </div>
+                          <i class="material-icons prefix" id="target_img_delete_button">delete</i>
                         </div>
                         <div class="col s3"></div>
                       </div>
@@ -417,25 +477,7 @@
 
             <div class="border_sample"><br></div>
             
-            <div class="row">
-              <br>
-              <h7>理想の文。</h7>
-              <br>
-            </div>
-            <div class="row">
-              <div class="col s3"></div>
-              <form class="col s6">
-                <div class="input-field">
-                  <i class="material-icons prefix">mode_edit</i>
-                  <input id="textarea" class="materialize-textarea cancelEnter" type="search">
-                  <label for="textarea">Input Text</label>
-                </div>
-              </form>
-              <div class="col s3"></div>
-            </div>
             
-            <br>
-            <div class="border_sample"></div>
 
             <br>
             <h7>オプション</h7>

@@ -85,6 +85,7 @@ function change_advanced_param(model_button_id , param_button_id) {
         };
         $('#seed').fadeIn(400);
         $('#source_img').fadeIn(400);
+        $('#target_img').fadeIn(400);
         $('#iter_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["iter"]);
         $('#num_layer_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["num_layer"]);
         $('#hidden_size_slider').prop('value', MODEL_PARAM[model_button_id][param_button_id]["hidden_size"]);
@@ -172,35 +173,35 @@ function get_seed_value() {
 
 
 // 画像のドラッグ＆ドロップに関する関数です
+// source
 $(function () {
-    
     // クリックで画像を選択する場合
     $('#drop_area').on('click', function () {
         if (!communicate_status) {
             $('#input_file').click();
-            }
-        });
-        $('#input_file').on('change', function () {
-            // 画像が複数選択されていた場合
-            if (this.files.length > 1) {
-                alert('アップロードできる画像は1つだけです');
-                $('#input_file').val('');
-                return;
-            }
-            handleFiles(this.files);
-        });
-    });
-    
-    // ドラッグしている要素がドロップ領域に入ったとき・領域にある間
-    $('#drop_area').on('dragenter dragover', function (event) {
-        if (!communicate_status) {
-            event.stopPropagation();
-            event.preventDefault();
-            $('#drop_area').css('border', '5px solid #333');  // 枠を実線にする
         }
     });
+    $('#input_file').on('change', function () {
+        // 画像が複数選択されていた場合
+        if (this.files.length > 1) {
+            alert('アップロードできる画像は1つだけです');
+            $('#input_file').val('');
+            return;
+        }
+        handleFiles(this.files);
+    });
+});
 
-    // ドラッグしている要素がドロップ領域から外れたとき
+// ドラッグしている要素がドロップ領域に入ったとき・領域にある間
+$('#drop_area').on('dragenter dragover', function (event) {
+    if (!communicate_status) {
+        event.stopPropagation();
+        event.preventDefault();
+        $('#drop_area').css('border', '5px solid #333');  // 枠を実線にする
+    }
+});
+
+// ドラッグしている要素がドロップ領域から外れたとき
 $('#drop_area').on('dragleave', function (event) {
     if (!communicate_status) {
         event.stopPropagation();
@@ -225,6 +226,7 @@ $('#drop_area').on('drop', function (event) {
 });
 
 // 選択された画像ファイルの操作
+var source_img = null;
 function handleFiles(files) {
     var file = files[0];
     var imageType = 'image.*';
@@ -239,33 +241,149 @@ function handleFiles(files) {
     
     $('#drop_area').hide();  // いちばん上のdrop_areaを非表示にします
     $('#img_delete_button').show();
-    
-    let img = document.createElement('img');  // <img>をつくります
+
+    let secret_img = document.createElement('img'); 
+    secret_img.id = 'secret_source_upload_img';
+    let secret_reader = new FileReader();
+    secret_reader.onload = function () {  
+        secret_img.src = secret_reader.result; 
+        source_img = secret_img.src.replace(/data:.*\/.*;base64,/, '');
+    }
+
+    let img = document.createElement('img');
     img.id = 'upload_img';
     img.width = $('#drop_area').outerWidth();
     img.height = $('#drop_area').outerHeight();
     let reader = new FileReader();
-    reader.onload = function () {  // 読み込みが完了したら
-        img.src = reader.result;  // readAsDataURLの読み込み結果がresult
-        $('#preview_field').append(img);  // preview_filedに画像を表示
+    reader.onload = function () {
+        img.src = reader.result;
+        $('#preview_field').append(img);
     }
-    reader.readAsDataURL(file); // ファイル読み込みを非同期でバックグラウンドで開始
+    reader.readAsDataURL(file);
 }
-
-$(window).resize(function () {
-    
-    $('#upload_img').width($('#drop_area').outerWidth());
-    $('#upload_img').height($('#drop_area').outerHeight());
-});
 
 // アイコン画像を消去するボタン
 $('#img_delete_button').on('click', function () {
     if (!communicate_status) {
-        $('#preview_field').empty();  // 表示していた画像を消去
-        $('#input_file').val('');  // inputの中身を消去
-        $('#drop_area').show();  // drop_areaをいちばん前面に表示
-        $('#img_delete_button').hide();  // clear_buttonを非表示
-        $('#drop_area').css('border', '5px dashed #aaa');  // 枠を点線に変更
+        source_img = null;
+        $('#preview_field').empty();
+        $('#input_file').val('');
+        $('#drop_area').show();
+        $('#img_delete_button').hide();
+        $('#drop_area').css('border', '5px dashed #aaa');
+    }
+});
+
+// target
+$(function () {
+    // クリックで画像を選択する場合
+    $('#target_drop_area').on('click', function () {
+        if (!communicate_status) {
+            $('#target_input_file').click();
+        }
+    });
+    $('#target_input_file').on('change', function () {
+        // 画像が複数選択されていた場合
+        if (this.files.length > 1) {
+            alert('アップロードできる画像は1つだけです');
+            $('#target_input_file').val('');
+            return;
+        }
+        target_handleFiles(this.files);
+    });
+});
+    
+// ドラッグしている要素がドロップ領域に入ったとき・領域にある間
+$('#target_drop_area').on('dragenter dragover', function (event) {
+    if (!communicate_status) {
+        event.stopPropagation();
+        event.preventDefault();
+        $('#target_drop_area').css('border', '5px solid #333');  // 枠を実線にする
+    }
+});
+
+// ドラッグしている要素がドロップ領域から外れたとき
+$('#target_drop_area').on('dragleave', function (event) {
+    if (!communicate_status) {
+        event.stopPropagation();
+        event.preventDefault();
+        $('#target_drop_area').css('border', '5px dashed #ccc');  // 枠を点線に戻す
+    }
+});
+
+// ドラッグしている要素がドロップされたとき
+$('#target_drop_area').on('drop', function (event) {
+    if (!communicate_status) {
+        event.preventDefault();
+        $('#target_input_file')[0].files = event.originalEvent.dataTransfer.files;
+        // 画像が複数選択されていた場合
+        if ($('#target_input_file')[0].files.length > 1) {
+            alert('アップロードできる画像は1つだけです');
+            $('#target_input_file').val('');
+            return;
+        }
+        target_handleFiles($('#target_input_file')[0].files);
+    }
+});
+
+// 選択された画像ファイルの操作
+var target_img = null;
+function target_handleFiles(files) {
+    var target_file = files[0];
+    var imageType = 'image.*';
+    
+    // ファイルが画像が確認する
+    if (!target_file.type.match(imageType)) {
+        alert('画像ファイルではありません。\n画像を選択してください');
+        $('#target_input_file').val('');
+        $('#target_drop_area').css('border', '5px dashed #ccc');
+        return;
+    }
+    
+    $('#target_drop_area').hide();
+    $('#target_img_delete_button').show();
+    
+    let secret_img = document.createElement('img'); 
+    secret_img.id = 'secret_target_upload_img';
+    let secret_reader = new FileReader();
+    secret_reader.onload = function () {  
+        secret_img.src = secret_reader.result; 
+        target_img = secret_img.src.replace(/data:.*\/.*;base64,/, '');
+        // console.log(secret_img.src.replace(/data:.*\/.*;base64,/, ''))
+    }
+    secret_reader.readAsDataURL(target_file); 
+
+    let img = document.createElement('img');
+    img.id = 'target_upload_img';
+    img.width = $('#target_drop_area').outerWidth();
+    img.height = $('#target_drop_area').outerHeight();
+    let reader = new FileReader();
+    reader.onload = function () {
+        img.src = reader.result;
+        // console.log(img.src)
+        $('#target_preview_field').append(img);
+    }
+    reader.readAsDataURL(target_file);
+}
+
+
+
+$(window).resize(function () {
+    $('#upload_img').width($('#drop_area').outerWidth());
+    $('#upload_img').height($('#drop_area').outerHeight());
+    $('#target_upload_img').width($('#target_drop_area').outerWidth());
+    $('#target_upload_img').height($('#target_drop_area').outerHeight());
+});
+
+// アイコン画像を消去するボタン
+$('#target_img_delete_button').on('click', function () {
+    if (!communicate_status) {
+        target_img = null;
+        $('#target_preview_field').empty();  // 表示していた画像を消去
+        $('#target_input_file').val('');  // inputの中身を消去
+        $('#target_drop_area').show();  // drop_areaをいちばん前面に表示
+        $('#target_img_delete_button').hide();  // clear_buttonを非表示
+        $('#target_drop_area').css('border', '5px dashed #aaa');  // 枠を点線に変更
     }
 });
 
@@ -356,6 +474,8 @@ function abort_signal() {
         backbone: backbone_model,
         seed: seed_value,
         size: parseInt(img_size),
+        source_img: source_img,
+        target_img: target_img,
         hash: hash,
         abort: true,
         carrot: text_check($('#carrot_textarea').val()),
@@ -411,12 +531,13 @@ function sort_order(priority, model_status) {
     }
 };
 
-
 // 生成開始ボタンに関しての関数
 var communicate_status = false;
 var hash = '00000000-0000-0000-0000-000000000000';
 function start() {
     stop_input();
+    // var _image = document.getElementById('#upload_img');
+    // console.log(image_to_base64(_image, 'image/png'));
     communicate_status = true;
     wait_display();
     $('#img_make_container').fadeIn(0);
@@ -425,7 +546,7 @@ function start() {
         $('#result_img').fadeIn();
     });
     const target = $('#img_make_container').get(0).offsetTop;
-    $('body,html').animate({ scrollTop: target }, 2000, 'swing');
+    $('body,html').animate({ scrollTop: target }, 600, 'swing');
     
     // スライダーの値を取得
     const slider_vals = get_slider_values();
@@ -443,8 +564,10 @@ function start() {
         batch_size: parseInt(slider_vals['batch_size']),
         gae: parseInt(slider_vals['gae']),
         backbone: backbone_model,
-        seed: seed_value,
+        seed: parseInt(seed_value),
         size: parseInt(img_size),
+        source_img: source_img,
+        target_img: target_img,
         hash: hash,
         abort: false,
         carrot: text_check($('#carrot_textarea').val()),
@@ -477,7 +600,13 @@ function communicate(s_data) {
             tmp_data = JSON.parse(s_data);
 
             // プログレスバーの表示
-            $('.determinate').attr('style', 'width:' + 100 * r_data['current_iter']/tmp_data['total_iter'] + '%');
+            if (r_data['current_iter'] === null) {
+                r_data['current_iter'] = 0;
+            }
+            console.log(r_data['current_iter'])
+            console.log(tmp_data['total_iter'])
+            console.log((100 * r_data['current_iter']/tmp_data['total_iter']))
+            $('.determinate').attr('style', 'width:' + (100 * r_data['current_iter']/tmp_data['total_iter']) + '%');
 
             // 生成画像の表示
             if (!(r_data["img_path"] === null)) {
@@ -502,7 +631,7 @@ function communicate(s_data) {
                 $('#download_img').attr("href", r_data["img_path"]).attr("download", $("#textarea").val() + ".png");
                 $('#download_mp4').attr("href", r_data["mp4_path"]).attr("download", $("#textarea").val() + '.' +r_data['mp4_path'].split('.').pop());
                 if ($('#Notification_box').prop("checked") === true) {
-                    PushNotification()
+                    PushNotification(r_data["img_path"])
                 }
             }
         })
@@ -558,10 +687,10 @@ $('.twitter').click(function () {
 
 
 // 通知に関しての関数
-function PushNotification() {
+function PushNotification(img_path) {
     Push.create('AIconです。', {
         body: '画像を作り終えました！！',
-        icon: 'https://lorempixel.com/250/250/cats/0',
+        icon: img_path,
         timeout: 5000,
         onClick: function () {
             this.close();
