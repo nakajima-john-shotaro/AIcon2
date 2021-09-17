@@ -61,6 +61,8 @@ IF_EMPTY_TOLERANCE: int = 100
 
 CORE_COMPATIBLE_PYTORCH_VERSION: str = "1.7.1"
 CORE_C2I_QUEUE: str = "c2i_queue"
+CORE_C2I_BREAK_QUEUE: str = "c2i_brake_queue"
+CORE_C2I_EVENT: str = "c2i_event"
 CORE_I2C_EVENT: str = "i2c_event"
 
 CHC_TIMEOUT: float = 7.0
