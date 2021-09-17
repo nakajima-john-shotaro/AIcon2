@@ -3,13 +3,15 @@ import multiprocessing
 import os
 import shutil
 import time
-from multiprocessing import Event, Process, Queue, synchronize
+from multiprocessing import Event, Process, Queue
+from multiprocessing.synchronize import Event as Event_
 from pathlib import Path
 from pprint import pprint  # pylint: disable=unused-import
 from queue import Empty, Full
 from queue import Queue as Queue_
 from threading import Lock, Thread
 from typing import Any, Dict, List, Optional, Union
+from urllib.parse import unquote
 from uuid import uuid4
 
 from flask import Flask, Response, abort, jsonify, render_template, request
@@ -17,6 +19,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_restful import Api, Resource
+from tweepy import API, OAuthHandler
 from waitress import serve
 from werkzeug.exceptions import (BadRequest, Forbidden, HTTPException,
                                  InternalServerError)
@@ -25,7 +28,7 @@ from constant import *
 from models.big_sleep import big_sleep
 from models.deep_daze import deep_daze
 from translation import Translation, install_webdriver
-from twitter import Authorization, Callback, Executor
+from twitter import Authorization, get_secrets
 
 app: Flask = Flask(
     import_name=__name__, 
@@ -41,7 +44,7 @@ api: Api = Api(app)
 
 logger: Logger = get_logger()
 
-_client_data: Dict[str, Dict[str, Union[bool, int, float, str, Queue, synchronize.Event]]] = {}
+_client_data: Dict[str, Dict[str, Union[bool, int, float, str, Queue, Event_]]] = {}
 _chc_queue: Queue_ = Queue_(maxsize=1)
 _pm_queue: Queue_ = Queue_(maxsize=1)
 _valid_response: Dict[str, Union[str, bool, int]] = {
@@ -113,7 +116,7 @@ class ConnectionHealthChecker:
     
         while True:
             try:
-                _client_data: Dict[str, Dict[str, Union[bool, int, float, str, Queue, synchronize.Event]]] = _chc_queue.get_nowait()
+                _client_data: Dict[str, Dict[str, Union[bool, int, float, str, Queue, Event_]]] = _chc_queue.get_nowait()
 
                 _empty_counter = 0
 
@@ -221,7 +224,7 @@ class AIconInterface(Resource):
         
         return input_text
 
-    def _get_client_priority(self, client_data: Dict[str, Dict[str, Union[bool, int, float, str, Queue, synchronize.Event]]], client_uuid: str) -> int:
+    def _get_client_priority(self, client_data: Dict[str, Dict[str, Union[bool, int, float, str, Queue, Event_]]], client_uuid: str) -> int:
         return list(client_data.keys()).index(client_uuid) + 1
 
     def _set_path(self, client_uuid: str) -> None:
@@ -264,13 +267,17 @@ class AIconInterface(Resource):
             received_data[JSON_CARROT] = self._translate(received_data[JSON_CARROT], client_uuid)
             received_data[JSON_STICK] = self._translate(received_data[JSON_STICK], client_uuid)
 
-            c2i_stack: Queue = Queue()
-            i2c_event: synchronize.Event = Event()
+            c2i_queue: Queue = Queue()
+            c2i_brake_queue: Queue = Queue()
+            c2i_event: Event_ = Event()
+            i2c_event: Event_ = Event()
 
             _client_data[client_uuid] = {
                 RECEIVED_DATA: received_data,
                 JSON_COMPLETE: False,
-                CORE_C2I_QUEUE: c2i_stack,
+                CORE_C2I_QUEUE: c2i_queue,
+                CORE_C2I_BREAK_QUEUE: c2i_brake_queue,
+                CORE_C2I_EVENT: c2i_event,
                 CORE_I2C_EVENT: i2c_event,
                 CHC_LAST_CONNECTION_TIME: time.time(),
                 IF_QUEUE_EMPTY_COUNTER: 0,
@@ -354,12 +361,21 @@ class AIconInterface(Resource):
                     if get_data[JSON_MODEL_STATUS]:
                         _valid_response[JSON_MODEL_STATUS] = get_data[JSON_MODEL_STATUS]
 
-                    if get_data[JSON_COMPLETE]:
+                    if _client_data[client_uuid][CORE_C2I_EVENT].is_set():
+                        get_data = _client_data[client_uuid][CORE_C2I_BREAK_QUEUE].get_nowait()
+
+                        res[JSON_CURRENT_ITER] = get_data[JSON_CURRENT_ITER]
+                        res[JSON_IMG_PATH] = get_data[JSON_IMG_PATH]
+                        res[JSON_MP4_PATH] = get_data[JSON_MP4_PATH]
+                        res[JSON_COMPLETE] = True
+                        res[JSON_MODEL_STATUS] = True
+
                         _lock.acquire()
                         _remove_client_data(client_uuid)
                         _lock.release()
 
                         logger.info(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. Removed the client data.")
+
 
                         _reset_valid_response()
 
@@ -414,6 +430,60 @@ def index() -> Response:
     return render_template("aicon.html", title="AIcon", name="AIcon")
 
 
+@app.route('/twitter/callback')
+def callback() -> Response:
+    oauth_token = request.args.get(TWITTER_OAUTH_TOKEN)
+    oauth_verifier = request.args.get(TWITTER_OAUTH_VERIFIER)
+
+    if oauth_token is None:
+        logger.error(f"<<AIcon Twitter Control>> Cannot get `oauth_token`")
+    
+    if  oauth_verifier is None:
+        logger.error(f"<<AIcon Twitter Control>> Cannot get `oauth_verifier`")
+
+    return render_template("twitter-callback.html", oauth_token=oauth_token, oauth_verifier=oauth_verifier)
+
+
+@app.route('/twitter/send')
+def send(self) -> Response:
+    oauth_token = request.args.get(TWITTER_OAUTH_TOKEN)
+    oauth_verifier = request.args.get(TWITTER_OAUTH_VERIFIER)
+
+    try:
+        secrets: Dict[str, Optional[str]] = get_secrets()
+
+        auth_handler: OAuthHandler = OAuthHandler(
+            consumer_key=secrets[TWITTER_CONSUMER_KEY],
+            consumer_secret=secrets[TWITTER_CONSUMER_SECRET]
+        )
+
+        auth_handler.request_token = {
+            TWITTER_OAUTH_TOKEN: oauth_token,
+            TWITTER_OAUTH_TOKEN_SECRET: oauth_verifier
+        }
+
+        auth_handler.get_access_token(oauth_verifier)
+
+        img_path: str = request.cookies.get(TWITTER_IMG_PATH)
+        mode: str = request.cookies.get(TWITTER_MODE)
+
+        api: API = API(auth_handler=auth_handler)
+
+        if mode == TWITTER_MODE_ICON:
+            img_path = unquote(img_path)
+            api.update_profile_image(img_path)
+
+        elif mode == TWITTER_MODE_TWEET:
+            img_path = unquote(img_path)
+            api.update_with_media(status="AIconでアイコンを作ったよ！！\n\n#技育展\n#AIcon", filename=img_path)
+
+        return render_template("twitter-send.html", title="Twitter-Send", name="Twitter-Send")
+
+
+    except AIconEnvVarNotFindError as e:
+        logger.error(f"<<AIcon Twitter Control>> {e}")
+
+
 if __name__ == "__main__":
     logger.info("<<AIcon>> Seesion started")
 
@@ -435,12 +505,8 @@ if __name__ == "__main__":
 
     AIconInterface()
     Authorization()
-    Callback()
-    Executor()
     api.add_resource(AIconInterface, '/service')
     api.add_resource(Authorization, '/twitter/auth')
-    api.add_resource(Callback, '/twitter/callback')
-    api.add_resource(Executor, '/twitter/send')
 
     logger.info(f"<<AIcon>> Running on http://localhost:{PORT}/")
 
