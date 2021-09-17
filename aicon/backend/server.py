@@ -1,3 +1,4 @@
+import datetime
 import json
 import multiprocessing
 import os
@@ -15,11 +16,12 @@ from urllib.parse import unquote
 from uuid import uuid4
 
 from flask import Flask, Response, abort, jsonify, render_template, request
+from flask.helpers import make_response
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_restful import Api, Resource
-from tweepy import API, OAuthHandler
+from tweepy import API, OAuthHandler, TweepError
 from waitress import serve
 from werkzeug.exceptions import (BadRequest, Forbidden, HTTPException,
                                  InternalServerError)
@@ -445,7 +447,7 @@ def callback() -> Response:
 
 
 @app.route('/twitter/send')
-def send(self) -> Response:
+def send() -> Response:
     oauth_token = request.args.get(TWITTER_OAUTH_TOKEN)
     oauth_verifier = request.args.get(TWITTER_OAUTH_VERIFIER)
 
@@ -482,6 +484,55 @@ def send(self) -> Response:
 
     except AIconEnvVarNotFindError as e:
         logger.error(f"<<AIcon Twitter Control>> {e}")
+
+
+_twitter_database: Dict[str, str] = {}
+
+
+@app.route("/twitter/auth", methods=["POST"])
+def auth() -> Response:
+    received_data: Dict[str, str] = request.get_json(force=True)
+
+    print(f"\n\nimg_path: {received_data[TWITTER_IMG_PATH]}")
+    print(f"\n\nmode: {received_data[TWITTER_MODE]}")
+
+    client_uuid: str = request.cookies.get(TWITTER_UUID, None)
+    
+    response: Response = make_response(render_template('twitter.html'))
+
+    if client_uuid not in _twitter_database.keys():
+        client_uuid: str = str(uuid4())
+        max_age: int = 60 * 60 * 24
+        expires: int = int(datetime.datetime.now().timestamp()) + max_age
+        response.set_cookie(TWITTER_UUID, value=client_uuid, max_age=max_age, expires=expires)
+
+        try:
+            secrets: Dict[str, Optional[str]] = get_secrets()
+
+            auth_handler: OAuthHandler = OAuthHandler(
+                consumer_key=secrets[TWITTER_CONSUMER_KEY],
+                consumer_secret=secrets[TWITTER_CONSUMER_SECRET]
+            )
+
+            res: Dict[str, Union[str, int]] = {
+                TWITTER_AUTHORIZATION_URL: None,
+            }
+
+            res[TWITTER_AUTHORIZATION_URL] = auth_handler.get_authorization_url()
+        
+        except TweepError as e:
+            logger.error(f"<<AIcon Twitter Control>> {e}")
+        
+        except AIconEnvVarNotFindError as e:
+            logger.error(f"<<AIcon Twitter Control>> {e}")
+
+        finally:
+            return make_response(jsonify(res))
+
+    else:
+        pass
+
+
 
 
 if __name__ == "__main__":
