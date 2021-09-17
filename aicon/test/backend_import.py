@@ -14,3 +14,4 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.exceptions import HTTPException, BadRequest, Forbidden, InternalServerError
 from waitress import serve
+from tweepy import OAuthHandler, API, TweepError
