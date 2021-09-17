@@ -322,8 +322,16 @@ border-bottom:1px solid #ccc;
 /* フッターの設定 */
 #footer {
 	min-height: 65px;
+	max-height: 80px;
 }
 
+#footer_position, #footer_position_row {
+	max-height: 84px;
+}
+
+#copyright_position {
+	transform: translateY(100%);
+}
 .page-footer {
 	position:relative;
 	width: 100%;
@@ -397,7 +405,9 @@ border-bottom:1px solid #ccc;
 	color: #dd171e;
 }
 
-
+#on{
+	color: rgb(59, 177, 236);
+}
 #waiting_num_display {
 	position: fixed;
 	display: flex;
