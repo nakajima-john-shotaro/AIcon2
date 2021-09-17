@@ -81,6 +81,7 @@ TWITTER_OAUTH_VERIFIER: str = "oauth_verifier"
 TWITTER_OAUTH_TOKEN_SECRET: str = "oauth_token_secret"
 TWITTER_IMG_PATH: str = JSON_IMG_PATH
 TWITTER_MODE: str = "mode"
+TWITTER_UUID: str = "uuid"
 
 TWITTER_MODE_ICON: str = "icon"
 TWITTER_MODE_TWEET: str = "tweet"
