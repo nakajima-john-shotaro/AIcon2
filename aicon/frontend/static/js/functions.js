@@ -682,7 +682,7 @@ $('.twitter').click(function () {
     let path = "";
     let mode = "";
     if (twitter_button === "tweet") {
-        path = $('#download_mp4').attr("href");
+        path = $('#download_img').attr("href");
         mode = "tweet";
     }
     else if (twitter_button === "change_icon") {
@@ -695,9 +695,6 @@ $('.twitter').click(function () {
         mode: mode
     };
     let twitter_send_data = JSON.stringify(twitter_data);
-    console.log(mode)
-    console.log(path)
-    console.log(twitter_send_data)
 
     $.ajax({
         url: "http://" + $('#communication_partner').val() + ":5050/twitter/auth",
