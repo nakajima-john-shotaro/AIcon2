@@ -374,7 +374,6 @@ function target_handleFiles(files) {
     secret_reader.onload = function () {  
         secret_img.src = secret_reader.result; 
         target_img = secret_img.src.replace(/data:.*\/.*;base64,/, '');
-        // console.log(secret_img.src.replace(/data:.*\/.*;base64,/, ''))
     }
     secret_reader.readAsDataURL(target_file); 
 
@@ -385,7 +384,6 @@ function target_handleFiles(files) {
     let reader = new FileReader();
     reader.onload = function () {
         img.src = reader.result;
-        // console.log(img.src)
         $('#target_preview_field').append(img);
     }
     reader.readAsDataURL(target_file);
@@ -541,10 +539,6 @@ function wait_display() {
 function sort_order(priority, model_status) {
     const color_list_ = ['rgba(100, 190, 228, 1)', 'rgba(80, 180, 228, 1)', 'rgba(55, 170, 228, 1)', 'rgba(25, 160, 228, 1)', 'rgba(4, 155, 228, 1)'];
     priority = priority > 5 ? 5 : priority;
-    console.log('priority')
-    console.log(priority)
-    // console.log("model_status")
-    // console.log(model_status)
     for (let i = 1; i < 6; i++) {
         $('#waiter_' + i).css('color', color_list_[i-1]);
     }
@@ -626,15 +620,11 @@ function communicate(s_data) {
             if (r_data['current_iter'] === null) {
                 r_data['current_iter'] = 0;
             }
-            console.log(r_data['current_iter'])
-            console.log(tmp_data['total_iter'])
-            console.log((100 * r_data['current_iter']/tmp_data['total_iter']))
             $('.determinate').attr('style', 'width:' + (100 * r_data['current_iter']/tmp_data['total_iter']) + '%');
 
             // 生成画像の表示
             if (!(r_data["img_path"] === null)) {
                 let img_path = r_data["img_path"].replace('..', 'http://' + $('#communication_partner').val() + ':5050');
-                console.log(img_path)
                 $('#result_img').attr("src", img_path).on("load", function () {
                     $('#result_img').fadeIn();
                 });
@@ -678,35 +668,44 @@ function wait(msec) {
     return objDef.promise();
 }
 
-// 画像と動画に関する関数です
-$('.save_content').click(function() {
-    $('#' + this.id)
-    let link = document.getElementById("download");
-    // link.href =  
-});
+// // 画像と動画に関する関数です
+// $('.save_content').click(function() {
+//     $('#' + this.id)
+//     let link = document.getElementById("download");
+//     // link.href =  
+// });
 
 
 // Twitterへの変更じ関する関数です
 $('.twitter').click(function () {
     let twitter_button = this.id;
+    let path = "";
+    let mode = "";
+    if (twitter_button === "tweet") {
+        path = $('#download_img').attr("href");
+        mode = "tweet";
+    }
+    else if (twitter_button === "change_icon") {
+        path = $('#download_img').attr("href");
+        mode = "icon"
+    }
+    // 送信するデータ
+    twitter_data = {
+        img_path: path,
+        mode: mode
+    };
+    let twitter_send_data = JSON.stringify(twitter_data);
+
     $.ajax({
         url: "http://" + $('#communication_partner').val() + ":5050/twitter/auth",
         method: "POST", //HTTPメソッドの種別
+        data: twitter_send_data,
         dataType: "json", //データの受信形式
         timeout: 10000, //タイムアウト値（ミリ秒）
         async: false, //同期通信  false:同期  true:非同期
         contentType: "application/json; charset=utf-8",
     })
         .done(function (r_data, textStatus, xhr) {
-            if (twitter_button === "tweet") {
-                $.cookie("mode", "tweet");
-            }
-            else if (twitter_button === "change_icon") {
-                $.cookie("mode", "icon");
-            };
-            console.log(twitter_button)
-            $.cookie("img_path", $("#" + twitter_button).attr("href"));
-            console.log(r_data["authorization_url"])
             window.open(r_data["authorization_url"]);
         })
         .fail(function (r_data, textStatus, xhr) {
