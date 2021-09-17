@@ -125,7 +125,7 @@ class ConnectionHealthChecker:
                             client_data[CORE_I2C_EVENT].set()
 
                             _lock.acquire()
-                            _remove_client_data(client_data)
+                            _remove_client_data(client_uuid)
                             _lock.release()
 
                             logger.error(
@@ -140,7 +140,7 @@ class ConnectionHealthChecker:
                             client_data[CORE_I2C_EVENT].set()
 
                             _lock.acquire()
-                            _remove_client_data(client_data)
+                            _remove_client_data(client_uuid)
                             _lock.release()
 
                             logger.error(
