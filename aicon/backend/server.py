@@ -1,4 +1,3 @@
-import datetime
 import json
 import multiprocessing
 import os
@@ -472,9 +471,6 @@ def callback() -> Response:
             img_path = unquote(_twitter_database[client_uuid][TWITTER_IMG_PATH])
             img_path = "../frontend/" + "/".join(img_path.split('/')[3:])
             api.update_with_media(status="AIconでアイコンを作ったよ！！\n\n#技育展\n#AIcon", filename=img_path)
-
-        else:
-            raise AIconRuntimeError("うううううううううううううんんんんんんんんんんんんちちちちちちちちいいいいいいいいいいいいいいいいいいいいいいぃぃぃぃぃぃぃぃぃ")
 
     except AIconEnvVarNotFoundError as e:
         logger.error(f"<<AIcon Twitter Control>> {e}")
