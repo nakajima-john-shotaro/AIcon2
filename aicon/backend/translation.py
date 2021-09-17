@@ -71,4 +71,7 @@ class Translation(object):
 
 
 def install_webdriver() -> None:
-    _ = webdriver.Chrome(ChromeDriverManager(print_first_line=False).install())
+    options: Options = Options()
+    options.add_argument('--headless')
+    options.add_argument('--no-sandbox')
+    _ = webdriver.Chrome(ChromeDriverManager(print_first_line=False).install(), options=options)
