@@ -164,11 +164,11 @@ class AIconAbortedError(AIconBaseException):
         return f"{self.arg}"
 
 
-class AIconEnvVarNotFindError(AIconBaseException):
+class AIconEnvVarNotFoundError(AIconBaseException):
     def __str__(self):
         return f"{self.arg}"
 
 
-class AIconCookiyNotFindError(AIconBaseException):
+class AIconCookieNotFoundError(AIconBaseException):
     def __str__(self):
         return f"{self.arg}"
