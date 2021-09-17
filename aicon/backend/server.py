@@ -444,11 +444,7 @@ def callback() -> Response:
     if oauth_verifier is None:
         logger.error(f"<<AIcon Twitter Control>> Could not get `oauth_verifier`")
 
-    client_uuid: str = request.cookies.get(TWITTER_UUID)
-
-    if client_uuid is None:
-        logger.error(f"<<AIcon Twitter Control>> Could not get `client_uuid` from cookie")
-        raise AIconCookieNotFoundError("Could not get `client_uuid` from cookie")
+    client_uuid: str = request.remote_addr
 
     try:
         secrets: Dict[str, Optional[str]] = get_secrets()
@@ -469,10 +465,12 @@ def callback() -> Response:
 
         if _twitter_database[client_uuid][TWITTER_MODE] == TWITTER_MODE_ICON:
             img_path = unquote(_twitter_database[client_uuid][TWITTER_IMG_PATH])
+            img_path = "../frontend/" + "/".join(img_path.split('/')[3:])
             api.update_profile_image(img_path)
 
         elif _twitter_database[client_uuid][TWITTER_MODE] == TWITTER_MODE_TWEET:
             img_path = unquote(_twitter_database[client_uuid][TWITTER_IMG_PATH])
+            img_path = "../frontend/" + "/".join(img_path.split('/')[3:])
             api.update_with_media(status="AIconでアイコンを作ったよ！！\n\n#技育展\n#AIcon", filename=img_path)
 
         else:
@@ -488,11 +486,7 @@ def callback() -> Response:
 def auth() -> Response:
     received_data: Dict[str, str] = request.get_json(force=True)
 
-    print(f"\n\nimg_path: {received_data[TWITTER_IMG_PATH]}")
-    print(f"\n\nmode: {received_data[TWITTER_MODE]}")
-    print(f"\n\cookies: {request.cookies}")
-
-    client_uuid: str = request.cookies.get(TWITTER_UUID, None)
+    client_uuid: str = request.remote_addr
     
     secrets: Dict[str, Optional[str]] = get_secrets()
 
@@ -506,30 +500,19 @@ def auth() -> Response:
     }
     res[TWITTER_AUTHORIZATION_URL] = auth_handler.get_authorization_url()
 
-    response = make_response(jsonify(res))
+    try:
+        _twitter_database[client_uuid] = {
+            TWITTER_IMG_PATH: received_data[TWITTER_IMG_PATH],
+            TWITTER_MODE: received_data[TWITTER_MODE],
+        }
+    
+    except TweepError as e:
+        logger.error(f"<<AIcon Twitter Control>> {e}")
+    
+    except AIconEnvVarNotFoundError as e:
+        logger.error(f"<<AIcon Twitter Control>> {e}")
 
-    if client_uuid not in _twitter_database.keys():
-        client_uuid: str = str(uuid4())
-        max_age: int = 60 * 60 * 24
-        expires: int = int(datetime.datetime.now().timestamp()) + max_age
-
-        try:
-            response.set_cookie(TWITTER_UUID, value=client_uuid, max_age=max_age, expires=expires)
-
-            _twitter_database[client_uuid] = {
-                TWITTER_IMG_PATH: received_data[TWITTER_IMG_PATH],
-                TWITTER_MODE: received_data[TWITTER_MODE],
-            }
-        
-        except TweepError as e:
-            logger.error(f"<<AIcon Twitter Control>> {e}")
-        
-        except AIconEnvVarNotFoundError as e:
-            logger.error(f"<<AIcon Twitter Control>> {e}")
-
-        finally:
-            return make_response(jsonify(res))
-    else:
+    finally:
         return make_response(jsonify(res))
 
 
