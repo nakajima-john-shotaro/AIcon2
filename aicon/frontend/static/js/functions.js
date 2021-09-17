@@ -42,7 +42,28 @@ $('.Model_Area').click(function() {
     };
 });
 
+var DeepDaze_dir = [
+    '../static/demo_img/DeepDaze/Women_in_cyberpunk.png',
+    '../static/demo_img/DeepDaze/inferno.png',
+    '../static/demo_img/DeepDaze/inferno.png',
+    '../static/demo_img/DeepDaze/inferno.png',
+    '../static/demo_img/DeepDaze/inferno.png',
+    '../static/demo_img/DeepDaze/inferno.png'
+];
 
+var BigSleep_dir = [
+    '../static/demo_img/BigSleep/Alice_in_wonderland.png',
+    '../static/demo_img/BigSleep/Demon_Slayer.png',
+    '../static/demo_img/BigSleep/Fantasia_World.png',
+    '../static/demo_img/BigSleep/Fantasia_galaxy.png',
+    '../static/demo_img/BigSleep/bread.png',
+    '../static/demo_img/BigSleep/cinderella.png',
+    '../static/demo_img/BigSleep/fire_and_ice.png',
+    '../static/demo_img/BigSleep/galaxy.png',
+    '../static/demo_img/BigSleep/lagoon.png'
+];
+
+var random = 0;
 $('.Model_Area').click(function () {
     if (!communicate_status) {
         let img_id_list = [];
@@ -51,12 +72,14 @@ $('.Model_Area').click(function () {
         });
         if (model_button_id === 'DeepDaze') {
             for (let i = 0; i < img_id_list.length; i++) {
-                $(img_id_list[i]).attr('src', "https://lorempixel.com/250/250/cats/" + (i + 1));
+                random = Math.floor(Math.random() * (DeepDaze_dir.length + 1 ));
+                $(img_id_list[i]).attr('src', DeepDaze_dir[random]);
             };
         }
         else if (model_button_id === 'BigSleep') {
             for (let i = 0; i < img_id_list.length; i++) {
-                $(img_id_list[i]).attr('src', "https://lorempixel.com/250/250/sports/" + (i + 1));
+                random = Math.floor(Math.random() * (BigSleep_dir.length + 1 ));
+                $(img_id_list[i]).attr('src', BigSleep_dir[random]);
             };
         }
     }
@@ -219,6 +242,7 @@ $('#drop_area').on('drop', function (event) {
         if ($('#input_file')[0].files.length > 1) {
             alert('アップロードできる画像は1つだけです');
             $('#input_file').val('');
+            $('#drop_area').css('border', '5px dashed #ccc');  // 枠を点線に戻す
             return;
         }
         handleFiles($('#input_file')[0].files);
@@ -320,6 +344,7 @@ $('#target_drop_area').on('drop', function (event) {
         if ($('#target_input_file')[0].files.length > 1) {
             alert('アップロードできる画像は1つだけです');
             $('#target_input_file').val('');
+            $('#target_drop_area').css('border', '5px dashed #ccc');  // 枠を点線に戻す
             return;
         }
         target_handleFiles($('#target_input_file')[0].files);
@@ -655,7 +680,6 @@ function wait(msec) {
 
 // 画像と動画に関する関数です
 $('.save_content').click(function() {
-    console.log(this.id)
     $('#' + this.id)
     let link = document.getElementById("download");
     // link.href =  
@@ -675,11 +699,12 @@ $('.twitter').click(function () {
     })
         .done(function (r_data, textStatus, xhr) {
             if (twitter_button === "tweet") {
-                $.cookie("twitter_mode", "tweet");
+                $.cookie("mode", "tweet");
             }
             else if (twitter_button === "change_icon") {
-                $.cookie("twitter_mode", "icon");
+                $.cookie("mode", "icon");
             };
+            console.log(twitter_button)
             $.cookie("img_path", $("#" + twitter_button).attr("href"));
             console.log(r_data["authorization_url"])
             window.open(r_data["authorization_url"]);
