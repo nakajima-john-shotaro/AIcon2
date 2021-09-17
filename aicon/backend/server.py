@@ -433,7 +433,7 @@ def index() -> Response:
 
 
 @app.route('/help')
-def index() -> Response:
+def help() -> Response:
     return render_template("help.html", title="help", name="help")
 
 
