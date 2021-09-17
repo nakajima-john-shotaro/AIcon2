@@ -691,12 +691,14 @@ $('.twitter').click(function () {
     }
     // 送信するデータ
     twitter_data = {
-        path: path,
+        img_path: path,
         mode: mode
     };
     let twitter_send_data = JSON.stringify(twitter_data);
-    // console.log(twitter_data)
-    // console.log(twitter_send_data)
+    console.log(mode)
+    console.log(path)
+    console.log(twitter_send_data)
+
     $.ajax({
         url: "http://" + $('#communication_partner').val() + ":5050/twitter/auth",
         method: "POST", //HTTPメソッドの種別
