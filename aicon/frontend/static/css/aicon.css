@@ -298,6 +298,7 @@ border-bottom:1px solid #ccc;
 	border: solid 1px #ddd;
 	width: 95%;
 	min-width: 150px;
+	max-height: 119px;
 	border-radius: 10px;
 	cursor: pointer;
 	cursor: hand;
@@ -402,7 +403,7 @@ border-bottom:1px solid #ccc;
 	width: 100vw;
 	height: 100vh;
 	top: 0;
-	background: rgba(39, 39, 39, 0.808);
+	background: rgba(87, 83, 77, 0.555);
 	z-index: 2147483647;
 	display: none;
 }
@@ -413,7 +414,7 @@ border-bottom:1px solid #ccc;
 }
 
 #on{
-	color: rgb(59, 177, 236);
+	color: rgb(40, 151, 207);
 }
 #waiting_num_display {
 	position: fixed;
