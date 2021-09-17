@@ -30,7 +30,7 @@ from constant import *
 from models.big_sleep import big_sleep
 from models.deep_daze import deep_daze
 from translation import Translation, install_webdriver
-from twitter import Authorization, get_secrets
+from twitter import get_secrets
 
 app: Flask = Flask(
     import_name=__name__, 
@@ -56,6 +56,7 @@ _valid_response: Dict[str, Union[str, bool, int]] = {
     JSON_MODEL_STATUS: False,
 }
 _lock: Lock = Lock()
+_twitter_database: Dict[str, str] = {}
 
 _translator: Translation = Translation("deepl")
 
@@ -438,18 +439,16 @@ def callback() -> Response:
     oauth_verifier = request.args.get(TWITTER_OAUTH_VERIFIER)
 
     if oauth_token is None:
-        logger.error(f"<<AIcon Twitter Control>> Cannot get `oauth_token`")
+        logger.error(f"<<AIcon Twitter Control>> Could not get `oauth_token`")
     
-    if  oauth_verifier is None:
-        logger.error(f"<<AIcon Twitter Control>> Cannot get `oauth_verifier`")
+    if oauth_verifier is None:
+        logger.error(f"<<AIcon Twitter Control>> Could not get `oauth_verifier`")
 
-    return render_template("twitter-callback.html", oauth_token=oauth_token, oauth_verifier=oauth_verifier)
+    client_uuid: str = request.cookies.get(TWITTER_UUID)
 
-
-@app.route('/twitter/send')
-def send() -> Response:
-    oauth_token = request.args.get(TWITTER_OAUTH_TOKEN)
-    oauth_verifier = request.args.get(TWITTER_OAUTH_VERIFIER)
+    if client_uuid is None:
+        logger.error(f"<<AIcon Twitter Control>> Could not get `client_uuid` from cookie")
+        raise AIconCookieNotFoundError("Could not get `client_uuid` from cookie")
 
     try:
         secrets: Dict[str, Optional[str]] = get_secrets()
@@ -463,30 +462,26 @@ def send() -> Response:
             TWITTER_OAUTH_TOKEN: oauth_token,
             TWITTER_OAUTH_TOKEN_SECRET: oauth_verifier
         }
-
+    
         auth_handler.get_access_token(oauth_verifier)
-
-        img_path: str = request.cookies.get(TWITTER_IMG_PATH)
-        mode: str = request.cookies.get(TWITTER_MODE)
 
         api: API = API(auth_handler=auth_handler)
 
-        if mode == TWITTER_MODE_ICON:
-            img_path = unquote(img_path)
+        if _twitter_database[client_uuid][TWITTER_MODE] == TWITTER_MODE_ICON:
+            img_path = unquote(_twitter_database[client_uuid][TWITTER_IMG_PATH])
             api.update_profile_image(img_path)
 
-        elif mode == TWITTER_MODE_TWEET:
-            img_path = unquote(img_path)
+        elif _twitter_database[client_uuid][TWITTER_MODE] == TWITTER_MODE_TWEET:
+            img_path = unquote(_twitter_database[client_uuid][TWITTER_IMG_PATH])
             api.update_with_media(status="AIconでアイコンを作ったよ！！\n\n#技育展\n#AIcon", filename=img_path)
 
-        return render_template("twitter-send.html", title="Twitter-Send", name="Twitter-Send")
+        else:
+            raise AIconRuntimeError("うううううううううううううんんんんんんんんんんんんちちちちちちちちいいいいいいいいいいいいいいいいいいいいいいぃぃぃぃぃぃぃぃぃ")
 
-
-    except AIconEnvVarNotFindError as e:
+    except AIconEnvVarNotFoundError as e:
         logger.error(f"<<AIcon Twitter Control>> {e}")
 
-
-_twitter_database: Dict[str, str] = {}
+    return render_template("twitter-send.html", title="Twitter-Send", name="Twitter-Send")
 
 
 @app.route("/twitter/auth", methods=["POST"])
@@ -495,44 +490,47 @@ def auth() -> Response:
 
     print(f"\n\nimg_path: {received_data[TWITTER_IMG_PATH]}")
     print(f"\n\nmode: {received_data[TWITTER_MODE]}")
+    print(f"\n\cookies: {request.cookies}")
 
     client_uuid: str = request.cookies.get(TWITTER_UUID, None)
     
-    response: Response = make_response(render_template('twitter.html'))
+    secrets: Dict[str, Optional[str]] = get_secrets()
+
+    auth_handler: OAuthHandler = OAuthHandler(
+        consumer_key=secrets[TWITTER_CONSUMER_KEY],
+        consumer_secret=secrets[TWITTER_CONSUMER_SECRET]
+    )
+
+    res: Dict[str, Union[str, int]] = {
+        TWITTER_AUTHORIZATION_URL: None,
+    }
+    res[TWITTER_AUTHORIZATION_URL] = auth_handler.get_authorization_url()
+
+    response = make_response(jsonify(res))
 
     if client_uuid not in _twitter_database.keys():
         client_uuid: str = str(uuid4())
         max_age: int = 60 * 60 * 24
         expires: int = int(datetime.datetime.now().timestamp()) + max_age
-        response.set_cookie(TWITTER_UUID, value=client_uuid, max_age=max_age, expires=expires)
 
         try:
-            secrets: Dict[str, Optional[str]] = get_secrets()
+            response.set_cookie(TWITTER_UUID, value=client_uuid, max_age=max_age, expires=expires)
 
-            auth_handler: OAuthHandler = OAuthHandler(
-                consumer_key=secrets[TWITTER_CONSUMER_KEY],
-                consumer_secret=secrets[TWITTER_CONSUMER_SECRET]
-            )
-
-            res: Dict[str, Union[str, int]] = {
-                TWITTER_AUTHORIZATION_URL: None,
+            _twitter_database[client_uuid] = {
+                TWITTER_IMG_PATH: received_data[TWITTER_IMG_PATH],
+                TWITTER_MODE: received_data[TWITTER_MODE],
             }
-
-            res[TWITTER_AUTHORIZATION_URL] = auth_handler.get_authorization_url()
         
         except TweepError as e:
             logger.error(f"<<AIcon Twitter Control>> {e}")
         
-        except AIconEnvVarNotFindError as e:
+        except AIconEnvVarNotFoundError as e:
             logger.error(f"<<AIcon Twitter Control>> {e}")
 
         finally:
             return make_response(jsonify(res))
-
     else:
-        pass
-
-
+        return make_response(jsonify(res))
 
 
 if __name__ == "__main__":
@@ -555,9 +553,7 @@ if __name__ == "__main__":
     ConnectionHealthChecker()
 
     AIconInterface()
-    Authorization()
     api.add_resource(AIconInterface, '/service')
-    api.add_resource(Authorization, '/twitter/auth')
 
     logger.info(f"<<AIcon>> Running on http://localhost:{PORT}/")
 
