@@ -3,7 +3,7 @@ HOST_SD=$(dirname $(dirname $(readlink -f $0)))/aicon
 
 VERSION="0.1.1"
 
-IMAGE_NAME="magicspell:${VERSION}"
+IMAGE_NAME="magicspell/aicon:${VERSION}"
 
 clear
 echo -e "Run \`sudo xhost +local:root\` on the host to use graphical applications."

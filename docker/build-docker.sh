@@ -2,7 +2,7 @@
 
 VERSION="0.1.1"
 
-IMAGE_NAME="magicspell:${VERSION}"
+IMAGE_NAME="magicspell/aicon:${VERSION}"
 BUILD_DIR=$(dirname $(readlink -f $0))
 
 echo "${BUILD_DIR}"
