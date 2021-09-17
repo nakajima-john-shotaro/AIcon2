@@ -11,6 +11,7 @@
     <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stickyfill/2.1.0/stickyfill.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/push.js/0.0.11/push.min.js"></script>
+    <script src="{{ url_for('static', filename='js/jquery.cookie.js') }}"></script>
   </head>
 
   <body>
@@ -578,10 +579,10 @@
     </div>
     <div class="blue darken-2" id="footer">
       <footer class="page-footer blue darken-2">
-        <div class="container">
-          <div class="row">
-            <div class="col s4 left">
-            © 2021 Copyright Text
+        <div class="container" id="footer_position">
+          <div class="row" id="footer_position_row">
+            <div class="col s4 left" id="copyright_position">
+              Copyright © 2021 MagicSpell
             </div>
             <div class="col s8 right">
               <div class="input-field col s5 right">

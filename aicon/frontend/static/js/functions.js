@@ -369,7 +369,6 @@ function target_handleFiles(files) {
 
 
 $(window).resize(function () {
-    console.log($('#communication_partner').val())
     $('#upload_img').width($('#drop_area').outerWidth());
     $('#upload_img').height($('#drop_area').outerHeight());
     $('#target_upload_img').width($('#target_drop_area').outerWidth());
@@ -495,7 +494,6 @@ function wait_display() {
     const top_list = [10, 14, 19, 27, 38];
     const fontsize_list = [70, 85, 110, 150, 200];
     const color_list = ['rgba(0, 0, 0, 1)', 'rgba(20, 20, 20, 1)', 'rgba(40, 40, 40, 1)', 'rgba(60, 60, 60, 1)', 'rgba(70, 70, 70, 1)'];
-    // $('#loader_wrap').css('display', 'block');
     $('#loader_wrap').fadeIn(0);
     for (i = 1; i < 6; i++) {
         let css_lib = {
@@ -516,20 +514,19 @@ function wait_display() {
 
 // 待機の状態に自分の位置を知らせる関数
 function sort_order(priority, model_status) {
-    const color_list_ = ['rgba(0, 0, 0, 1)', 'rgba(20, 20, 20, 1)', 'rgba(40, 40, 40, 1)', 'rgba(60, 60, 60, 1)', 'rgba(70, 70, 70, 1)'];
+    const color_list_ = ['rgba(100, 190, 228, 1)', 'rgba(80, 180, 228, 1)', 'rgba(55, 170, 228, 1)', 'rgba(25, 160, 228, 1)', 'rgba(4, 155, 228, 1)'];
+    priority = priority > 5 ? 5 : priority;
+    console.log('priority')
+    console.log(priority)
+    // console.log("model_status")
+    // console.log(model_status)
+    for (let i = 1; i < 6; i++) {
+        $('#waiter_' + i).css('color', color_list_[i-1]);
+    }
+    $('#waiter_' + priority).css('color', 'rgba(221, 23, 30, 1)');
+
     if ((priority === 1) && model_status) {
         $('#loader_wrap').fadeOut(0);
-    }
-    else {
-        for (let i = 1; i < 6; i++) {
-            $('#waiter_' + i).addClass('color', color_list_[i-1]);
-        };
-        if (priority < 5) {
-            $('#waiter_' + priority).css('color', 'rgba(221, 23, 30, 1)');
-        }
-        else {
-            $('#waiter_5').css('color', 'rgba(221, 23, 30, 1)');
-        }
     }
 };
 
@@ -538,8 +535,6 @@ var communicate_status = false;
 var hash = '00000000-0000-0000-0000-000000000000';
 function start() {
     stop_input();
-    // var _image = document.getElementById('#upload_img');
-    // console.log(image_to_base64(_image, 'image/png'));
     communicate_status = true;
     wait_display();
     $('#img_make_container').fadeIn(0);
@@ -594,6 +589,7 @@ function communicate(s_data) {
     })
         .done(function (r_data, textStatus, xhr) {
             sort_order(r_data["priority"], r_data["model_status"]);
+
             console.log("Communication success");
             console.log("r_data");
             console.log(r_data);
@@ -636,7 +632,7 @@ function communicate(s_data) {
                 let download_img_path = r_data["img_path"].replace('..', 'http://' + $('#communication_partner').val() + ':5050');
                 let download_mp4_path = r_data["mp4_path"].replace('..', 'http://' + $('#communication_partner').val() + ':5050');
                 $('#download_img').attr("href", download_img_path).attr("download", $("#textarea").val() + ".png");
-                $('#download_mp4').attr("href", download_mp4_path).attr("download", $("#textarea").val() + '.' +r_data['mp4_path'].split('.').pop());
+                $('#download_mp4').attr("href", download_mp4_path).attr("download", $("#textarea").val() + '.mp4');
                 if ($('#Notification_box').prop("checked") === true) {
                     PushNotification(r_data["img_path"])
                 }
@@ -684,8 +680,9 @@ $('.twitter').click(function () {
             else if (twitter_button === "change_icon") {
                 $.cookie("twitter_mode", "icon");
             };
-            $.cookie("img_path", $("#download-origin").attr("href"));
-            window.open(r_data["auth_url"]);
+            $.cookie("img_path", $("#" + twitter_button).attr("href"));
+            console.log(r_data["authorization_url"])
+            window.open(r_data["authorization_url"]);
         })
         .fail(function (r_data, textStatus, xhr) {
             console.log('Fail to communication')
