@@ -20,6 +20,10 @@ align-items: center;
 padding:5px 20px;
 }
 
+#how_to_use {
+    text-decoration: none;
+    color: #fff;
+}
 
 /*全体のエリア設定*/
 

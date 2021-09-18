@@ -20,6 +20,11 @@ $('#reload').on('click', function () {
     $('html,body').animate({ scrollTop: 0 }, '1');
 });
 
+$('#nico_font').on('click', function () {
+    location.reload();
+    $('html,body').animate({ scrollTop: 0 }, '1');
+});
+
 
 // helpが押されたときに関する関数です
 $('#help').click(function() {
@@ -58,10 +63,10 @@ $('.Model_Area').click(function() {
 var DeepDaze_dir = [
     '../static/demo_img/DeepDaze/Women_in_cyberpunk.png',
     '../static/demo_img/DeepDaze/inferno.png',
-    '../static/demo_img/DeepDaze/inferno.png',
-    '../static/demo_img/DeepDaze/inferno.png',
-    '../static/demo_img/DeepDaze/inferno.png',
-    '../static/demo_img/DeepDaze/inferno.png'
+    '../static/demo_img/DeepDaze/burning_ice.png',
+    '../static/demo_img/DeepDaze/Catcher_in_the_Rye.png',
+    '../static/demo_img/DeepDaze/cosmos.png',
+    '../static/demo_img/DeepDaze/New_green_promenade.png'
 ];
 
 var BigSleep_dir = [
@@ -527,6 +532,7 @@ function abort_signal() {
 
 // 待機の場合に表示する関数
 function wait_display() {
+    
     const top_list = [10, 14, 19, 27, 38];
     const fontsize_list = [70, 85, 110, 150, 200];
     const color_list = ['rgba(0, 0, 0, 1)', 'rgba(20, 20, 20, 1)', 'rgba(40, 40, 40, 1)', 'rgba(60, 60, 60, 1)', 'rgba(70, 70, 70, 1)'];
@@ -571,9 +577,6 @@ function start() {
     wait_display();
     $('#img_make_container').fadeIn(0);
     $('#save_buttons').fadeOut(0);
-    $('#result_img').attr("src", "../static/demo_img/Alice_in_wonderland.png").on("scroll", function () {
-        $('#result_img').fadeIn();
-    });
     const target = $('#img_make_container').get(0).offsetTop;
     $('body,html').animate({ scrollTop: target }, 600, 'swing');
     
@@ -621,7 +624,6 @@ function communicate(s_data) {
     })
         .done(function (r_data, textStatus, xhr) {
             sort_order(r_data["priority"], r_data["model_status"]);
-
             console.log("Communication success");
             console.log("r_data");
             console.log(r_data);
