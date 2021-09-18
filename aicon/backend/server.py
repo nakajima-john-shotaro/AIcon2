@@ -432,6 +432,11 @@ def index() -> Response:
     return render_template("aicon.html", title="AIcon", name="AIcon")
 
 
+@app.route('/help')
+def help() -> Response:
+    return render_template("help.html", title="help", name="help")
+
+
 @app.route('/twitter/callback')
 def callback() -> Response:
     oauth_token = request.args.get(TWITTER_OAUTH_TOKEN)
@@ -470,7 +475,7 @@ def callback() -> Response:
         elif _twitter_database[client_uuid][TWITTER_MODE] == TWITTER_MODE_TWEET:
             img_path = unquote(_twitter_database[client_uuid][TWITTER_IMG_PATH])
             img_path = "../frontend/" + "/".join(img_path.split('/')[3:])
-            api.update_with_media(status="AIconでアイコンを作ったよ！！\n\n#技育展\n#AIcon", filename=img_path)
+            api.update_with_media(status=f"AIconで「{_twitter_database[client_uuid][TWITTER_TEXT]}」という言葉からアイコンを作ったよ！！\n\n#技育展\n#AIcon", filename=img_path)
 
     except AIconEnvVarNotFoundError as e:
         logger.error(f"<<AIcon Twitter Control>> {e}")
@@ -500,6 +505,7 @@ def auth() -> Response:
         _twitter_database[client_uuid] = {
             TWITTER_IMG_PATH: received_data[TWITTER_IMG_PATH],
             TWITTER_MODE: received_data[TWITTER_MODE],
+            TWITTER_TEXT: received_data[TWITTER_TEXT],
         }
     
     except TweepError as e:
