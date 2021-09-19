@@ -6,6 +6,7 @@
 
 #nico_font {
 	font-family: NicoKaku;
+	cursor: pointer;
 }
 
 #sup {
@@ -297,6 +298,8 @@ border-bottom:1px solid #ccc;
 	padding: 5px;
 	border: solid 1px #ddd;
 	width: 95%;
+	min-width: 150px;
+	max-height: 119px;
 	border-radius: 10px;
 	cursor: pointer;
 	cursor: hand;
@@ -305,10 +308,15 @@ border-bottom:1px solid #ccc;
 
 .save_setting_button:hover{
 	border: solid 1px #ccc;
+
 }
 
 #save_buttons {
 	min-height: 100px;
+}
+
+#icon, #tweet_icon {
+	width: 55px;
 }
 
 #save_img, #save_mp4 {
@@ -318,12 +326,21 @@ border-bottom:1px solid #ccc;
 
 #save_img_text, #save_mp4_text, #change_icon_text, #tweet_text {
 	color: #808080;
+	width: auto;
 }
 /* フッターの設定 */
 #footer {
 	min-height: 65px;
+	max-height: 80px;
 }
 
+#footer_position, #footer_position_row {
+	max-height: 84px;
+}
+
+#copyright_position {
+	transform: translateY(100%);
+}
 .page-footer {
 	position:relative;
 	width: 100%;
@@ -387,7 +404,7 @@ border-bottom:1px solid #ccc;
 	width: 100vw;
 	height: 100vh;
 	top: 0;
-	background: rgba(39, 39, 39, 0.808);
+	background: rgba(87, 83, 77, 0.555);
 	z-index: 2147483647;
 	display: none;
 }
@@ -397,7 +414,9 @@ border-bottom:1px solid #ccc;
 	color: #dd171e;
 }
 
-
+#on{
+	color: rgb(40, 151, 207);
+}
 #waiting_num_display {
 	position: fixed;
 	display: flex;

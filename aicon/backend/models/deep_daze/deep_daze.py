@@ -7,8 +7,8 @@ from torch import optim
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 import random
-from multiprocessing import synchronize
 from multiprocessing import Queue
+from multiprocessing.synchronize import Event as Event_
 from pathlib import Path
 from queue import Empty
 
@@ -265,7 +265,7 @@ class Imagine(nn.Module):
         save_mp4_path: str = os.path.join(self.client_data[JSON_MP4_PATH], "timelapse.mp4")
         self.response_mp4_path: str = save_mp4_path.replace("frontend/", "")
 
-        self.writer: imageio.core.Format.Writer = get_writer(save_mp4_path, fps=10)
+        self.writer: imageio.core.Format.Writer = get_writer(save_mp4_path, fps=20)
 
         text: str = self.client_data[RECEIVED_DATA][JSON_TEXT]
         seed: Optional[int] = self.client_data[RECEIVED_DATA][JSON_SEED]
@@ -278,13 +278,15 @@ class Imagine(nn.Module):
         model_name: str = str(self.client_data[RECEIVED_DATA][JSON_BACKBONE])
 
         self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
-        self.i2c_event: synchronize.Event = self.client_data[CORE_I2C_EVENT]
+        self.c2i_brake_queue: Queue = self.client_data[CORE_C2I_BREAK_QUEUE]
+        self.c2i_event: Event_ = self.client_data[CORE_C2I_EVENT]
+        self.i2c_event: Event_ = self.client_data[CORE_I2C_EVENT]
 
         self.put_data: Dict[str, Optional[Union[str, bool]]] = {
             JSON_HASH: self.client_uuid,
             JSON_CURRENT_ITER: None,
             JSON_IMG_PATH: None,
-            JSON_MP4_PATH: None,
+            JSON_MP4_PATH: self.response_mp4_path,
             JSON_COMPLETE: False,
             JSON_MODEL_STATUS: False,
         }
@@ -541,7 +543,7 @@ class Imagine(nn.Module):
         pil_img: Image = T.ToPILImage()(img.squeeze())
         pil_img.save(save_filename)
 
-        self.writer.append_data(np.uint8(np.array(pil_img) * 255.))
+        self.writer.append_data(np.uint8(np.array(pil_img)))
 
     def forward(self):
         if exists(self.start_image):
@@ -614,10 +616,10 @@ class Imagine(nn.Module):
                 pass
 
             self.put_data[JSON_IMG_PATH] = str(self.response_filename)
-            self.put_data[JSON_MP4_PATH] = self.response_mp4_path
-            self.put_data[JSON_COMPLETE] = True
 
             self.c2i_queue.put_nowait(self.put_data)
+            self.c2i_brake_queue.put_nowait(self.put_data)
+            self.c2i_event.set()
 
             torch.cuda.empty_cache()
 

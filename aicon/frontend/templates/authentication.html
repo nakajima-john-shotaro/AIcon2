@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+
+    <!--入力フォーム-->
+    <input type="text" id="content">
+    <!--ご自身のTwitterアカウントへ行きます-->
+    <button id="twitter" class="btn" type="button">Tweet</button>
+
+    <script>
+        // twitter共有機能
+        document.getElementById("twitter").addEventListener('click', function (event) {
+            event.preventDefault();
+            var left = Math.round(window.screen.width / 2 - 275);
+            var top = (window.screen.height > 420) ? Math.round(window.screen.height / 2 - 210) : 0;
+            window.open(
+                "https://twitter.com/intent/tweet?text=" + encodeURIComponent(document.getElementById(
+                    "content").value),
+                null,
+                "scrollbars=yes,resizable=yes,toolbar=no,location=yes,width=550,height=420,left=" + left +
+                ",top=" + top);
+        });
+    </script>
+</body>
+
+</html>
