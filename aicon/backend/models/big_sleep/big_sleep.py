@@ -297,7 +297,7 @@ class Imagine(nn.Module):
         save_mp4_path: str = os.path.join(self.client_data[JSON_MP4_PATH], "timelapse.mp4")
         self.response_mp4_path: str = save_mp4_path.replace("frontend/", "")
 
-        self.writer: imageio.core.Format.Writer = get_writer(save_mp4_path, fps=20, quality=10)
+        self.writer: imageio.core.Format.Writer = get_writer(save_mp4_path, fps=20)
 
         text: str = f"{self.client_data[RECEIVED_DATA][JSON_TEXT]}|{self.client_data[RECEIVED_DATA][JSON_CARROT]}"
         stick: str = self.client_data[RECEIVED_DATA][JSON_STICK]
