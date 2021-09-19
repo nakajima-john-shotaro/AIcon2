@@ -6,6 +6,7 @@
 
 #nico_font {
 	font-family: NicoKaku;
+	cursor: pointer;
 }
 
 #sup {
@@ -315,7 +316,7 @@ border-bottom:1px solid #ccc;
 }
 
 #icon, #tweet_icon {
-	width: 60px;
+	width: 55px;
 }
 
 #save_img, #save_mp4 {

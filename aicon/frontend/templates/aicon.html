@@ -1,6 +1,9 @@
 <html lang="ja">
   <head>
     <title>AIcon</title>
+    <!-- favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='../static/demo_img/icon/aicon_2.ico') }}" />
+
     <!-- css file -->
     <link rel="stylesheet" href="../static/css/aicon.css" type="text/css">
 
@@ -28,28 +31,28 @@
             </i>
           </a>
           <ul class="right hide-on-med-and-down">
-            <a href="help.html" id="help" target="_blank">help</a>
-            <li><a href="review.html">review</a></li>
+            <a href="help" id="help" target="_blank">help</a>
+            <li><a href="review.html" >review</a></li>
           </ul>
         </div>
       </nav>
     </div>
 
-    <!-- <ul class="sidenav" id="mobile-demo">
-      <li><a href="help.html">help</a></li>
-      <li><a href="review.html" id="help">review</a></li>
-    </ul> -->
+    <ul class="sidenav" id="mobile-demo">
+      <li><a href="help" target="_blank">help</a></li>
+      <!-- <li><a href="review.html" id="help">review</a></li> -->
+    </ul>
 
 
     <div id="wrapper">
       <!-- 左固定 -->
         <div class="container" id="fixed-area">
           <div class="container carousel col s12 gallery">
-              <img class="carousel-item" id="img1" src="../static/demo_img/DeepDaze/Women_in_cyberpunk.png" alt="Can't load image.">
+              <img class="carousel-item" id="img1" src="../static/demo_img/DeepDaze/burning_ice.png" alt="Can't load image.">
               <img class="carousel-item" id="img2" src="../static/demo_img/DeepDaze/inferno.png" alt="Can't load image.">
-              <img class="carousel-item" id="img3" src="../static/demo_img/DeepDaze/inferno.png" alt="Can't load image.">
-              <img class="carousel-item" id="img4" src="../static/demo_img/DeepDaze/Women_in_cyberpunk.png" alt="Can't load image.">
-              <img class="carousel-item" id="img5" src="../static/demo_img/DeepDaze/Women_in_cyberpunk.png" alt="Can't load image.">
+              <img class="carousel-item" id="img3" src="../static/demo_img/DeepDaze/Women_in_cyberpunk.png" alt="Can't load image.">
+              <img class="carousel-item" id="img4" src="../static/demo_img/DeepDaze/Catcher_in_the_Rye.png" alt="Can't load image.">
+              <img class="carousel-item" id="img5" src="../static/demo_img/DeepDaze/cosmos.png" alt="Can't load image.">
           </div>
           <div class="text">
             
@@ -535,7 +538,7 @@
     <!-- 通信を開始した際に以下のコンテナを出現させる -->
     <div class="container" id="img_make_container" hidden>
       <div class="row">
-        <img id="result_img" src="../static/demo_img/BigSleep/Alice_in_wonderland.png" alt="Can't load image.">
+        <img id="result_img" src="../static/demo_img/icon/loading_light.gif" alt="Can't load image.">
         <div class="row progress" id="progress_bar">
           <div class="determinate" style="width: 0%"></div>
         </div>
