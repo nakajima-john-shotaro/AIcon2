@@ -11,7 +11,7 @@ $(window).on('load resize', function () {
 
 $(window).load(function () {    
     change_advanced_param(model_button_id, param_button_id);
-    // console.log($('#communication_partner').val())
+    $('#textarea').focus()
     $('#communication_partner').val($.cookie('url'))
     if ($('#communication_partner').val() == ''){
         $('#communication_partner').val('localhost')
@@ -274,8 +274,9 @@ $('#drop_area').on('drop', function (event) {
 
 // 選択された画像ファイルの操作
 var source_img = null;
+var file = null;
 function handleFiles(files) {
-    var file = files[0];
+    file = files[0];
     var imageType = 'image.*';
     
     // ファイルが画像が確認する
@@ -286,16 +287,51 @@ function handleFiles(files) {
         return;
     }
     
-    $('#drop_area').hide();  // いちばん上のdrop_areaを非表示にします
+    $('#drop_area').hide();
     $('#img_delete_button').show();
-
-    let secret_img = document.createElement('img'); 
+    
+    
+    
+    // let canvas = document.createElement('canvas');
+    // canvas.width  = img.width;
+    // canvas.height = img.height;
+    // // Draw Image
+    // let ctx = canvas.getContext('2d');
+    // ctx.drawImage(img, 0, 0);
+    // // To Base64
+    // source_img =  canvas.toDataURL(file.type);
+    // console.log(source_img)
+    
+    let secret_img = document.createElement('canvas');
     secret_img.id = 'secret_source_upload_img';
+    secret_img.width = 16;
+    secret_img.height = 16;
+    ctx.drawImage(imgReader, 0, 0, 16, 16)
+    // secimg = $('#secret_source_upload_img').prop('width', 16).prop('height', 16)
+    console.log(secimg)
     let secret_reader = new FileReader();
+    secret_reader.onload = function () {  
+        secret_img.src = secret_reader.result;
+        console.log(secret_reader.result)
+        secret_img.width = 16;
+        secret_img.height = 16;
+        // console.log(secret_img)
+        source_img = secret_img.src.replace(/data:.*\/.*;base64,/, '');
+        }
+    // console.log(secret_img)
+    secret_reader.readAsDataURL(file);
+
+
+    secret_img = document.createElement('img');
+    secret_img.id = 'secret_source_upload_img';
+    secret_reader = new FileReader();
     secret_reader.onload = function () {  
         secret_img.src = secret_reader.result; 
         source_img = secret_img.src.replace(/data:.*\/.*;base64,/, '');
-    }
+        }
+    console.log(secret_img)
+    secret_reader.readAsDataURL(file);
+
 
     let img = document.createElement('img');
     img.id = 'upload_img';
@@ -376,10 +412,10 @@ $('#target_drop_area').on('drop', function (event) {
 
 // 選択された画像ファイルの操作
 var target_img = null;
+var target_file = null;
 function target_handleFiles(files) {
-    var target_file = files[0];
+    target_file = files[0];
     var imageType = 'image.*';
-    
     // ファイルが画像が確認する
     if (!target_file.type.match(imageType)) {
         alert('画像ファイルではありません。\n画像を選択してください');
@@ -387,18 +423,20 @@ function target_handleFiles(files) {
         $('#target_drop_area').css('border', '5px dashed #ccc');
         return;
     }
-    
     $('#target_drop_area').hide();
     $('#target_img_delete_button').show();
     
     let secret_img = document.createElement('img'); 
     secret_img.id = 'secret_target_upload_img';
+    console.log(secret_img)
+    console.log(secret_img)
     let secret_reader = new FileReader();
     secret_reader.onload = function () {  
         secret_img.src = secret_reader.result; 
         target_img = secret_img.src.replace(/data:.*\/.*;base64,/, '');
     }
     secret_reader.readAsDataURL(target_file); 
+    console.log(target_file)
 
     let img = document.createElement('img');
     img.id = 'target_upload_img';
@@ -415,6 +453,9 @@ function target_handleFiles(files) {
 
 
 $(window).resize(function () {
+    console.log(source_img)
+    console.log(target_img)
+
     $('#upload_img').width($('#drop_area').outerWidth());
     $('#upload_img').height($('#drop_area').outerHeight());
     $('#target_upload_img').width($('#target_drop_area').outerWidth());
@@ -534,6 +575,8 @@ function abort_signal() {
     communicate(send_json_data);
 };
 
+
+
 // 待機の場合に表示する関数
 function wait_display() {
     
@@ -576,8 +619,8 @@ function sort_order(priority, model_status) {
 var communicate_status = false;
 var hash = '00000000-0000-0000-0000-000000000000';
 function start() {
-    $.cookie('url', $('#communication_partner').val())
     stop_input();
+    $.cookie('url', $('#communication_partner').val())
     communicate_status = true;
     wait_display();
     $('#img_make_container').fadeIn(0);
@@ -610,8 +653,9 @@ function start() {
         stick: text_check($('#stick_textarea').val())
     };
     let send_json_data = JSON.stringify(send_data);
-
-    communicate(send_json_data);
+    console.log(source_img)
+    console.log(target_img)
+    // communicate(send_json_data);
 };
 
 // 通信に関しての関数

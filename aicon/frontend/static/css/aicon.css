@@ -50,6 +50,9 @@ body {
 border-bottom:1px solid #ccc;
 }
 
+#param_space {
+	min-width: 433px;
+}
 
 /* コンテナの中身の位置を全体的に少し下げる */
 #right_container {
@@ -142,6 +145,7 @@ border-bottom:1px solid #ccc;
 .user-icon-dnd-wrapper {
 	position: relative;
 	width: 100%;
+	min-width: 190;
 }
 
 #preview_field {
@@ -382,6 +386,7 @@ border-bottom:1px solid #ccc;
 @media screen and (max-width:768px) {
 	#wrapper {
 		display: block;
+		min-width: 720px;
 	}
 	#fixed-area {
 		position:relative!important;
