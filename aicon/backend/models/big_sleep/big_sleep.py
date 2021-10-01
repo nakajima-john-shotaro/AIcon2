@@ -147,7 +147,7 @@ class Model(nn.Module):
         
         assert image_width in (128, 256, 512), 'image size must be one of 128, 256, or 512'
 
-        self.biggan = BigGAN.from_pretrained(f'biggan-deep-{image_width}')
+        self.biggan = BigGAN.from_pretrained(f'biggan-deep-{image_width}', cache_dir=PRETRAINED_BACKBONE_MODEL_PATH)
         self.max_classes = max_classes
         self.class_temperature = class_temperature
         self.ema_decay\
@@ -308,6 +308,7 @@ class Imagine(nn.Module):
         model_name: str = self.client_data[RECEIVED_DATA][JSON_BACKBONE]
 
         self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
+        self.c2i_brake_queue: Queue = self.client_data[CORE_C2I_BREAK_QUEUE]
         self.c2i_event: Event_ = self.client_data[CORE_C2I_EVENT]
         self.i2c_event: Event_ = self.client_data[CORE_I2C_EVENT]
 
@@ -456,22 +457,15 @@ class Imagine(nn.Module):
         return sequence_number
 
     def train_step(self, epoch: int, iteration: int) -> None:
-        total_loss: float = 0
+        total_loss = 0
 
         for _ in range(self.gradient_accumulate_every):
-            with autocast(enabled=True):
-                loss: torch.Tensor
-                _, losses = self.model(self.encoded_texts["max"], self.encoded_texts["min"])
-    
-            loss: torch.Tensor = sum(losses) / self.gradient_accumulate_every
-            self.scaler.scale(loss).backward()
+            _, losses = self.model(self.encoded_texts["max"], self.encoded_texts["min"])
+            loss = sum(losses) / self.gradient_accumulate_every
+            total_loss += loss
+            loss.backward()
 
-            total_loss = total_loss + loss.item()
-
-            del loss
-
-        self.scaler.step(self.optimizer)
-        self.scaler.update()
+        self.optimizer.step()
         self.model.model.latents.update()
         self.optimizer.zero_grad(set_to_none=True)
 
@@ -545,6 +539,7 @@ class Imagine(nn.Module):
             self.put_data[JSON_IMG_PATH] = str(self.response_filename)
 
             self.c2i_queue.put_nowait(self.put_data)
+            self.c2i_brake_queue.put_nowait(self.put_data)
             self.c2i_event.set()
 
             torch.cuda.empty_cache()
