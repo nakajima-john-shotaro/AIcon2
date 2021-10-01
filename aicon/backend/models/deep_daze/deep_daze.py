@@ -1,3 +1,4 @@
+from io import BytesIO
 import os
 import sys
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
@@ -10,7 +11,7 @@ import random
 from multiprocessing import Queue
 from multiprocessing.synchronize import Event as Event_
 from pathlib import Path
-from queue import Empty
+from base64 import b64decode
 
 import numpy as np
 import torch
@@ -229,15 +230,13 @@ class Imagine(nn.Module):
             self,
             client_uuid: str,
             client_data: Dict[str, Union[str, Queue]],
-            target_img: Optional[str] = None,
-            start_image_path: Optional[str] = None,
             lr: float = 0.0001,
             optimizer: str = "AdamP",
             center_bias: bool = True,
             center_focus: int = 2,
             jit: bool = True,
             epochs: int = 1,
-            start_image_train_iters: int = 20,
+            start_image_train_iters: int = 50,
             start_image_lr: float = 3e-4,
             theta_initial: Optional[float] = None,
             theta_hidden: Optional[float] = None,
@@ -276,6 +275,14 @@ class Imagine(nn.Module):
         num_layers: int = int(self.client_data[RECEIVED_DATA][JSON_NUM_LAYER])
         hidden_size: int = int(self.client_data[RECEIVED_DATA][JSON_HIDDEN_SIZE])
         model_name: str = str(self.client_data[RECEIVED_DATA][JSON_BACKBONE])
+        if self.client_data[RECEIVED_DATA][JSON_SOURCE_IMG] is not None:
+            source_img: bytes = BytesIO(b64decode((self.client_data[RECEIVED_DATA][JSON_SOURCE_IMG])))
+        else:
+            source_img = None
+        if self.client_data[RECEIVED_DATA][JSON_TARGET_IMG] is not None:
+            target_img: bytes = BytesIO(b64decode((self.client_data[RECEIVED_DATA][JSON_TARGET_IMG])))
+        else:
+            target_img = None
 
         self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
         self.c2i_brake_queue: Queue = self.client_data[CORE_C2I_BREAK_QUEUE]
@@ -414,12 +421,8 @@ class Imagine(nn.Module):
         self.start_image_train_iters: int = start_image_train_iters
         self.start_image_lr: float = start_image_lr
 
-        if exists(start_image_path):
-            file: Path = Path(start_image_path)
-            if not file.exists():
-                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> File does not exist at given starting image path {start_image_path}")
-                raise AIconFileNotFoundError(f"File does not exist at given starting image path {start_image_path}")
-            image: Image = Image.open(str(file))
+        if source_img is not None:
+            image: Image = Image.open(source_img)
             start_img_transform: Compose = T.Compose([
                 T.Resize(image_width),
                 T.CenterCrop((image_width, image_width)),
@@ -555,7 +558,7 @@ class Imagine(nn.Module):
                     loss.backward()
 
                     optim.step()
-                    optim.zero_grad()
+                    optim.zero_grad(set_to_none=True)
             except KeyboardInterrupt as e:
                 logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Keyboard Interrunpted")
                 raise e
