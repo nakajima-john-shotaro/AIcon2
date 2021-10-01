@@ -13,6 +13,9 @@ $(window).load(function () {
     change_advanced_param(model_button_id, param_button_id);
     // console.log($('#communication_partner').val())
     $('#communication_partner').val($.cookie('url'))
+    if ($('#communication_partner').val() == ''){
+        $('#communication_partner').val('localhost')
+    }
     // $('#communication_partner').prop('val', $('#communication_partner').val(''))
     $('html,body').animate({ scrollTop: 0 }, '1');
 });
@@ -611,7 +614,7 @@ function start() {
     let send_json_data = JSON.stringify(send_data);
     console.log('スタート直後の送信データ');
     console.log(send_data);
-    communicate(send_json_data);
+    // communicate(send_json_data);
 };
 
 // 通信に関しての関数
