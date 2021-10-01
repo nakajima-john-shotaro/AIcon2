@@ -277,6 +277,7 @@ var source_img = null;
 var file = null;
 function handleFiles(files) {
     file = files[0];
+    console.log(file)
     var imageType = 'image.*';
     
     // ファイルが画像が確認する
@@ -302,47 +303,92 @@ function handleFiles(files) {
     // source_img =  canvas.toDataURL(file.type);
     // console.log(source_img)
     
-    let secret_img = document.createElement('canvas');
-    secret_img.id = 'secret_source_upload_img';
-    secret_img.width = 16;
-    secret_img.height = 16;
-    ctx.drawImage(imgReader, 0, 0, 16, 16)
-    // secimg = $('#secret_source_upload_img').prop('width', 16).prop('height', 16)
-    console.log(secimg)
-    let secret_reader = new FileReader();
-    secret_reader.onload = function () {  
-        secret_img.src = secret_reader.result;
-        console.log(secret_reader.result)
-        secret_img.width = 16;
-        secret_img.height = 16;
-        // console.log(secret_img)
-        source_img = secret_img.src.replace(/data:.*\/.*;base64,/, '');
-        }
+
+    // let source_canvas = document.createElement('canvas');
+    // let source_cg = source_canvas.getContext('2d');
+    // let source_img = new Image();
+    // let source_reader = new FileReader();
+    // source_img.crossOrigin = 'Anonymous';
+    // source_reader.onload = function(event){
+    //     console.log('bjhb')
+    //     let source_width = 512;
+    //     let source_height = 512;
+    //     source_canvas.width = source_width;
+    //     source_canvas.height = source_height;
+    //     source_cg.drawImage(this, 0, 0, this.width, this.height, 0, 0, source_width, source_height);
+    // }
+    // console.log(source_canvas.toDataURL());
+
+//     var image = new Image();
+//     var reader = new FileReader();
+//     var file = null; // 選択されるファイル
+//   var blob = null; // 画像(BLOBデータ)
+//     reader.onload = function(e) {
+//         image.onload = function() {
+//             var width, height;
+//             if(image.width > image.height){
+//                 // 横長の画像は横のサイズを指定値にあわせる
+//                 var ratio = image.height/image.width;
+//                 width = 256;
+//                 height = 256;
+//             } else {
+//                 // 縦長の画像は縦のサイズを指定値にあわせる
+//                 var ratio = image.width/image.height;
+//                 width = 256;
+//                 height = 256;
+//             }
+//             // サムネ描画用canvasのサイズを上で算出した値に変更
+//             var canvas = $('#canvas').attr('width', width).attr('height', height);
+//             var ctx = canvas[0].getContext('2d');
+//             // canvasに既に描画されている画像をクリア
+//             ctx.clearRect(0,0,width,height);
+//             // canvasにサムネイルを描画
+//             ctx.drawImage(image,0,0,image.width,image.height,0,0,width,height);
+
+//             // canvasからbase64画像データを取得
+//             var base64 = canvas.get(0).toDataURL(file.type);        
+//             // base64からBlobデータを作成
+//             var barr, bin, i, len;
+//             bin = atob(base64.split('base64,')[1]);
+//             len = bin.length;
+//             barr = new Uint8Array(len);
+//             i = 0;
+//             while (i < len) {
+//                 barr[i] = bin.charCodeAt(i);
+//                 i++;
+//             }
+//             blob = new Blob([barr], {type: file.type});
+//             console.log(blob);
+//         }
+//         image.src = e.target.result;
+//     }
+//     reader.readAsDataURL(file);
+
+
+
+
+
+    // secret_img = document.createElement('img');
+    // secret_img.id = 'secret_source_upload_img';
+    // secret_reader = new FileReader();
+    // secret_reader.onload = function () {  
+    //     secret_img.src = secret_reader.result; 
+    //     source_img = secret_img.src.replace(/data:.*\/.*;base64,/, '');
+    //     }
     // console.log(secret_img)
-    secret_reader.readAsDataURL(file);
+    // secret_reader.readAsDataURL(file);
 
 
-    secret_img = document.createElement('img');
-    secret_img.id = 'secret_source_upload_img';
-    secret_reader = new FileReader();
-    secret_reader.onload = function () {  
-        secret_img.src = secret_reader.result; 
-        source_img = secret_img.src.replace(/data:.*\/.*;base64,/, '');
-        }
-    console.log(secret_img)
-    secret_reader.readAsDataURL(file);
-
-
-    let img = document.createElement('img');
-    img.id = 'upload_img';
-    img.width = $('#drop_area').outerWidth();
-    img.height = $('#drop_area').outerHeight();
-    let reader = new FileReader();
-    reader.onload = function () {
-        img.src = reader.result;
-        $('#preview_field').append(img);
-    }
-    reader.readAsDataURL(file);
+    // let img = document.createElement('img');
+    // img.id = 'upload_img';
+    // img.width = $('#drop_area').outerWidth();
+    // img.height = $('#drop_area').outerHeight();
+    // let reader = new FileReader();
+    // reader.onload = function () {
+    //     img.src = reader.result;
+    //     $('#preview_field').append(img);
+    // }
+    // reader.readAsDataURL(file);
 }
 
 // アイコン画像を消去するボタン
