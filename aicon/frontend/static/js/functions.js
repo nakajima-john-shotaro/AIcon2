@@ -611,7 +611,7 @@ function start() {
     };
     let send_json_data = JSON.stringify(send_data);
 
-    // communicate(send_json_data);
+    communicate(send_json_data);
 };
 
 // 通信に関しての関数
