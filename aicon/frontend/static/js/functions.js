@@ -530,7 +530,6 @@ function abort_signal() {
     };
     $('#quit_button').fadeOut(0);
     $('#progress_bar').fadeOut(300);
-    console.log('中止信号が押されました');
     let send_json_data = JSON.stringify(send_data);
     communicate(send_json_data);
 };
@@ -591,7 +590,6 @@ function start() {
     const seed_value = get_seed_value();
 
 
-    console.log(slider_vals);
     // 送信するデータ
     send_data = {
         model_name: model_button_id,
@@ -612,8 +610,7 @@ function start() {
         stick: text_check($('#stick_textarea').val())
     };
     let send_json_data = JSON.stringify(send_data);
-    console.log('スタート直後の送信データ');
-    console.log(send_data);
+
     // communicate(send_json_data);
 };
 
@@ -630,7 +627,6 @@ function communicate(s_data) {
     })
         .done(function (r_data, textStatus, xhr) {
             sort_order(r_data["priority"], r_data["model_status"]);
-            console.log("Communication success");
             console.log("r_data");
             console.log(r_data);
             console.log("s_data");
@@ -677,7 +673,6 @@ function communicate(s_data) {
         .fail(function (r_data, textStatus, error) {
             console.log("Commnucation error");
             console.log(r_data);
-            console.log(typeof r_data);
         });
 }
 
