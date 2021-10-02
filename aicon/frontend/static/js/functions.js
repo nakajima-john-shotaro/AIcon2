@@ -370,6 +370,8 @@ function handleFiles(files) {
 
     // secret_img = document.createElement('img');
     // secret_img.id = 'secret_source_upload_img';
+    // secret_img.width = 128
+    // secret_img.height =128
     // secret_reader = new FileReader();
     // secret_reader.onload = function () {  
     //     secret_img.src = secret_reader.result; 
@@ -378,17 +380,34 @@ function handleFiles(files) {
     // console.log(secret_img)
     // secret_reader.readAsDataURL(file);
 
+    let img = document.createElement('img');
+    let reader = new FileReader();
+    $.when(
+        img.id = 'upload_img',
+        img.width = $('#drop_area').outerWidth(),
+        img.height = $('#drop_area').outerHeight(),
+        reader.onload = function () {
+            img.src = reader.result;
+            $('#preview_field').append(img);
+            reader.readAsDataURL(file);
+        }
+    ).done(function (){
+    let source = document.getElementById('upload_img');
+    source_img = imagetobase64(source, file.type);
+    }).fail(function(){
+        
+    })
+}
 
-    // let img = document.createElement('img');
-    // img.id = 'upload_img';
-    // img.width = $('#drop_area').outerWidth();
-    // img.height = $('#drop_area').outerHeight();
-    // let reader = new FileReader();
-    // reader.onload = function () {
-    //     img.src = reader.result;
-    //     $('#preview_field').append(img);
-    // }
-    // reader.readAsDataURL(file);
+function imagetobase64(img, type) {
+    var canvas = document.createElement('canvas');
+    canvas.width  = 256;
+    canvas.height = 256;
+    // Draw Image
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    // To Base64
+    return canvas.toDataURL(type);
 }
 
 // アイコン画像を消去するボタン
@@ -474,7 +493,6 @@ function target_handleFiles(files) {
     
     let secret_img = document.createElement('img'); 
     secret_img.id = 'secret_target_upload_img';
-    console.log(secret_img)
     console.log(secret_img)
     let secret_reader = new FileReader();
     secret_reader.onload = function () {  
