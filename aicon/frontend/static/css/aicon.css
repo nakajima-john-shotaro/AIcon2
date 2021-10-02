@@ -29,7 +29,10 @@ input[type="search"]::-webkit-search-cancel-button {
 body {
 	user-select: none;
 }
-
+/* ヘッダー関係 */
+#header {
+	min-width: 640px;
+}
 
 /* 左関係 */
 /* #gallery_model_name_container {
@@ -50,6 +53,9 @@ body {
 border-bottom:1px solid #ccc;
 }
 
+#param_space {
+	min-width: 433px;
+}
 
 /* コンテナの中身の位置を全体的に少し下げる */
 #right_container {
@@ -128,9 +134,6 @@ border-bottom:1px solid #ccc;
 .seed_box {
 	transform: translateY(30%);
 }
-#seed_box_fix {
-	border-left: 2px dashed rgb(212, 212, 212);
-}
 
 /* テキストボックスの高さ */
 .materialize-textarea {
@@ -142,6 +145,7 @@ border-bottom:1px solid #ccc;
 .user-icon-dnd-wrapper {
 	position: relative;
 	width: 100%;
+	min-width: 190;
 }
 
 #preview_field {
@@ -332,6 +336,7 @@ border-bottom:1px solid #ccc;
 #footer {
 	min-height: 65px;
 	max-height: 80px;
+	min-width: 720px;
 }
 
 #footer_position, #footer_position_row {
@@ -382,6 +387,7 @@ border-bottom:1px solid #ccc;
 @media screen and (max-width:768px) {
 	#wrapper {
 		display: block;
+		min-width: 720px;
 	}
 	#fixed-area {
 		position:relative!important;

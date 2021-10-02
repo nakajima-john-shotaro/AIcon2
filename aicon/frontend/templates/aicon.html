@@ -21,7 +21,7 @@
     
     <div class="navbar-fixed">
       <nav>
-        <div class="nav-wrapper  light-blue darken-1">
+        <div class="nav-wrapper  light-blue darken-1" id='header'>
           <h href="#!" class="brand-logo center" id="nico_font">
             AIcon<sup id="sup">2</sup>
           </h>
@@ -96,11 +96,11 @@
                 <div class="modal-content">
                   <h4>DeepDaze</h4>
                   <div class="conteiner">
-                    <p>A bunch of text</p>
+                    <p>抽象的な画像(イメージ的)を作成可能</p>
                   </div>
                   <h4>BigSleep</h4>
                   <div class="conteiner">
-                  <p>A bunch of text</p>
+                  <p>リアルな画像を作成可能</p>
                   </div>
                 </div>
                 <div class="modal-footer">
@@ -273,22 +273,22 @@
                         <br>
                       </div>
                       <div class="row center">
-                        <div class="col s3">
+                        <div class="col s6 m3">
                           <div id="RN50" class="backbone_button">
                             <p class="not_select_text center">ResNet50</p>
                           </div><!-- ResNet50 -->
                         </div>
-                        <div class="col s3">
+                        <div class="col s6 m3">
                           <div id="RN50x4" class="backbone_button">
                             <p class="not_select_text center">ResNet50x4</p>
                           </div><!-- ResNet50x4 -->
                         </div>
-                        <div class="col s3">
+                        <div class="col s6 m3">
                           <div id="RN101" class="backbone_button">
                             <p class="not_select_text center">ResNet101</p>
                           </div><!-- ResNet101 -->
                         </div>
-                        <div class="col s3">
+                        <div class="col s6 m3">
                           <div id="ViT-B32" class="backbone_button">
                             <p class="not_select_text center">ViT-B32</p>
                           </div><!-- ViT -->
@@ -304,26 +304,29 @@
                       </div>
                       <div class="row center">
                         <form action="#">
-                          <div class="col s1"></div>
-                          <div class="col s4 seed_box">
-                            <p>
-                              <label>
-                                <input name="seed" class="seed_radio_button" type="radio" id="seed_button_random" checked />
-                                <span>Random</span>
-                              </label>
-                            </p>
+                          <div class="row">
+                            <div class="col s6 m6 l6 seed_box center">
+                              <p>
+                                <label>
+                                  <input name="seed" class="seed_radio_button" type="radio" id="seed_button_random" checked />
+                                  <span>Random</span>
+                                </label>
+                              </p>
+                            </div>
                           </div>
-                          <div class="col s4 seed_box" id="seed_box_fix">
-                            <p>
-                              <label>
-                                <input name="seed" class="seed_radio_button" type="radio" id="seed_button_specify" />
-                                <span>Specify</span>
-                              </label>
-                            </p>
-                          </div>
-                          <div class="input-field  left s2">
-                            <input id="seed_value" type="number" class="validate"  disabled/>
-                            <label for="seed_value">seed value</label>
+                          <div class="row">
+                            <div class="col s6 m6 l6 seed_box center">
+                              <p>
+                                <label>
+                                  <input name="seed" class="seed_radio_button" type="radio" id="seed_button_specify" />
+                                  <span>Specify</span>
+                                </label>
+                              </p>
+                            </div>
+                            <div class="input-field s6 m6 l6 left">
+                              <input id="seed_value" type="number" class="validate"  disabled/>
+                              <label for="seed_value">seed value</label>
+                            </div>
                           </div>
                         </form>
                       </div>
@@ -371,11 +374,11 @@
 
                     <div class="advanced_params" id="source_img">
                       <div class="row">
-                        <br>
                         <h7>基にする画像の選択(source)。(optional)</h7>
                         <br>
                       </div>
                       <div class="row">
+                        <canvas id="canvas_src" width="0" height="0" hidden></canvas>
                         <a class="modal-trigger" href="#source_image_description">基にする画像とは？</a>
                         <div id="source_image_description" class="modal">
                           <div class="modal-content">
@@ -415,6 +418,7 @@
                         <br>
                       </div>
                       <div class="row">
+                        <canvas id="canvas_tar" width="0" height="0" hidden></canvas>
                         <a class="modal-trigger" href="#target_image_description">基にする画像とは？</a>
                         <div id="target_image_description" class="modal">
                           <div class="modal-content">
@@ -509,7 +513,7 @@
                   Play
                 </a>
               </div>
-              <div class="col s4">  
+              <div class="col s4 button_interval">  
                 <a class="waves-effect waves-light btn-large" id="reload">
                   <i class="material-icons left">refresh</i>
                   Reload
@@ -584,10 +588,10 @@
       <footer class="page-footer blue darken-2">
         <div class="container" id="footer_position">
           <div class="row" id="footer_position_row">
-            <div class="col s4 left" id="copyright_position">
+            <div class="col s6 m4 left" id="copyright_position">
               Copyright © 2021 MagicSpell
             </div>
-            <div class="col s8 right">
+            <div class="col s6 m8 right">
               <div class="input-field col s5 right">
                 <input class="right cancelEnter" id="communication_partner" type="text" value=" ">
                 <label class="active" for="communication_partner">Server IP Address</label>

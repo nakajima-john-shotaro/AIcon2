@@ -11,7 +11,7 @@ $(window).on('load resize', function () {
 
 $(window).load(function () {    
     change_advanced_param(model_button_id, param_button_id);
-    // console.log($('#communication_partner').val())
+    $('#textarea').focus()
     $('#communication_partner').val($.cookie('url'))
     if ($('#communication_partner').val() == ''){
         $('#communication_partner').val('localhost')
@@ -33,7 +33,6 @@ $('#nico_font').on('click', function () {
 
 // helpが押されたときに関する関数です
 $('#help').click(function() {
-    console.log('unti')
     $.ajax({
         url: "http://" + $('#communication_partner').val() + ":5050/help",
         method: "GET",
@@ -274,10 +273,10 @@ $('#drop_area').on('drop', function (event) {
 
 // 選択された画像ファイルの操作
 var source_img = null;
+var file = null;
 function handleFiles(files) {
-    var file = files[0];
+    file = files[0];
     var imageType = 'image.*';
-    
     // ファイルが画像が確認する
     if (!file.type.match(imageType)) {
         alert('画像ファイルではありません。\n画像を選択してください');
@@ -285,29 +284,41 @@ function handleFiles(files) {
         $('#drop_area').css('border', '5px dashed #ccc');
         return;
     }
-    
-    $('#drop_area').hide();  // いちばん上のdrop_areaを非表示にします
+    $('#drop_area').hide();
     $('#img_delete_button').show();
-
-    let secret_img = document.createElement('img'); 
-    secret_img.id = 'secret_source_upload_img';
-    let secret_reader = new FileReader();
-    secret_reader.onload = function () {  
-        secret_img.src = secret_reader.result; 
-        source_img = secret_img.src.replace(/data:.*\/.*;base64,/, '');
+    const resize_width = 512;
+    const resize_height = 512;
+    let image = new Image();
+    let source_reader = new FileReader();
+    source_reader.onload = function(e) {
+        image.onload = function() {
+            var canvas = $('#canvas_src').attr('width', resize_width).attr('height', resize_height);
+            var ctx = canvas[0].getContext('2d');
+            ctx.clearRect(0,0,0,0);
+            ctx.drawImage(image,
+                0, 0, image.width, image.height,
+                0, 0, resize_width, resize_height
+                );
+            var source_base64 = canvas.get(0).toDataURL(imageType);
+            source_img = source_base64.split(',')[1]
+        }
+        image.src = e.target.result;
     }
+    source_reader.readAsDataURL(file);
 
     let img = document.createElement('img');
     img.id = 'upload_img';
     img.width = $('#drop_area').outerWidth();
     img.height = $('#drop_area').outerHeight();
-    let reader = new FileReader();
-    reader.onload = function () {
-        img.src = reader.result;
+    let disp_reader = new FileReader();
+    disp_reader.onload = function () {
+        img.src = disp_reader.result;
         $('#preview_field').append(img);
     }
-    reader.readAsDataURL(file);
+    disp_reader.readAsDataURL(file);
 }
+
+
 
 // アイコン画像を消去するボタン
 $('#img_delete_button').on('click', function () {
@@ -376,10 +387,10 @@ $('#target_drop_area').on('drop', function (event) {
 
 // 選択された画像ファイルの操作
 var target_img = null;
+var target_file = null;
 function target_handleFiles(files) {
-    var target_file = files[0];
+    target_file = files[0];
     var imageType = 'image.*';
-    
     // ファイルが画像が確認する
     if (!target_file.type.match(imageType)) {
         alert('画像ファイルではありません。\n画像を選択してください');
@@ -387,18 +398,28 @@ function target_handleFiles(files) {
         $('#target_drop_area').css('border', '5px dashed #ccc');
         return;
     }
-    
     $('#target_drop_area').hide();
     $('#target_img_delete_button').show();
     
-    let secret_img = document.createElement('img'); 
-    secret_img.id = 'secret_target_upload_img';
-    let secret_reader = new FileReader();
-    secret_reader.onload = function () {  
-        secret_img.src = secret_reader.result; 
-        target_img = secret_img.src.replace(/data:.*\/.*;base64,/, '');
+    const resize_width = 512;
+    const resize_height = 512;
+    let image = new Image();
+    let target_reader = new FileReader();
+    target_reader.onload = function(e) {
+        image.onload = function() {
+            var canvas = $('#canvas_tar').attr('width', resize_width).attr('height', resize_height);
+            var ctx = canvas[0].getContext('2d');
+            ctx.clearRect(0,0,0,0);
+            ctx.drawImage(image,
+                0, 0, image.width, image.height,
+                0, 0, resize_width, resize_height
+                );
+            var target_base64 = canvas.get(0).toDataURL(imageType);
+            target_img = target_base64.split(',')[1]
+        }
+        image.src = e.target.result;
     }
-    secret_reader.readAsDataURL(target_file); 
+    target_reader.readAsDataURL(file);
 
     let img = document.createElement('img');
     img.id = 'target_upload_img';
@@ -534,6 +555,8 @@ function abort_signal() {
     communicate(send_json_data);
 };
 
+
+
 // 待機の場合に表示する関数
 function wait_display() {
     
@@ -576,8 +599,8 @@ function sort_order(priority, model_status) {
 var communicate_status = false;
 var hash = '00000000-0000-0000-0000-000000000000';
 function start() {
-    $.cookie('url', $('#communication_partner').val())
     stop_input();
+    $.cookie('url', $('#communication_partner').val())
     communicate_status = true;
     wait_display();
     $('#img_make_container').fadeIn(0);
@@ -610,7 +633,8 @@ function start() {
         stick: text_check($('#stick_textarea').val())
     };
     let send_json_data = JSON.stringify(send_data);
-
+    console.log(source_img)
+    console.log(target_img)
     communicate(send_json_data);
 };
 
