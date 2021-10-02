@@ -62,7 +62,6 @@
 
       <!-- 右可変 -->
       <div class="container active" id="scroll_container">
-        <canvas id="canvas" width="0" height="0" hidden></canvas>
         <div class="row" id="right_container">
           <div id="adjust_top_space"></div>
           <div class="col s1"></div>
@@ -377,6 +376,7 @@
                         <br>
                       </div>
                       <div class="row">
+                        <canvas id="canvas_src" width="0" height="0" hidden></canvas>
                         <a class="modal-trigger" href="#source_image_description">基にする画像とは？</a>
                         <div id="source_image_description" class="modal">
                           <div class="modal-content">
@@ -416,6 +416,7 @@
                         <br>
                       </div>
                       <div class="row">
+                        <canvas id="canvas_tar" width="0" height="0" hidden></canvas>
                         <a class="modal-trigger" href="#target_image_description">基にする画像とは？</a>
                         <div id="target_image_description" class="modal">
                           <div class="modal-content">

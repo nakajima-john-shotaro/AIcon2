@@ -275,7 +275,7 @@ $('#drop_area').on('drop', function (event) {
 // 選択された画像ファイルの操作
 var source_img = null;
 var file = null;
-var blob = null; // 画像(BLOBデータ)が格納される変数
+var blob = null;
 function handleFiles(files) {
     file = files[0];
     console.log(file)
@@ -291,123 +291,21 @@ function handleFiles(files) {
     
     $('#drop_area').hide();
     $('#img_delete_button').show();
-    
-    
-    
-    // let canvas = document.createElement('canvas');
-    // canvas.width  = img.width;
-    // canvas.height = img.height;
-    // // Draw Image
-    // let ctx = canvas.getContext('2d');
-    // ctx.drawImage(img, 0, 0);
-    // // To Base64
-    // source_img =  canvas.toDataURL(file.type);
-    // console.log(source_img)
-    
-
-    // let source_canvas = document.createElement('canvas');
-    // let source_cg = source_canvas.getContext('2d');
-    // let source_img = new Image();
-    // let source_reader = new FileReader();
-    // source_img.crossOrigin = 'Anonymous';
-    // source_reader.onload = function(event){
-    //     console.log('bjhb')
-    //     let source_width = 512;
-    //     let source_height = 512;
-    //     source_canvas.width = source_width;
-    //     source_canvas.height = source_height;
-    //     source_cg.drawImage(this, 0, 0, this.width, this.height, 0, 0, source_width, source_height);
-    // }
-    // console.log(source_canvas.toDataURL());
-
-//     var image = new Image();
-//     var reader = new FileReader();
-//     var file = null; // 選択されるファイル
-//   var blob = null; // 画像(BLOBデータ)
-//     reader.onload = function(e) {
-//         image.onload = function() {
-//             var width, height;
-//             if(image.width > image.height){
-//                 // 横長の画像は横のサイズを指定値にあわせる
-//                 var ratio = image.height/image.width;
-//                 width = 256;
-//                 height = 256;
-//             } else {
-//                 // 縦長の画像は縦のサイズを指定値にあわせる
-//                 var ratio = image.width/image.height;
-//                 width = 256;
-//                 height = 256;
-//             }
-//             // サムネ描画用canvasのサイズを上で算出した値に変更
-//             var canvas = $('#canvas').attr('width', width).attr('height', height);
-//             var ctx = canvas[0].getContext('2d');
-//             // canvasに既に描画されている画像をクリア
-//             ctx.clearRect(0,0,width,height);
-//             // canvasにサムネイルを描画
-//             ctx.drawImage(image,0,0,image.width,image.height,0,0,width,height);
-
-//             // canvasからbase64画像データを取得
-//             var base64 = canvas.get(0).toDataURL(file.type);        
-//             // base64からBlobデータを作成
-//             var barr, bin, i, len;
-//             bin = atob(base64.split('base64,')[1]);
-//             len = bin.length;
-//             barr = new Uint8Array(len);
-//             i = 0;
-//             while (i < len) {
-//                 barr[i] = bin.charCodeAt(i);
-//                 i++;
-//             }
-//             blob = new Blob([barr], {type: file.type});
-//             console.log(blob);
-//         }
-//         image.src = e.target.result;
-//     }
-//     reader.readAsDataURL(file);
-
-
-
-
-
-    // secret_img.width = 128
-    // secret_img.height =128
-    // secret_reader = new FileReader();
-    // secret_reader.onload = function () {  
-    //     secret_img.src = secret_reader.result; 
-    //     source_img = secret_img.src.replace(/data:.*\/.*;base64,/, '');
-    //     }
-    // console.log(secret_img)
-    // secret_reader.readAsDataURL(file);
-
-    // secret_img = document.createElement('canvas');
-    // secret_img.id = 'source_upload_img';
-    // console.log(file)
-
-
-    const resize_width = 100; // 画像がヨコ長の場合、横サイズがこの値になるように縮小される
-    const resize_height = 100; // 画像がタテ長の場合、縦サイズがこの値になるように縮小される
+    const resize_width = 512;
+    const resize_height = 512;
     let image = new Image();
     let reader = new FileReader();
     reader.onload = function(e) {
         image.onload = function() {
             var canvas = $('#canvas').attr('width', resize_width).attr('height', resize_height);
             var ctx = canvas[0].getContext('2d');
+            ctx.clearRect(0,0,0,0);
             ctx.drawImage(image,
                 0, 0, image.width, image.height,
                 0, 0, resize_width, resize_height
                 );
             var source_base64 = canvas.get(0).toDataURL(imageType);
-            console.log(source_base64)
-            // var barr, bin, i, len;
-            // bin = atob(base64.split('base64')[1]);
-            // len = bin.length;
-            // barr = new Uint8Array(len);
-            // i = 0;
-            // while (i < len) {
-            //     barr[i] = bin.charCodeAt(i);
-            //     i++;
-            // }
-            // blob = new Blob([barr], {type: file});
+            source_img = source_base64.split(',')[1]
         }
         image.src = e.target.result;
     }
