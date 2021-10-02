@@ -29,7 +29,10 @@ input[type="search"]::-webkit-search-cancel-button {
 body {
 	user-select: none;
 }
-
+/* ヘッダー関係 */
+#header {
+	min-width: 640px;
+}
 
 /* 左関係 */
 /* #gallery_model_name_container {
@@ -336,6 +339,7 @@ border-bottom:1px solid #ccc;
 #footer {
 	min-height: 65px;
 	max-height: 80px;
+	min-width: 720px;
 }
 
 #footer_position, #footer_position_row {
