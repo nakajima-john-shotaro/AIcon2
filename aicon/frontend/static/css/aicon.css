@@ -134,9 +134,6 @@ border-bottom:1px solid #ccc;
 .seed_box {
 	transform: translateY(30%);
 }
-#seed_box_fix {
-	border-left: 2px dashed rgb(212, 212, 212);
-}
 
 /* テキストボックスの高さ */
 .materialize-textarea {

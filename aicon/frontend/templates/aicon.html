@@ -304,26 +304,29 @@
                       </div>
                       <div class="row center">
                         <form action="#">
-                          <div class="col s1"></div>
-                          <div class="col s4 seed_box">
-                            <p>
-                              <label>
-                                <input name="seed" class="seed_radio_button" type="radio" id="seed_button_random" checked />
-                                <span>Random</span>
-                              </label>
-                            </p>
+                          <div class="row">
+                            <div class="col s6 m6 l6 seed_box center">
+                              <p>
+                                <label>
+                                  <input name="seed" class="seed_radio_button" type="radio" id="seed_button_random" checked />
+                                  <span>Random</span>
+                                </label>
+                              </p>
+                            </div>
                           </div>
-                          <div class="col s4 seed_box" id="seed_box_fix">
-                            <p>
-                              <label>
-                                <input name="seed" class="seed_radio_button" type="radio" id="seed_button_specify" />
-                                <span>Specify</span>
-                              </label>
-                            </p>
-                          </div>
-                          <div class="input-field  left s2">
-                            <input id="seed_value" type="number" class="validate"  disabled/>
-                            <label for="seed_value">seed value</label>
+                          <div class="row">
+                            <div class="col s6 m6 l6 seed_box center">
+                              <p>
+                                <label>
+                                  <input name="seed" class="seed_radio_button" type="radio" id="seed_button_specify" />
+                                  <span>Specify</span>
+                                </label>
+                              </p>
+                            </div>
+                            <div class="input-field s6 m6 l6 left">
+                              <input id="seed_value" type="number" class="validate"  disabled/>
+                              <label for="seed_value">seed value</label>
+                            </div>
                           </div>
                         </form>
                       </div>
