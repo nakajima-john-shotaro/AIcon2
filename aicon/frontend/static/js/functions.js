@@ -33,7 +33,6 @@ $('#nico_font').on('click', function () {
 
 // helpが押されたときに関する関数です
 $('#help').click(function() {
-    console.log('unti')
     $.ajax({
         url: "http://" + $('#communication_partner').val() + ":5050/help",
         method: "GET",
@@ -275,12 +274,9 @@ $('#drop_area').on('drop', function (event) {
 // 選択された画像ファイルの操作
 var source_img = null;
 var file = null;
-var blob = null;
 function handleFiles(files) {
     file = files[0];
-    console.log(file)
     var imageType = 'image.*';
-    
     // ファイルが画像が確認する
     if (!file.type.match(imageType)) {
         alert('画像ファイルではありません。\n画像を選択してください');
@@ -288,16 +284,15 @@ function handleFiles(files) {
         $('#drop_area').css('border', '5px dashed #ccc');
         return;
     }
-    
     $('#drop_area').hide();
     $('#img_delete_button').show();
     const resize_width = 512;
     const resize_height = 512;
     let image = new Image();
-    let reader = new FileReader();
-    reader.onload = function(e) {
+    let source_reader = new FileReader();
+    source_reader.onload = function(e) {
         image.onload = function() {
-            var canvas = $('#canvas').attr('width', resize_width).attr('height', resize_height);
+            var canvas = $('#canvas_src').attr('width', resize_width).attr('height', resize_height);
             var ctx = canvas[0].getContext('2d');
             ctx.clearRect(0,0,0,0);
             ctx.drawImage(image,
@@ -309,7 +304,7 @@ function handleFiles(files) {
         }
         image.src = e.target.result;
     }
-    reader.readAsDataURL(file)
+    source_reader.readAsDataURL(file);
 
     let img = document.createElement('img');
     img.id = 'upload_img';
@@ -406,17 +401,25 @@ function target_handleFiles(files) {
     $('#target_drop_area').hide();
     $('#target_img_delete_button').show();
     
-    let secret_img = document.createElement('img'); 
-    secret_img.id = 'secret_target_upload_img';
-    console.log(secret_img)
-    let secret_reader = new FileReader();
-    secret_reader.onload = function () {  
-        secret_img.src = secret_reader.result; 
-        target_img = secret_img.src.replace(/data:.*\/.*;base64,/, '');
-        console.log(target_img)
+    const resize_width = 512;
+    const resize_height = 512;
+    let image = new Image();
+    let target_reader = new FileReader();
+    target_reader.onload = function(e) {
+        image.onload = function() {
+            var canvas = $('#canvas_tar').attr('width', resize_width).attr('height', resize_height);
+            var ctx = canvas[0].getContext('2d');
+            ctx.clearRect(0,0,0,0);
+            ctx.drawImage(image,
+                0, 0, image.width, image.height,
+                0, 0, resize_width, resize_height
+                );
+            var target_base64 = canvas.get(0).toDataURL(imageType);
+            target_img = target_base64.split(',')[1]
+        }
+        image.src = e.target.result;
     }
-    secret_reader.readAsDataURL(target_file); 
-    console.log(target_file)
+    target_reader.readAsDataURL(file);
 
     let img = document.createElement('img');
     img.id = 'target_upload_img';
@@ -433,9 +436,6 @@ function target_handleFiles(files) {
 
 
 $(window).resize(function () {
-    console.log(source_img)
-    console.log(target_img)
-
     $('#upload_img').width($('#drop_area').outerWidth());
     $('#upload_img').height($('#drop_area').outerHeight());
     $('#target_upload_img').width($('#target_drop_area').outerWidth());
@@ -635,7 +635,7 @@ function start() {
     let send_json_data = JSON.stringify(send_data);
     console.log(source_img)
     console.log(target_img)
-    // communicate(send_json_data);
+    communicate(send_json_data);
 };
 
 // 通信に関しての関数
