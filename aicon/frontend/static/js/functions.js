@@ -275,6 +275,7 @@ $('#drop_area').on('drop', function (event) {
 // 選択された画像ファイルの操作
 var source_img = null;
 var file = null;
+var blob = null; // 画像(BLOBデータ)が格納される変数
 function handleFiles(files) {
     file = files[0];
     console.log(file)
@@ -368,8 +369,6 @@ function handleFiles(files) {
 
 
 
-    // secret_img = document.createElement('img');
-    // secret_img.id = 'secret_source_upload_img';
     // secret_img.width = 128
     // secret_img.height =128
     // secret_reader = new FileReader();
@@ -380,35 +379,53 @@ function handleFiles(files) {
     // console.log(secret_img)
     // secret_reader.readAsDataURL(file);
 
-    let img = document.createElement('img');
+    // secret_img = document.createElement('canvas');
+    // secret_img.id = 'source_upload_img';
+    // console.log(file)
+
+
+    const resize_width = 100; // 画像がヨコ長の場合、横サイズがこの値になるように縮小される
+    const resize_height = 100; // 画像がタテ長の場合、縦サイズがこの値になるように縮小される
+    let image = new Image();
     let reader = new FileReader();
-    $.when(
-        img.id = 'upload_img',
-        img.width = $('#drop_area').outerWidth(),
-        img.height = $('#drop_area').outerHeight(),
-        reader.onload = function () {
-            img.src = reader.result;
-            $('#preview_field').append(img);
-            reader.readAsDataURL(file);
+    reader.onload = function(e) {
+        image.onload = function() {
+            var canvas = $('#canvas').attr('width', resize_width).attr('height', resize_height);
+            var ctx = canvas[0].getContext('2d');
+            ctx.drawImage(image,
+                0, 0, image.width, image.height,
+                0, 0, resize_width, resize_height
+                );
+            var source_base64 = canvas.get(0).toDataURL(imageType);
+            console.log(source_base64)
+            // var barr, bin, i, len;
+            // bin = atob(base64.split('base64')[1]);
+            // len = bin.length;
+            // barr = new Uint8Array(len);
+            // i = 0;
+            // while (i < len) {
+            //     barr[i] = bin.charCodeAt(i);
+            //     i++;
+            // }
+            // blob = new Blob([barr], {type: file});
         }
-    ).done(function (){
-    let source = document.getElementById('upload_img');
-    source_img = imagetobase64(source, file.type);
-    }).fail(function(){
-        
-    })
+        image.src = e.target.result;
+    }
+    reader.readAsDataURL(file)
+
+    let img = document.createElement('img');
+    img.id = 'upload_img';
+    img.width = $('#drop_area').outerWidth();
+    img.height = $('#drop_area').outerHeight();
+    let disp_reader = new FileReader();
+    disp_reader.onload = function () {
+        img.src = disp_reader.result;
+        $('#preview_field').append(img);
+    }
+    disp_reader.readAsDataURL(file);
 }
 
-function imagetobase64(img, type) {
-    var canvas = document.createElement('canvas');
-    canvas.width  = 256;
-    canvas.height = 256;
-    // Draw Image
-    var ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
-    // To Base64
-    return canvas.toDataURL(type);
-}
+
 
 // アイコン画像を消去するボタン
 $('#img_delete_button').on('click', function () {
@@ -498,6 +515,7 @@ function target_handleFiles(files) {
     secret_reader.onload = function () {  
         secret_img.src = secret_reader.result; 
         target_img = secret_img.src.replace(/data:.*\/.*;base64,/, '');
+        console.log(target_img)
     }
     secret_reader.readAsDataURL(target_file); 
     console.log(target_file)
