@@ -302,7 +302,7 @@ class Imagine(nn.Module):
         gradient_accumulate_every: int = int(self.client_data[RECEIVED_DATA][JSON_GAE])
         model_name: str = self.client_data[RECEIVED_DATA][JSON_BACKBONE]
         if self.client_data[RECEIVED_DATA][JSON_SOURCE_IMG] is not None:
-            source_img: Image = Image.open(BytesIO(b64decode((self.client_data[RECEIVED_DATA][JSON_SOURCE_IMG]))))
+            source_img: Image = Image.open(BytesIO(b64decode((self.client_data[RECEIVED_DATA][JSON_SOURCE_IMG])))).convert('RGB')
         else:
             source_img = None
 
