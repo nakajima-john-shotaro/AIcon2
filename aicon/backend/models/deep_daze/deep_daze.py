@@ -422,7 +422,7 @@ class Imagine(nn.Module):
         self.start_image_lr: float = start_image_lr
 
         if source_img is not None:
-            image: Image = Image.open(source_img)
+            image: Image = Image.open(source_img).convert('RGB')
             start_img_transform: Compose = T.Compose([
                 T.Resize(image_width),
                 T.CenterCrop((image_width, image_width)),
@@ -457,7 +457,7 @@ class Imagine(nn.Module):
         return text_encoding
     
     def create_img_encoding(self, target_img: str) -> torch.Tensor:
-        target_img: Image = Image.open(target_img)
+        target_img: Image = Image.open(target_img).convert('RGB')
         normed_img: torch.Tensor = self.clip_transform(target_img).unsqueeze(0).to(self.device)
 
         with torch.no_grad():
