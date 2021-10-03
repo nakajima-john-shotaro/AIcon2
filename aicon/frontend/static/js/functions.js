@@ -419,7 +419,7 @@ function target_handleFiles(files) {
         }
         image.src = e.target.result;
     }
-    target_reader.readAsDataURL(file);
+    target_reader.readAsDataURL(target_file);
 
     let img = document.createElement('img');
     img.id = 'target_upload_img';
