@@ -1,52 +1,51 @@
 # this code is a copy from huggingface
 # with some minor modifications
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import math
-import json
 import copy
+import json
 import logging
+import math
 import os
 import shutil
+import sys
 import tempfile
 from functools import wraps
 from hashlib import sha256
-import sys
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from io import open
 
 import boto3
 import requests
 from botocore.exceptions import ClientError
+from constant import *
 from tqdm import tqdm
+from urllib.parse import urlparse
 
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
 
 try:
     from pathlib import Path
-    PYTORCH_PRETRAINED_BIGGAN_CACHE = Path(os.getenv('PYTORCH_PRETRAINED_BIGGAN_CACHE',
-                                                   Path.home() / '.pytorch_pretrained_biggan'))
+    PYTORCH_PRETRAINED_BIGGAN_CACHE = Path(PRETRAINED_BACKBONE_MODEL_PATH)
 except (AttributeError, ImportError):
-    PYTORCH_PRETRAINED_BIGGAN_CACHE = os.getenv('PYTORCH_PRETRAINED_BIGGAN_CACHE',
-                                              os.path.join(os.path.expanduser("~"), '.pytorch_pretrained_biggan'))
+    PYTORCH_PRETRAINED_BIGGAN_CACHE = PRETRAINED_BACKBONE_MODEL_PATH
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 PRETRAINED_MODEL_ARCHIVE_MAP = {
-    'biggan-deep-128': "https://s3.amazonaws.com/models.huggingface.co/biggan/biggan-deep-128-pytorch_model.bin",
-    'biggan-deep-256': "https://s3.amazonaws.com/models.huggingface.co/biggan/biggan-deep-256-pytorch_model.bin",
-    'biggan-deep-512': "https://s3.amazonaws.com/models.huggingface.co/biggan/biggan-deep-512-pytorch_model.bin",
+    'biggan-deep-128': f"{PRETRAINED_BACKBONE_MODEL_PATH}/biggan-deep-128-pytorch_model.bin",
+    'biggan-deep-256': f"{PRETRAINED_BACKBONE_MODEL_PATH}/biggan-deep-256-pytorch_model.bin",
+    'biggan-deep-512': f"{PRETRAINED_BACKBONE_MODEL_PATH}/biggan-deep-512-pytorch_model.bin",
 }
 
 PRETRAINED_CONFIG_ARCHIVE_MAP = {
-    'biggan-deep-128': "https://s3.amazonaws.com/models.huggingface.co/biggan/biggan-deep-128-config.json",
-    'biggan-deep-256': "https://s3.amazonaws.com/models.huggingface.co/biggan/biggan-deep-256-config.json",
-    'biggan-deep-512': "https://s3.amazonaws.com/models.huggingface.co/biggan/biggan-deep-512-config.json",
+    'biggan-deep-128': f"{PRETRAINED_BACKBONE_MODEL_PATH}/biggan-deep-128-config.json",
+    'biggan-deep-256': f"{PRETRAINED_BACKBONE_MODEL_PATH}/biggan-deep-256-config.json",
+    'biggan-deep-512': f"{PRETRAINED_BACKBONE_MODEL_PATH}/biggan-deep-512-config.json",
 }
 
 WEIGHTS_NAME = 'pytorch_model.bin'
@@ -219,7 +218,7 @@ def get_from_cache(url, cache_dir=None):
         # Download to temporary file, then copy to cache dir once finished.
         # Otherwise you get corrupt cache entries if the download gets interrupted.
         with tempfile.NamedTemporaryFile() as temp_file:
-            logger.info("%s not found in cache, downloading to %s", url, temp_file.name)
+            logger.warning("%s not found in cache, downloading to %s", url, temp_file.name)
 
             # GET file object
             if url.startswith("s3://"):
@@ -536,22 +535,10 @@ class BigGAN(nn.Module):
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, cache_dir=None, *inputs, **kwargs):
         if pretrained_model_name_or_path in PRETRAINED_MODEL_ARCHIVE_MAP:
-            model_file = PRETRAINED_MODEL_ARCHIVE_MAP[pretrained_model_name_or_path]
-            config_file = PRETRAINED_CONFIG_ARCHIVE_MAP[pretrained_model_name_or_path]
-        else:
-            model_file = os.path.join(pretrained_model_name_or_path, WEIGHTS_NAME)
-            config_file = os.path.join(pretrained_model_name_or_path, CONFIG_NAME)
+            resolved_model_file = PRETRAINED_MODEL_ARCHIVE_MAP[pretrained_model_name_or_path]
+            resolved_config_file = PRETRAINED_CONFIG_ARCHIVE_MAP[pretrained_model_name_or_path]
 
-        try:
-            resolved_model_file = cached_path(model_file, cache_dir=cache_dir)
-            resolved_config_file = cached_path(config_file, cache_dir=cache_dir)
-        except EnvironmentError:
-            logger.error("Wrong model name, should be a valid path to a folder containing "
-                         "a {} file and a {} file or a model name in {}".format(
-                         WEIGHTS_NAME, CONFIG_NAME, PRETRAINED_MODEL_ARCHIVE_MAP.keys()))
-            raise
-
-        logger.info("loading model {} from cache at {}".format(pretrained_model_name_or_path, resolved_model_file))
+        logger.info("\n\nloading model {} from cache at {}".format(pretrained_model_name_or_path, resolved_model_file))
 
         # Load config
         config = BigGANConfig.from_json_file(resolved_config_file)

@@ -57,7 +57,7 @@ _valid_response: Dict[str, Union[str, bool, int]] = {
 _lock: Lock = Lock()
 _twitter_database: Dict[str, str] = {}
 
-_translator: Translation = Translation("deepl")
+_translator: Translation = Translation("google")
 
 
 def _reset_valid_response() -> None:

@@ -1,3 +1,5 @@
+from base64 import b64decode
+from io import BytesIO
 import os
 import sys
 from queue import Empty
@@ -20,7 +22,6 @@ from constant import *
 from imageio import get_writer
 from PIL import Image
 from torch import nn
-from torch.cuda.amp import GradScaler, autocast
 from torch.optim import Adam
 from torchvision.transforms.transforms import Compose
 
@@ -39,16 +40,11 @@ def exists(val: Any) -> bool:
     return val is not None
 
 
-def create_text_path(text: Optional[str] = None, img: Optional[str] = None) -> str:
+def create_text_path(text: Optional[str] = None) -> str:
     input_name: str = ""
 
     if text is not None:
         input_name += text
-
-    if img is not None:
-        img_name: str = "".join(img.split(".")[:-1])
-        img_name = img_name.split("/")[-1]
-        input_name += "_" + img_name
 
     return input_name.replace("-", "_").replace(",", "").replace(" ", "_").replace("|", "--").strip('-_')[:255]
 
@@ -147,7 +143,7 @@ class Model(nn.Module):
         
         assert image_width in (128, 256, 512), 'image size must be one of 128, 256, or 512'
 
-        self.biggan = BigGAN.from_pretrained(f'biggan-deep-{image_width}')
+        self.biggan = BigGAN.from_pretrained(f'biggan-deep-{image_width}', cache_dir=PRETRAINED_BACKBONE_MODEL_PATH)
         self.max_classes = max_classes
         self.class_temperature = class_temperature
         self.ema_decay\
@@ -236,8 +232,7 @@ class BigSleep(nn.Module):
         into = torch.cat(pieces)
         into = self.normalize_image(into)
 
-        with autocast(enabled=False):
-            image_embed = self.perceptor.encode_image(into)
+        image_embed = self.perceptor.encode_image(into)
 
         latents, soft_one_hot_classes = self.model.latents()
         num_latents = latents.shape[0]
@@ -306,8 +301,13 @@ class Imagine(nn.Module):
         iterations: int = int(self.client_data[RECEIVED_DATA][JSON_TOTAL_ITER])
         gradient_accumulate_every: int = int(self.client_data[RECEIVED_DATA][JSON_GAE])
         model_name: str = self.client_data[RECEIVED_DATA][JSON_BACKBONE]
+        if self.client_data[RECEIVED_DATA][JSON_SOURCE_IMG] is not None:
+            source_img: Image = Image.open(BytesIO(b64decode((self.client_data[RECEIVED_DATA][JSON_SOURCE_IMG])))).convert('RGB')
+        else:
+            source_img = None
 
         self.c2i_queue: Queue = self.client_data[CORE_C2I_QUEUE]
+        self.c2i_brake_queue: Queue = self.client_data[CORE_C2I_BREAK_QUEUE]
         self.c2i_event: Event_ = self.client_data[CORE_C2I_EVENT]
         self.i2c_event: Event_ = self.client_data[CORE_I2C_EVENT]
 
@@ -359,8 +359,6 @@ class Imagine(nn.Module):
             clip_model=clip_model,
         ).cuda()
 
-        self.scaler: GradScaler = GradScaler()
-
         self.model: BigSleep = model
 
         self.lr: float = lr
@@ -377,7 +375,7 @@ class Imagine(nn.Module):
         self.clip_transform = create_clip_img_transform(224)
 
         # create starting encoding
-        self.set_clip_encoding(text=text, img=img, stick=stick)
+        self.set_clip_encoding(text=text, img=source_img, stick=stick)
 
     def set_text(self, text: Optional[str] = None) -> None:
         self.set_clip_encoding(text=text)
@@ -428,7 +426,7 @@ class Imagine(nn.Module):
         
         if len(stick) > 0:
             text = text + "_wout_" + stick[:255] if text is not None else "wout_" + stick[:255]
-        text_path = create_text_path(text=text, img=img)
+        text_path = create_text_path(text=text)
 
         self.text_path = text_path
         self.filename = Path(f'./{text_path}.png')
@@ -456,22 +454,15 @@ class Imagine(nn.Module):
         return sequence_number
 
     def train_step(self, epoch: int, iteration: int) -> None:
-        total_loss: float = 0
+        total_loss = 0
 
         for _ in range(self.gradient_accumulate_every):
-            with autocast(enabled=True):
-                loss: torch.Tensor
-                _, losses = self.model(self.encoded_texts["max"], self.encoded_texts["min"])
-    
-            loss: torch.Tensor = sum(losses) / self.gradient_accumulate_every
-            self.scaler.scale(loss).backward()
+            _, losses = self.model(self.encoded_texts["max"], self.encoded_texts["min"])
+            loss = sum(losses) / self.gradient_accumulate_every
+            total_loss += loss
+            loss.backward()
 
-            total_loss = total_loss + loss.item()
-
-            del loss
-
-        self.scaler.step(self.optimizer)
-        self.scaler.update()
+        self.optimizer.step()
         self.model.model.latents.update()
         self.optimizer.zero_grad(set_to_none=True)
 
@@ -545,6 +536,7 @@ class Imagine(nn.Module):
             self.put_data[JSON_IMG_PATH] = str(self.response_filename)
 
             self.c2i_queue.put_nowait(self.put_data)
+            self.c2i_brake_queue.put_nowait(self.put_data)
             self.c2i_event.set()
 
             torch.cuda.empty_cache()
