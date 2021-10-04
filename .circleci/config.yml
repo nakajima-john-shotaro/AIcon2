@@ -8,6 +8,7 @@ jobs:
           username: $DOCKERHUB_USER
           password: $DOCKERHUB_PASSWORD
     parallelism: 4
+    no_output_timeout: 30m
     steps:
       - checkout
       - run:
