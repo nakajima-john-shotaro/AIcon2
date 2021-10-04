@@ -32,7 +32,7 @@
           </a>
           <ul class="right hide-on-med-and-down">
             <a href="help" id="help" target="_blank">help</a>
-            <li><a href="review.html" >review</a></li>
+            <li><a href="https://en.wikipedia.org/wiki/Easter_egg_(media)">　</a></li>
           </ul>
         </div>
       </nav>
@@ -544,13 +544,15 @@
       <div class="row">
         <img id="result_img" src="../static/demo_img/icon/loading_light.gif" alt="Can't load image.">
         <div class="row progress" id="progress_bar">
-          <div class="determinate" style="width: 0%"></div>
+          <div class="determinate s12" style="width: 0%"></div>
         </div>
         <div class="row">
-          <a class="waves-effect waves-light btn-large red accent-2" id="quit_button" onclick="abort_signal()">
-            <i class="material-icons left">cancel</i>
-            Stop
-          </a>
+          <div class="col s12" id="quit_range">
+            <a class="waves-effect waves-light btn-large red accent-2" id="quit_button" onclick="abort_signal()">
+              <i class="material-icons left">cancel</i>
+              Stop
+            </a>
+          </div>
         </div>
       </div>
       <div class="row" id="save_buttons">
