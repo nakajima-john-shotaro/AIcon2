@@ -16,7 +16,6 @@ $(window).load(function () {
     if ($('#communication_partner').val() == ''){
         $('#communication_partner').val('localhost')
     }
-    // $('#communication_partner').prop('val', $('#communication_partner').val(''))
     $('html,body').animate({ scrollTop: 0 }, '1');
 });
 
@@ -528,31 +527,11 @@ function stop_input() {
 }
 
 // 中止ボタンを押された際に送信データを変更する
+var abort = false;
 function abort_signal() {
-    const slider_vals = get_slider_values();
-    const seed_value = get_seed_value();
-    send_data = {
-        model_name: model_button_id,
-        text: $('#textarea').val(),
-        total_iter: parseInt(slider_vals['iter']),
-        num_layer: parseInt(slider_vals['num_layer']),
-        hidden_size: parseInt(slider_vals['hidden_size']),
-        batch_size: parseInt(slider_vals['batch_size']),
-        gae: parseInt(slider_vals['gae']),
-        backbone: backbone_model,
-        seed: seed_value,
-        size: parseInt(img_size),
-        source_img: source_img,
-        target_img: target_img,
-        hash: hash,
-        abort: true,
-        carrot: text_check($('#carrot_textarea').val()),
-        stick: text_check($('#stick_textarea').val())
-    };
     $('#quit_button').fadeOut(0);
     $('#progress_bar').fadeOut(300);
-    let send_json_data = JSON.stringify(send_data);
-    communicate(send_json_data);
+    abort = true;
 };
 
 
@@ -633,28 +612,26 @@ function start() {
         stick: text_check($('#stick_textarea').val())
     };
     let send_json_data = JSON.stringify(send_data);
-    console.log(source_img)
-    console.log(target_img)
     communicate(send_json_data);
 };
 
 // 通信に関しての関数
+var jqxhr;
 function communicate(s_data) {
-    $.ajax({
+    if (JSON.parse(s_data)["abort"]) {
+        jqxhr.abort();
+    }
+    jqxhr = $.ajax({
         url: "http://" + $('#communication_partner').val() + ":5050/service",
         method: "POST",
         data: s_data,
-        dataType: "json", //データの受信形式
+        dataType: "json", // データの受信形式
         timeout: 10000,
-        async: false, //同期通信  false:同期  true:非同期
+        async: false, // 同期通信  false:同期  true:非同期
         contentType: "application/json; charset=utf-8",
     })
         .done(function (r_data, textStatus, xhr) {
             sort_order(r_data["priority"], r_data["model_status"]);
-            console.log("r_data");
-            console.log(r_data);
-            console.log("s_data");
-            console.log(s_data);
             tmp_data = JSON.parse(s_data);
 
             // プログレスバーの表示
@@ -672,6 +649,9 @@ function communicate(s_data) {
             }
             // 通信継続の確認
             if (!r_data["complete"]) {
+                if (abort){
+                    tmp_data["abort"] = true;
+                }
                 tmp_data["source_img"] = null;
                 tmp_data["target_img"] = null;
                 wait(300).done(function () {
@@ -680,23 +660,27 @@ function communicate(s_data) {
                     communicate(JSON.stringify(tmp_data));
                 });
             } else {
-                console.log("Communication is finished")
                 $('#quit_button').fadeOut(0);
                 $('#progress_bar').fadeOut(300, function(){
                     $('#save_buttons').fadeIn(0);
                 });
-                let download_img_path = r_data["img_path"].replace('..', 'http://' + $('#communication_partner').val() + ':5050');
-                let download_mp4_path = r_data["mp4_path"].replace('..', 'http://' + $('#communication_partner').val() + ':5050');
-                $('#download_img').attr("href", download_img_path).attr("download", $("#textarea").val() + ".png");
-                $('#download_mp4').attr("href", download_mp4_path).attr("download", $("#textarea").val() + '.mp4');
+                if (r_data) {
+                    let download_img_path = r_data["img_path"].replace('..', 'http://' + $('#communication_partner').val() + ':5050');
+                    let download_mp4_path = r_data["mp4_path"].replace('..', 'http://' + $('#communication_partner').val() + ':5050');
+                    $('#download_img').attr("href", download_img_path).attr("download", $("#textarea").val() + ".png");
+                    $('#download_mp4').attr("href", download_mp4_path).attr("download", $("#textarea").val() + '.mp4');
+                }
+                else {
+                    $('#download_img').attr("href", download_img_path).attr("download", $("#textarea").val() + ".png");
+                    $('#download_mp4').attr("href", download_mp4_path).attr("download", $("#textarea").val() + '.mp4');
+                }
                 if ($('#Notification_box').prop("checked") === true) {
                     PushNotification(r_data["img_path"])
                 }
             }
         })
         .fail(function (r_data, textStatus, error) {
-            console.log("Commnucation error");
-            console.log(r_data);
+            alert('通信に失敗しました。\n画面を再読み込みしてください。')
         });
 }
 
@@ -731,18 +715,18 @@ $('.twitter').click(function () {
 
     $.ajax({
         url: "http://" + $('#communication_partner').val() + ":5050/twitter/auth",
-        method: "POST", //HTTPメソッドの種別
+        method: "POST", // HTTPメソッドの種別
         data: twitter_send_data,
-        dataType: "json", //データの受信形式
-        timeout: 10000, //タイムアウト値（ミリ秒）
-        async: false, //同期通信  false:同期  true:非同期
+        dataType: "json", // データの受信形式
+        timeout: 10000, // タイムアウト値（ミリ秒）
+        async: false, // 同期通信  false:同期  true:非同期
         contentType: "application/json; charset=utf-8",
     })
         .done(function (r_data, textStatus, xhr) {
             window.open(r_data["authorization_url"]);
         })
         .fail(function (r_data, textStatus, xhr) {
-            console.log('Fail to communication')
+            alert('現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。');
         });
 });
 
@@ -750,7 +734,7 @@ $('.twitter').click(function () {
 // 通知に関しての関数
 function PushNotification(img_path) {
     Push.create('AIconです。', {
-        body: '画像を作り終えました！！',
+        body: '画像を作り終えました！',
         icon: img_path,
         timeout: 5000,
         onClick: function () {
