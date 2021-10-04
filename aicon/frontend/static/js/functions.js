@@ -95,12 +95,18 @@ $('.Model_Area').click(function () {
             for (let i = 0; i < img_id_list.length; i++) {
                 random = Math.floor(Math.random() * (DeepDaze_dir.length + 1 ));
                 $(img_id_list[i]).attr('src', DeepDaze_dir[random]);
+                $('.set_size_button').removeClass('add_Color');
+                $('#size_256').addClass('add_Color');
+                img_size = '256';
             };
         }
         else if (model_button_id === 'BigSleep') {
             for (let i = 0; i < img_id_list.length; i++) {
                 random = Math.floor(Math.random() * (BigSleep_dir.length + 1 ));
                 $(img_id_list[i]).attr('src', BigSleep_dir[random]);
+                $('.set_size_button').removeClass('add_Color');
+                $('#size_512').addClass('add_Color');
+                img_size = '512';
             };
         }
     }
@@ -613,6 +619,7 @@ function start() {
         stick: text_check($('#stick_textarea').val())
     };
     let send_json_data = JSON.stringify(send_data);
+    console.log(send_data)
     communicate(send_json_data);
 };
 
