@@ -8,7 +8,6 @@ jobs:
           username: $DOCKERHUB_USER
           password: $DOCKERHUB_PASSWORD
     parallelism: 4
-    no_output_timeout: 30m
     steps:
       - checkout
       - run:
@@ -25,6 +24,8 @@ jobs:
           command: |
             /home/user/.local/bin/pylint aicon/test/ -v -f colorized -r y  --fail-under 5.0
             /home/user/.local/bin/pylint aicon/backend/ -v -f colorized -r y  --fail-under -20.0
+          no_output_timeout: 30m
+       
 
 workflows:
   version: 2.1
