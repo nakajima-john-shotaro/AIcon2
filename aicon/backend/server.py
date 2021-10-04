@@ -20,7 +20,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_restful import Api, Resource
-from tweepy import API, OAuthHandler, TweepError
+from tweepy import API, OAuthHandler, TweepyException
 from waitress import serve
 from werkzeug.exceptions import (BadRequest, Forbidden, HTTPException,
                                  InternalServerError)
@@ -508,7 +508,7 @@ def auth() -> Response:
             TWITTER_TEXT: received_data[TWITTER_TEXT],
         }
     
-    except TweepError as e:
+    except TweepyException as e:
         logger.error(f"<<AIcon Twitter Control>> {e}")
     
     except AIconEnvVarNotFoundError as e:
