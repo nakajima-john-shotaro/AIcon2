@@ -579,6 +579,7 @@ var communicate_status = false;
 var hash = '00000000-0000-0000-0000-000000000000';
 function start() {
     stop_input();
+    $('#footer').fadeOut(0);
     $.cookie('url', $('#communication_partner').val())
     communicate_status = true;
     wait_display();
