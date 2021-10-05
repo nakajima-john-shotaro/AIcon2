@@ -9,8 +9,10 @@ jobs:
       - uses: sobolevn/misspell-fixer-action@master
         with:
           options: '-rsnouRVD .'
-      - uses: peter-evans/create-pull-request@v2.4.4
+      - uses: peter-evans/create-pull-request@v3
         with:
+          base: main
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           token: ${{ secrets.GITHUB_TOKEN }}
         env:
           ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
