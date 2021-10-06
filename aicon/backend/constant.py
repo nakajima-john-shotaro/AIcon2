@@ -25,6 +25,7 @@ JSON_MP4_PATH: str = "mp4_path"
 JSON_MODEL_STATUS: str = "model_status"
 JSON_TARGET_IMG: str = "target_img"
 JSON_SOURCE_IMG: str = "source_img"
+JSON_DIAGNOSTICS: str = "diagnostics"
 
 JSON_GAE: int = "gae"
 JSON_SEED: int = "seed"
@@ -58,11 +59,17 @@ IF_BASE_IMG_PATH: str = "../frontend/static/dst_img"
 IF_BASE_MP4_PATH: str = "../frontend/static/dst_mp4"
 IF_QUEUE_EMPTY_COUNTER: str = "queue_empty_counter"
 IF_EMPTY_TOLERANCE: int = 100
+IF_DIAGNOSTICS_OK: int = 0b0000
+IF_DIAGNOSTICS_DEEPL: int = 0b0001
+IF_DIAGNOSTICS_MEMORY: int = 0b0010
+IF_DIAGNOSTICS_UNEXPECTED: int = 0b0100
+IF_DIAGNOSTICS_RESERVED: int = 0b1000
 
 CORE_COMPATIBLE_PYTORCH_VERSION: str = "1.7.1"
 CORE_C2I_QUEUE: str = "c2i_queue"
 CORE_C2I_BREAK_QUEUE: str = "c2i_brake_queue"
 CORE_C2I_EVENT: str = "c2i_event"
+CORE_C2I_ERROR_EVENT: str = "c2i_error_event"
 CORE_I2C_EVENT: str = "i2c_event"
 
 CHC_TIMEOUT: float = 7.0
@@ -76,6 +83,7 @@ TWITTER_CONSUMER_SECRET: str = "CONSUMER_SECRET"
 TWITTER_ACCESS_TOKEN: str = "ACCESS_TOKEN"
 TWITTER_ACCESS_TOKEN_SECRET: str = "ACCESS_TOKEN_SECRET"
 TWITTER_AUTHORIZATION_URL: str = "authorization_url"
+TWITTER_ENV_VAR: str = "is_set_env_var"
 TWITTER_OAUTH_TOKEN: str = "oauth_token" 
 TWITTER_OAUTH_VERIFIER: str = "oauth_verifier"
 TWITTER_OAUTH_TOKEN_SECRET: str = "oauth_token_secret"

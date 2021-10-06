@@ -9,14 +9,28 @@ $(window).on('load resize', function () {
     }
 });
 
-$(window).load(function () {    
+$(window).load(function () {  
     change_advanced_param(model_button_id, param_button_id);
-    $('#textarea').focus()
-    $('#communication_partner').val($.cookie('url'))
+    $('#textarea').focus();
+    $('#communication_partner').val($.cookie('url'));
     if ($('#communication_partner').val() == ''){
-        $('#communication_partner').val('localhost')
+        $('#communication_partner').val('localhost');
     }
     $('html,body').animate({ scrollTop: 0 }, '1');
+    $.ajax({
+        url: "http://" + $('#communication_partner').val() + ":5050/test",
+        method: "POST",
+        timeout: 10000,
+        async: true, // 同期通信  false:同期  true:非同期
+        contentType: "application/json; charset=utf-8",
+    })
+        .done(function () {
+            communication_status = true;
+        })
+        .fail(function () {
+            communication_status = false;
+            notify_alert("サーバに接続できません", "Server IP Addressを確認してください。", false);
+        });
 });
 
 $('#reload').on('click', function () {
@@ -179,6 +193,7 @@ $('#ResNet50').addClass('add_Color');
 var backbone = 'ResNet50';
 $('.backbone_button').click(function() {
     if (!communicate_status) {
+    backbone_model = this.id;
     backbone = this.id;
     $('.backbone_button').removeClass('add_Color');
     $('#' + backbone).addClass('add_Color');
@@ -234,7 +249,7 @@ $(function () {
     $('#input_file').on('change', function () {
         // 画像が複数選択されていた場合
         if (this.files.length > 1) {
-            alert('アップロードできる画像は1つだけです');
+            notify_alert('ファイルが多すぎます', 'アップロードできる画像は1つだけです。', false);
             $('#input_file').val('');
             return;
         }
@@ -267,7 +282,7 @@ $('#drop_area').on('drop', function (event) {
         $('#input_file')[0].files = event.originalEvent.dataTransfer.files;
         // 画像が複数選択されていた場合
         if ($('#input_file')[0].files.length > 1) {
-            alert('アップロードできる画像は1つだけです');
+            notify_alert('ファイルが多すぎます', 'アップロードできる画像は1つだけです。', false);
             $('#input_file').val('');
             $('#drop_area').css('border', '5px dashed #ccc');  // 枠を点線に戻す
             return;
@@ -284,7 +299,7 @@ function handleFiles(files) {
     var imageType = 'image.*';
     // ファイルが画像が確認する
     if (!file.type.match(imageType)) {
-        alert('画像ファイルではありません。\n画像を選択してください');
+        notify_alert('非対応のファイルです', '画像を入れてください。', false);
         $('#input_file').val('');
         $('#drop_area').css('border', '5px dashed #ccc');
         return;
@@ -348,7 +363,7 @@ $(function () {
     $('#target_input_file').on('change', function () {
         // 画像が複数選択されていた場合
         if (this.files.length > 1) {
-            alert('アップロードできる画像は1つだけです');
+            notify_alert('ファイルが多すぎます', 'アップロードできる画像は1つだけです。', false);
             $('#target_input_file').val('');
             return;
         }
@@ -381,7 +396,7 @@ $('#target_drop_area').on('drop', function (event) {
         $('#target_input_file')[0].files = event.originalEvent.dataTransfer.files;
         // 画像が複数選択されていた場合
         if ($('#target_input_file')[0].files.length > 1) {
-            alert('アップロードできる画像は1つだけです');
+            notify_alert('ファイルが多すぎます', 'アップロードできる画像は1つだけです。', false);
             $('#target_input_file').val('');
             $('#target_drop_area').css('border', '5px dashed #ccc');  // 枠を点線に戻す
             return;
@@ -398,7 +413,7 @@ function target_handleFiles(files) {
     var imageType = 'image.*';
     // ファイルが画像が確認する
     if (!target_file.type.match(imageType)) {
-        alert('画像ファイルではありません。\n画像を選択してください');
+        notify_alert('非対応のファイルです', '画像を入れてください。', false);
         $('#target_input_file').val('');
         $('#target_drop_area').css('border', '5px dashed #ccc');
         return;
@@ -509,13 +524,36 @@ $('.set_size_button').click(function () {
 function check() {
     let text_length_status = (text_length > 0 ? true : false);
     let start_status = text_length_status;
-    if (start_status) {
+    if (start_status && communication_status) {
         $('#start_button').removeClass('disabled');
     }
     else {
         $('#start_button').addClass('disabled');
     }
 };
+// サーバーIPアドレスとの通信が可能かを確認
+var communication_status = false;
+$('#communication_partner').focusout(function(){
+    $.ajax({
+        url: "http://" + $('#communication_partner').val() + ":5050/test",
+        method: "POST",
+        dataType: "json", // データの受信形式
+        timeout: 10000,
+        async: true, // 同期通信  false:同期  true:非同期
+        contentType: "application/json; charset=utf-8",
+    })
+        .done(function () {
+            communication_status = true;
+            check();
+        })
+        .fail(function () {
+            communication_status = false;
+            check();
+            notify_alert("サーバーにアクセス出来ません", "Server IP Addressを確認してください。", false);
+            let button = $('#footer_position_row').offset().top;
+            $('body,html').animate({ scrollTop:  button}, 600, 'swing');
+        });
+})
 
 // 開始後に関する関数です
 function stop_input() {
@@ -535,6 +573,9 @@ function stop_input() {
 // 中止ボタンを押された際に送信データを変更する
 var abort = false;
 function abort_signal() {
+    if (!img_path_check){
+        $('#result_img').attr("src", "../static/demo_img/icon/whiteout.png");
+    }
     $('#quit_button').fadeOut(0);
     $('#progress_bar').fadeOut(300);
     abort = true;
@@ -544,7 +585,6 @@ function abort_signal() {
 
 // 待機の場合に表示する関数
 function wait_display() {
-    
     const top_list = [10, 14, 19, 27, 38];
     const fontsize_list = [70, 85, 110, 150, 200];
     const color_list = ['rgba(0, 0, 0, 1)', 'rgba(20, 20, 20, 1)', 'rgba(40, 40, 40, 1)', 'rgba(60, 60, 60, 1)', 'rgba(70, 70, 70, 1)'];
@@ -619,12 +659,12 @@ function start() {
         stick: text_check($('#stick_textarea').val())
     };
     let send_json_data = JSON.stringify(send_data);
-    console.log(send_data)
     communicate(send_json_data);
 };
 
 // 通信に関しての関数
 var jqxhr;
+var img_path_check = false;
 function communicate(s_data) {
     if (JSON.parse(s_data)["abort"]) {
         jqxhr.abort();
@@ -640,7 +680,15 @@ function communicate(s_data) {
     })
         .done(function (r_data, textStatus, xhr) {
             sort_order(r_data["priority"], r_data["model_status"]);
+            img_path_check = r_data["img_path"];
             tmp_data = JSON.parse(s_data);
+            // サーバーサイド側の問題の有無を確認
+            if (r_data["diagnostics"] !== 0) {
+                $('#result_img').attr("src", "../static/demo_img/icon/whiteout.png");
+                let error_string = make_error_string(r_data["diagnostics"]);
+                error_string = 'サーバーサイドで以下のエラーが発生しました。\n' + error_string;
+                notify_alert("Backend Error", error_string);
+            }
 
             // プログレスバーの表示
             if (r_data['current_iter'] === null) {
@@ -688,8 +736,37 @@ function communicate(s_data) {
             }
         })
         .fail(function (r_data, textStatus, error) {
-            alert('通信に失敗しました。\nServer IP Addressを確認してください。\n画面を再読み込みしてください。')
+            notify_alert("通信失敗", "Server IP Addressを確認してください。");
         });
+}
+
+function notify_alert(alart_title, alart_text, reload=true) {
+    swal({
+        title: alart_title,
+        text: alart_text,
+        icon: "error",
+    });
+    $('.swal-button').click(function() {
+        if (reload){
+            window.location.reload();
+        }
+    });
+}
+
+function make_error_string(error_value) {
+    let error_cause = "";
+    let binary_error_value = error_value.toString(2);
+
+    if (binary_error_value & 0B0001) {
+        error_cause = error_cause + '・Deeplエラー\n　管理者にお問い合わせください。\n';
+    }
+    if ((binary_error_value >>> 1) & 0B0001) {
+        error_cause = error_cause + '・メモリエラー\n　(Tips：「仕上がりの選択」をmiddleにしてください。)\n';
+    }
+    if ((binary_error_value >>> 2) & 0B0001) {
+        error_cause = error_cause + '・予期しないエラー\n　管理者にお問い合わせください。';
+    }
+    return error_cause;
 }
 
 function wait(msec) {
@@ -731,13 +808,16 @@ $('.twitter').click(function () {
         contentType: "application/json; charset=utf-8",
     })
         .done(function (r_data, textStatus, xhr) {
-            window.open(r_data["authorization_url"]);
+            if (r_data['is_set_env_var']) {
+                window.open(r_data["authorization_url"]);
+            }else {
+                notify_alert('申し訳ございません。','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
+            }
         })
         .fail(function (r_data, textStatus, xhr) {
-            alert('現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。');
+            notify_alert('申し訳ございません。','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
         });
 });
-
 
 // 通知に関しての関数
 function PushNotification(img_path) {
@@ -750,4 +830,3 @@ function PushNotification(img_path) {
         }
     });
 }
-
