@@ -35,10 +35,6 @@ body {
 }
 
 /* 左関係 */
-/* #gallery_model_name_container {
-	height: auto;
-} */
-
 .gallery {
 	height: 50%;
 	min-height: 100%;
@@ -57,6 +53,9 @@ border-bottom:1px solid #ccc;
 	min-width: 433px;
 }
 
+#model_modal {
+	min-width: 315px;
+}
 /* コンテナの中身の位置を全体的に少し下げる */
 #right_container {
 	position: relative;

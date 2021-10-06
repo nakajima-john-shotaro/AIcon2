@@ -15,6 +15,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stickyfill/2.1.0/stickyfill.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/push.js/0.0.11/push.min.js"></script>
     <script src="{{ url_for('static', filename='js/jquery.cookie.js') }}"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
   </head>
 
   <body>
@@ -40,7 +41,6 @@
 
     <ul class="sidenav" id="mobile-demo">
       <li><a href="help" target="_blank">help</a></li>
-      <!-- <li><a href="review.html" id="help">review</a></li> -->
     </ul>
 
 
@@ -93,14 +93,31 @@
             <div class="row">
               <a class="modal-trigger" href="#fit_model_description">あなたに合ったモデルは？</a>
               <div id="fit_model_description" class="modal">
-                <div class="modal-content">
+                <div class="modal-content" id="model_modal">
                   <h4>DeepDaze</h4>
                   <div class="conteiner">
-                    <p>抽象的な画像(イメージ的)を作成可能</p>
+                    <div class="row">
+                      <div class="s8">
+                        <p>抽象的な画像(イメージ的)を作成可能</p>
+                        <p>用途例 ）風景画</p>
+                      </div>
+                      <div class="s4">
+                        <img src="../static/demo_img/DeepDaze/New_green_promenade.png" alt="Can't load image." width="128" height="128">
+                      </div>
+                    </div>
                   </div>
                   <h4>BigSleep</h4>
                   <div class="conteiner">
-                  <p>リアルな画像を作成可能</p>
+                    <div class="row">
+                      <div class="s8">
+                        <p>リアルな画像を作成可能</p>
+                        <p>用途例 ）キャラクター風イラスト</p>
+                      </div>
+                      <div class="s4">
+                        <img src="../static/demo_img/BigSleep/Alice_in_wonderland.png" alt="Can't load image." width="128" height="128">
+                      </div>
+                    </div>
+
                   </div>
                 </div>
                 <div class="modal-footer">
@@ -603,74 +620,74 @@
         </div>
       </footer>
     </div>
-  <script>
-    $(document).ready(function(){
-      $('ul.tabs').tabs({
-        swipeable : true,
-        responsiveThreshold : 1920
+    <script>
+      $(document).ready(function(){
+        $('ul.tabs').tabs({
+          swipeable : true,
+          responsiveThreshold : 1920
+        });
       });
-    });
 
-    $(document).ready(function(){
-      $('.sidenav').sidenav();
-    });
+      $(document).ready(function(){
+        $('.sidenav').sidenav();
+      });
 
-    function autoplay() {
-      $('.carousel').carousel('next');
-      autoplay: true,
-      setTimeout(autoplay, 3000);
-    }
+      function autoplay() {
+        $('.carousel').carousel('next');
+        autoplay: true,
+        setTimeout(autoplay, 3000);
+      }
 
-    $(document).ready(function(){
-      $('.carousel').carousel();
-      autoplay();
-    });
+      $(document).ready(function(){
+        $('.carousel').carousel();
+        autoplay();
+      });
 
-    $(document).ready(function(){
-      $('select').formSelect();
-    });
+      $(document).ready(function(){
+        $('select').formSelect();
+      });
+      
+      $(document).ready(function(){
+        $('.modal').modal();
+      });
+
+      $(document).ready(function(){
+        $('.collapsible').collapsible();
+      });
+    </script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+      <script type=text/javascript src="{{ url_for('static', filename='../static/js/constant.js') }}"></script>
+      <script type=text/javascript src="{{ url_for('static', filename='../static/js/functions.js') }}"></script>
+
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.1/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.0.1/firebase-analytics.js";
+      // TODO: Add SDKs for Firebase products that you want to use
+      // https://firebase.google.com/docs/web/setup#available-libraries
     
-    $(document).ready(function(){
-      $('.modal').modal();
-    });
-
-    $(document).ready(function(){
-      $('.collapsible').collapsible();
-    });
-  </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-    <script type=text/javascript src="{{ url_for('static', filename='../static/js/constant.js') }}"></script>
-    <script type=text/javascript src="{{ url_for('static', filename='../static/js/functions.js') }}"></script>
+      // Your web app's Firebase configuration
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      const firebaseConfig = {
+        apiKey: "AIzaSyCCc-FwJu2Cl1xscyv1sn-I8GqbCWx11TM",
+        authDomain: "aicon-681d5.firebaseapp.com",
+        projectId: "aicon-681d5",
+        storageBucket: "aicon-681d5.appspot.com",
+        messagingSenderId: "464075167614",
+        appId: "1:464075167614:web:1e10b2e9c50e409434052f",
+        measurementId: "G-13W89KFRBN"
+      };
+    
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+    </script>
+    <noscript>
+      <h1>
+        お使いのブラウザは旧石器時代に開発されたものかテキストベースのもの，
+        またはAdBlockやサイトの設定などによってJavascriptが無効にされているようです。
+        現代の一般的なブラウザを用いるかJavascriptの実行を許可してください。
+      </h1>
+    </noscript>
   </body>
-
-  <script type="module">
-    // Import the functions you need from the SDKs you need
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.1/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.0.1/firebase-analytics.js";
-    // TODO: Add SDKs for Firebase products that you want to use
-    // https://firebase.google.com/docs/web/setup#available-libraries
-  
-    // Your web app's Firebase configuration
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-    const firebaseConfig = {
-      apiKey: "AIzaSyCCc-FwJu2Cl1xscyv1sn-I8GqbCWx11TM",
-      authDomain: "aicon-681d5.firebaseapp.com",
-      projectId: "aicon-681d5",
-      storageBucket: "aicon-681d5.appspot.com",
-      messagingSenderId: "464075167614",
-      appId: "1:464075167614:web:1e10b2e9c50e409434052f",
-      measurementId: "G-13W89KFRBN"
-    };
-  
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-  </script>
-  <noscript>
-    <h1>
-      お使いのブラウザは旧石器時代に開発されたものかテキストベースのもの，
-      またはAdBlockやサイトの設定などによってJavascriptが無効にされているようです。
-      現代の一般的なブラウザを用いるかJavascriptの実行を許可してください。
-    </h1>
-  </noscript>
 </html>

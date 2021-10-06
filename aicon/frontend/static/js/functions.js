@@ -234,7 +234,7 @@ $(function () {
     $('#input_file').on('change', function () {
         // 画像が複数選択されていた場合
         if (this.files.length > 1) {
-            alert('アップロードできる画像は1つだけです');
+            notify_alert('ファイルが多すぎます', 'アップロードできる画像は1つだけです。', false);
             $('#input_file').val('');
             return;
         }
@@ -267,7 +267,7 @@ $('#drop_area').on('drop', function (event) {
         $('#input_file')[0].files = event.originalEvent.dataTransfer.files;
         // 画像が複数選択されていた場合
         if ($('#input_file')[0].files.length > 1) {
-            alert('アップロードできる画像は1つだけです');
+            notify_alert('ファイルが多すぎます', 'アップロードできる画像は1つだけです。', false);
             $('#input_file').val('');
             $('#drop_area').css('border', '5px dashed #ccc');  // 枠を点線に戻す
             return;
@@ -284,7 +284,7 @@ function handleFiles(files) {
     var imageType = 'image.*';
     // ファイルが画像が確認する
     if (!file.type.match(imageType)) {
-        alert('画像ファイルではありません。\n画像を選択してください');
+        notify_alert('非対応のファイルです', '画像を入れてください。', false);
         $('#input_file').val('');
         $('#drop_area').css('border', '5px dashed #ccc');
         return;
@@ -348,7 +348,7 @@ $(function () {
     $('#target_input_file').on('change', function () {
         // 画像が複数選択されていた場合
         if (this.files.length > 1) {
-            alert('アップロードできる画像は1つだけです');
+            notify_alert('ファイルが多すぎます', 'アップロードできる画像は1つだけです。', false);
             $('#target_input_file').val('');
             return;
         }
@@ -381,7 +381,7 @@ $('#target_drop_area').on('drop', function (event) {
         $('#target_input_file')[0].files = event.originalEvent.dataTransfer.files;
         // 画像が複数選択されていた場合
         if ($('#target_input_file')[0].files.length > 1) {
-            alert('アップロードできる画像は1つだけです');
+            notify_alert('ファイルが多すぎます', 'アップロードできる画像は1つだけです。', false);
             $('#target_input_file').val('');
             $('#target_drop_area').css('border', '5px dashed #ccc');  // 枠を点線に戻す
             return;
@@ -398,7 +398,7 @@ function target_handleFiles(files) {
     var imageType = 'image.*';
     // ファイルが画像が確認する
     if (!target_file.type.match(imageType)) {
-        alert('画像ファイルではありません。\n画像を選択してください');
+        notify_alert('非対応のファイルです', '画像を入れてください。', false);
         $('#target_input_file').val('');
         $('#target_drop_area').css('border', '5px dashed #ccc');
         return;
@@ -641,6 +641,14 @@ function communicate(s_data) {
         .done(function (r_data, textStatus, xhr) {
             sort_order(r_data["priority"], r_data["model_status"]);
             tmp_data = JSON.parse(s_data);
+            // サーバーサイド側の問題の有無を確認
+            r_data["diagnostics"] = 2;
+            if (r_data["diagnostics"] !== 0) {
+                $('#result_img').attr("src", "../static/demo_img/icon/whiteout.png");
+                let error_string = make_error_string(r_data["diagnostics"]);
+                error_string = 'サーバーサイドで以下のエラーが発生しました。\n' + error_string;
+                notify_alert("Backend Error", error_string);
+            }
 
             // プログレスバーの表示
             if (r_data['current_iter'] === null) {
@@ -688,8 +696,37 @@ function communicate(s_data) {
             }
         })
         .fail(function (r_data, textStatus, error) {
-            alert('通信に失敗しました。\nServer IP Addressを確認してください。\n画面を再読み込みしてください。')
+            notify_alert("通信失敗", "Server IP Addressを確認してください。");
         });
+}
+
+function notify_alert(alart_title, alart_text, reload=true) {
+    swal({
+        title: alart_title,
+        text: alart_text,
+        icon: "error",
+    });
+    $('.swal-button').click(function() {
+        if (reload){
+            window.location.reload();
+        }
+    });
+}
+
+function make_error_string(error_value) {
+    let error_cause = "";
+    let binary_error_value = error_value.toString(2);
+
+    if (binary_error_value & 0B0001) {
+        error_cause = error_cause + '・Deeplエラー\n';
+    }
+    if ((binary_error_value >>> 1) & 0B0001) {
+        error_cause = error_cause + '・メモリエラー\n';
+    }
+    if ((binary_error_value >>> 2) & 0B0001) {
+        error_cause = error_cause + '・予期しないエラー\n';
+    }
+    return error_cause;
 }
 
 function wait(msec) {
@@ -738,7 +775,6 @@ $('.twitter').click(function () {
         });
 });
 
-
 // 通知に関しての関数
 function PushNotification(img_path) {
     Push.create('AIconです。', {
@@ -750,4 +786,3 @@ function PushNotification(img_path) {
         }
     });
 }
-
