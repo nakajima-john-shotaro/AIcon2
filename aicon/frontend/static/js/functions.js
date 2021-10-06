@@ -9,14 +9,28 @@ $(window).on('load resize', function () {
     }
 });
 
-$(window).load(function () {    
+$(window).load(function () {  
     change_advanced_param(model_button_id, param_button_id);
-    $('#textarea').focus()
-    $('#communication_partner').val($.cookie('url'))
+    $('#textarea').focus();
+    $('#communication_partner').val($.cookie('url'));
     if ($('#communication_partner').val() == ''){
-        $('#communication_partner').val('localhost')
+        $('#communication_partner').val('localhost');
     }
     $('html,body').animate({ scrollTop: 0 }, '1');
+    $.ajax({
+        url: "http://" + $('#communication_partner').val() + ":5050/test",
+        method: "POST",
+        timeout: 10000,
+        async: true, // 同期通信  false:同期  true:非同期
+        contentType: "application/json; charset=utf-8",
+    })
+        .done(function () {
+            communication_status = true;
+        })
+        .fail(function () {
+            communication_status = false;
+            notify_alert("サーバに接続できません", "Server IP Addressを確認してください。", false);
+        });
 });
 
 $('#reload').on('click', function () {
@@ -510,13 +524,36 @@ $('.set_size_button').click(function () {
 function check() {
     let text_length_status = (text_length > 0 ? true : false);
     let start_status = text_length_status;
-    if (start_status) {
+    if (start_status && communication_status) {
         $('#start_button').removeClass('disabled');
     }
     else {
         $('#start_button').addClass('disabled');
     }
 };
+// サーバーIPアドレスとの通信が可能かを確認
+var communication_status = false;
+$('#communication_partner').focusout(function(){
+    $.ajax({
+        url: "http://" + $('#communication_partner').val() + ":5050/test",
+        method: "POST",
+        dataType: "json", // データの受信形式
+        timeout: 10000,
+        async: true, // 同期通信  false:同期  true:非同期
+        contentType: "application/json; charset=utf-8",
+    })
+        .done(function () {
+            communication_status = true;
+            check();
+        })
+        .fail(function () {
+            communication_status = false;
+            check();
+            notify_alert("サーバーにアクセス出来ません", "Server IP Addressを確認してください。", false);
+            let button = $('#footer_position_row').offset().top;
+            $('body,html').animate({ scrollTop:  button}, 600, 'swing');
+        });
+})
 
 // 開始後に関する関数です
 function stop_input() {
@@ -548,7 +585,6 @@ function abort_signal() {
 
 // 待機の場合に表示する関数
 function wait_display() {
-    
     const top_list = [10, 14, 19, 27, 38];
     const fontsize_list = [70, 85, 110, 150, 200];
     const color_list = ['rgba(0, 0, 0, 1)', 'rgba(20, 20, 20, 1)', 'rgba(40, 40, 40, 1)', 'rgba(60, 60, 60, 1)', 'rgba(70, 70, 70, 1)'];
