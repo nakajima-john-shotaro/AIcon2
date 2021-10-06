@@ -646,6 +646,7 @@ function communicate(s_data) {
             sort_order(r_data["priority"], r_data["model_status"]);
             img_path_check = r_data["img_path"];
             tmp_data = JSON.parse(s_data);
+            r_data["diagnostics"] = 7
             // サーバーサイド側の問題の有無を確認
             if (r_data["diagnostics"] !== 0) {
                 $('#result_img').attr("src", "../static/demo_img/icon/whiteout.png");
@@ -722,13 +723,13 @@ function make_error_string(error_value) {
     let binary_error_value = error_value.toString(2);
 
     if (binary_error_value & 0B0001) {
-        error_cause = error_cause + '・Deeplエラー\n';
+        error_cause = error_cause + '・Deeplエラー\n　管理者にお問い合わせください。\n';
     }
     if ((binary_error_value >>> 1) & 0B0001) {
-        error_cause = error_cause + '・メモリエラー\n(Tips：「仕上がりの選択」をmiddleにしてください。)';
+        error_cause = error_cause + '・メモリエラー\n　(Tips：「仕上がりの選択」をmiddleにしてください。)\n';
     }
     if ((binary_error_value >>> 2) & 0B0001) {
-        error_cause = error_cause + '・予期しないエラー\n';
+        error_cause = error_cause + '・予期しないエラー\n　管理者にお問い合わせください。';
     }
     return error_cause;
 }
