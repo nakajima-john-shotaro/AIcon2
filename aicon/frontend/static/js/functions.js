@@ -536,6 +536,9 @@ function stop_input() {
 // 中止ボタンを押された際に送信データを変更する
 var abort = false;
 function abort_signal() {
+    if (!img_path_check){
+        $('#result_img').attr("src", "../static/demo_img/icon/whiteout.png");
+    }
     $('#quit_button').fadeOut(0);
     $('#progress_bar').fadeOut(300);
     abort = true;
@@ -620,12 +623,12 @@ function start() {
         stick: text_check($('#stick_textarea').val())
     };
     let send_json_data = JSON.stringify(send_data);
-    console.log(send_data)
     communicate(send_json_data);
 };
 
 // 通信に関しての関数
 var jqxhr;
+var img_path_check = false;
 function communicate(s_data) {
     if (JSON.parse(s_data)["abort"]) {
         jqxhr.abort();
@@ -641,7 +644,9 @@ function communicate(s_data) {
     })
         .done(function (r_data, textStatus, xhr) {
             sort_order(r_data["priority"], r_data["model_status"]);
+            img_path_check = r_data["img_path"];
             tmp_data = JSON.parse(s_data);
+            r_data["diagnostics"] = 7
             // サーバーサイド側の問題の有無を確認
             if (r_data["diagnostics"] !== 0) {
                 $('#result_img').attr("src", "../static/demo_img/icon/whiteout.png");
@@ -718,13 +723,13 @@ function make_error_string(error_value) {
     let binary_error_value = error_value.toString(2);
 
     if (binary_error_value & 0B0001) {
-        error_cause = error_cause + '・Deeplエラー\n';
+        error_cause = error_cause + '・Deeplエラー\n　管理者にお問い合わせください。\n';
     }
     if ((binary_error_value >>> 1) & 0B0001) {
-        error_cause = error_cause + '・メモリエラー\n';
+        error_cause = error_cause + '・メモリエラー\n　(Tips：「仕上がりの選択」をmiddleにしてください。)\n';
     }
     if ((binary_error_value >>> 2) & 0B0001) {
-        error_cause = error_cause + '・予期しないエラー\n';
+        error_cause = error_cause + '・予期しないエラー\n　管理者にお問い合わせください。';
     }
     return error_cause;
 }
@@ -768,10 +773,14 @@ $('.twitter').click(function () {
         contentType: "application/json; charset=utf-8",
     })
         .done(function (r_data, textStatus, xhr) {
-            window.open(r_data["authorization_url"]);
+            if (r_data['is_set_env_var']) {
+                window.open(r_data["authorization_url"]);
+            }else {
+                notify_alert('申し訳ございません。','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
+            }
         })
         .fail(function (r_data, textStatus, xhr) {
-            alert('現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。');
+            notify_alert('申し訳ございません。','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
         });
 });
 

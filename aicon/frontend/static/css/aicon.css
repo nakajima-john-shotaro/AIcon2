@@ -268,6 +268,7 @@ border-bottom:1px solid #ccc;
 	position: relative;
 	top: 8%;
 	width: 100%;
+	min-width: 720px;
 	min-height: 97vh;
 	text-align: center;
 }
@@ -302,7 +303,7 @@ border-bottom:1px solid #ccc;
 	border: solid 1px #ddd;
 	width: 95%;
 	min-width: 150px;
-	max-height: 119px;
+	height: 130px;
 	border-radius: 10px;
 	cursor: pointer;
 	cursor: hand;
@@ -317,6 +318,9 @@ border-bottom:1px solid #ccc;
 #save_buttons {
 	min-height: 90px;
 }
+#icon {
+	padding-top: 4px;
+}
 
 #icon, #tweet_icon {
 	width: 55px;
@@ -327,10 +331,14 @@ border-bottom:1px solid #ccc;
 	color: #303030;
 }
 
-#save_img_text, #save_mp4_text, #change_icon_text, #tweet_text {
+#save_img_text, #save_mp4_text, #change_icon, #tweet_text {
 	color: #808080;
 	width: auto;
+	min-height: 40px;
+	padding: 0px;
+	line-height: 1em;
 }
+
 /* フッターの設定 */
 #footer {
 	min-height: 65px;
