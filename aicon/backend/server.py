@@ -20,6 +20,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_restful import Api, Resource
+from selenium.common import exceptions
 from tweepy import API, OAuthHandler, TweepyException
 from waitress import serve
 from werkzeug.exceptions import (BadRequest, Forbidden, HTTPException,
@@ -225,7 +226,10 @@ class AIconInterface(Resource):
     def _translate(self, input_text: str, client_uuid: int) -> str:
         if input_text != "":
             logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translating input text")
-            output_text: str = _translator.translate(input_text)
+            try:
+                output_text: str = _translator.translate(input_text)
+            except RuntimeError as e:
+                raise e
             logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated input text `{input_text}` to `{output_text}` by {_translator.translator}")
 
             input_text = output_text
@@ -277,7 +281,15 @@ class AIconInterface(Resource):
                 received_data[JSON_CARROT] = self._translate(received_data[JSON_CARROT], client_uuid)
                 received_data[JSON_STICK] = self._translate(received_data[JSON_STICK], client_uuid)
             except RuntimeError:
+                res[JSON_COMPLETE] = True
+                res[JSON_MODEL_STATUS] = True
                 res[JSON_DIAGNOSTICS] = res[JSON_DIAGNOSTICS] | 0b0001
+
+                _lock.acquire()
+                _remove_client_data(client_uuid)
+                _lock.release()
+
+                _reset_valid_response()
 
             c2i_queue: Queue = Queue()
             c2i_brake_queue: Queue = Queue()
@@ -432,9 +444,6 @@ class AIconInterface(Resource):
         else:
             logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> Invalid UUID")
             abort(403, f"Invalid UUID: {client_uuid}")
-
-        logger.error(f"{res[JSON_DIAGNOSTICS]}")
-        logger.fatal(f"{bin(res[JSON_DIAGNOSTICS])}")
 
         return jsonify(res)
 
