@@ -643,7 +643,6 @@ function communicate(s_data) {
             sort_order(r_data["priority"], r_data["model_status"]);
             tmp_data = JSON.parse(s_data);
             // サーバーサイド側の問題の有無を確認
-            r_data["diagnostics"] = 0;
             if (r_data["diagnostics"] !== 0) {
                 $('#result_img').attr("src", "../static/demo_img/icon/whiteout.png");
                 let error_string = make_error_string(r_data["diagnostics"]);
