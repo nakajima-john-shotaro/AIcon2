@@ -4,9 +4,6 @@ from typing import Dict, Optional
 from constant import *
 
 
-logger: Logger = get_logger()
-
-
 def get_secrets() -> Dict[str, Optional[str]]:
     secrets: Dict[str, Optional[str]] = {
         TWITTER_CONSUMER_KEY: os.environ.get(TWITTER_CONSUMER_KEY, default=None),
@@ -17,8 +14,6 @@ def get_secrets() -> Dict[str, Optional[str]]:
 
     for key, value in secrets.items():
         if value is None:
-            logger.fatal(f"<<AIcon Twitter Control>> Cannot find secret environment variable {key}")
-
-            raise AIconEnvVarNotFoundError(f"Cannot find secret environment variable")
+            raise AIconEnvVarNotFoundError(f"Cannot find secret environment variable {key}")
     
     return secrets
