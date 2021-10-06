@@ -644,6 +644,7 @@ function communicate(s_data) {
             // サーバーサイド側の問題の有無を確認
             r_data["diagnostics"] = 2;
             if (r_data["diagnostics"] !== 0) {
+                $('#result_img').attr("src", "../static/demo_img/icon/whiteout.png");
                 let error_string = make_error_string(r_data["diagnostics"]);
                 error_string = 'サーバーサイドで以下のエラーが発生しました。\n' + error_string;
                 notify_alert("Backend Error", error_string);
@@ -774,7 +775,6 @@ $('.twitter').click(function () {
         });
 });
 
-
 // 通知に関しての関数
 function PushNotification(img_path) {
     Push.create('AIconです。', {
@@ -786,4 +786,3 @@ function PushNotification(img_path) {
         }
     });
 }
-
