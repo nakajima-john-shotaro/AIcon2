@@ -461,7 +461,7 @@ def index() -> Response:
 def help() -> Response:
     return render_template("help.html", title="help", name="help")
 
-@app.route('/test')
+@app.route('/test', methods=["POST"])
 def connection_test() -> Response:
     return make_response(jsonify({"Hello": "client"}))
 
