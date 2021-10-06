@@ -536,7 +536,6 @@ function stop_input() {
 // 中止ボタンを押された際に送信データを変更する
 var abort = false;
 function abort_signal() {
-    console.log(img_path_check)
     if (!img_path_check){
         $('#result_img').attr("src", "../static/demo_img/icon/whiteout.png");
     }
