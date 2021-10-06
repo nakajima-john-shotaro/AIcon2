@@ -620,7 +620,6 @@ function start() {
         stick: text_check($('#stick_textarea').val())
     };
     let send_json_data = JSON.stringify(send_data);
-    console.log(send_data)
     communicate(send_json_data);
 };
 
