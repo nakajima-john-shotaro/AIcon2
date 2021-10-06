@@ -705,9 +705,11 @@ function notify_alert(alart_title, alart_text, reload=true) {
         text: alart_text,
         icon: "error",
     });
-    if (reload){
-        window.location.reload();
-    }
+    $('.swal-button').click(function() {
+        if (reload){
+            window.location.reload();
+        }
+    });
 }
 
 function make_error_string(error_value) {
