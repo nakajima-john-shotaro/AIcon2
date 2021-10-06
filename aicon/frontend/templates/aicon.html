@@ -15,6 +15,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stickyfill/2.1.0/stickyfill.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/push.js/0.0.11/push.min.js"></script>
     <script src="{{ url_for('static', filename='js/jquery.cookie.js') }}"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
   </head>
 
   <body>
@@ -93,14 +94,31 @@
             <div class="row">
               <a class="modal-trigger" href="#fit_model_description">あなたに合ったモデルは？</a>
               <div id="fit_model_description" class="modal">
-                <div class="modal-content">
+                <div class="modal-content" id="model_modal">
                   <h4>DeepDaze</h4>
                   <div class="conteiner">
-                    <p>抽象的な画像(イメージ的)を作成可能</p>
+                    <div class="row">
+                      <div class="s8">
+                        <p>抽象的な画像(イメージ的)を作成可能</p>
+                        <p>用途例 ）風景画</p>
+                      </div>
+                      <div class="s4">
+                        <img src="../static/demo_img/DeepDaze/New_green_promenade.png" alt="Can't load image." width="128" height="128">
+                      </div>
+                    </div>
                   </div>
                   <h4>BigSleep</h4>
                   <div class="conteiner">
-                  <p>リアルな画像を作成可能</p>
+                    <div class="row">
+                      <div class="s8">
+                        <p>リアルな画像を作成可能</p>
+                        <p>用途例 ）キャラクター風イラスト</p>
+                      </div>
+                      <div class="s4">
+                        <img src="../static/demo_img/BigSleep/Alice_in_wonderland.png" alt="Can't load image." width="128" height="128">
+                      </div>
+                    </div>
+
                   </div>
                 </div>
                 <div class="modal-footer">
