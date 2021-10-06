@@ -32,12 +32,12 @@ var MODEL_PARAM = {
             backbone: 'RN50x4'
         },
         middle: {
-            iter: 250,
+            iter: 200,
             gae: 1,
             backbone: 'ViT-B32'
         },
         high: {
-            iter: 400,
+            iter: 300,
             gae: 1,
             backbone: 'ViT-B32'
         },
