@@ -773,7 +773,11 @@ $('.twitter').click(function () {
         contentType: "application/json; charset=utf-8",
     })
         .done(function (r_data, textStatus, xhr) {
-            window.open(r_data["authorization_url"]);
+            if (r_data['is_set_env_var']) {
+                window.open(r_data["authorization_url"]);
+            }else {
+                notify_alert('申し訳ございません。','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
+            }
         })
         .fail(function (r_data, textStatus, xhr) {
             notify_alert('申し訳ございません。','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
