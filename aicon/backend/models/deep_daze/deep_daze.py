@@ -578,7 +578,7 @@ class Imagine(nn.Module):
             for epoch in range(self.epochs):
                 for iteration in range(self.iterations):
                     if self.i2c_event.is_set():
-                        raise AIconAbortedError("Abort signal detected")
+                        raise AIconAbortedError("Abort signal recieved. Aborting.")
 
                     sequence_number: int = self.get_img_sequence_number(epoch, iteration)
 
@@ -625,5 +625,3 @@ class Imagine(nn.Module):
             self.c2i_event.set()
 
             torch.cuda.empty_cache()
-
-            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Completed imagination")
