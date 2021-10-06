@@ -625,5 +625,3 @@ class Imagine(nn.Module):
             self.c2i_event.set()
 
             torch.cuda.empty_cache()
-
-            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Completed imagination")
