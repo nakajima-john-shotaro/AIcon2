@@ -646,7 +646,6 @@ function communicate(s_data) {
             sort_order(r_data["priority"], r_data["model_status"]);
             img_path_check = r_data["img_path"];
             tmp_data = JSON.parse(s_data);
-            r_data["diagnostics"] = 7
             // サーバーサイド側の問題の有無を確認
             if (r_data["diagnostics"] !== 0) {
                 $('#result_img').attr("src", "../static/demo_img/icon/whiteout.png");
