@@ -25,6 +25,7 @@ JSON_MP4_PATH: str = "mp4_path"
 JSON_MODEL_STATUS: str = "model_status"
 JSON_TARGET_IMG: str = "target_img"
 JSON_SOURCE_IMG: str = "source_img"
+JSON_DIAGNOSTICS: str = "diagnostics"
 
 JSON_GAE: int = "gae"
 JSON_SEED: int = "seed"
@@ -63,6 +64,7 @@ CORE_COMPATIBLE_PYTORCH_VERSION: str = "1.7.1"
 CORE_C2I_QUEUE: str = "c2i_queue"
 CORE_C2I_BREAK_QUEUE: str = "c2i_brake_queue"
 CORE_C2I_EVENT: str = "c2i_event"
+CORE_C2I_ERROR_EVENT: str = "c2i_error_event"
 CORE_I2C_EVENT: str = "i2c_event"
 
 CHC_TIMEOUT: float = 7.0

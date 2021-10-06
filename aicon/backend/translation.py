@@ -7,6 +7,7 @@ import time
 from googletrans import Translator
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 
 
@@ -31,26 +32,31 @@ class Translation(object):
             if self.translator == "google":
                 output_text = self.g_translator.translate(text, src=lang, dest="en").text
             elif self.translator == "deepl":
-                self.d_options.add_argument('--headless')
-                self.d_options.add_argument('--no-sandbox')
+                try:
+                    self.d_options.add_argument('--headless')
+                    self.d_options.add_argument('--no-sandbox')
 
-                driver: webdriver.Chrome = webdriver.Chrome(
-                    ChromeDriverManager(print_first_line=False).install(), 
-                    options=self.d_options
-                )
-                driver.get("https://www.deepl.com/ja/translator")
+                    driver: webdriver.Chrome = webdriver.Chrome(
+                        ChromeDriverManager(print_first_line=False).install(), 
+                        options=self.d_options
+                    )
+                    driver.get("https://www.deepl.com/ja/translator")
 
-                input_selector = driver.find_element_by_css_selector(".lmt__textarea.lmt__source_textarea.lmt__textarea_base_style")
-                input_selector.send_keys(text)
+                    input_selector = driver.find_element_by_css_selector(".lmt__textarea.lmt__source_textarea.lmt__textarea_base_style")
+                    input_selector.send_keys(text)
 
-                while True:
-                    output_selector: str = ".lmt__textarea.lmt__target_textarea.lmt__textarea_base_style"
-                    output_text: str = driver.find_element_by_css_selector(output_selector).get_property("value")
-                    if output_text != "":
-                        break
-                    time.sleep(1)
+                    while True:
+                        output_selector: str = ".lmt__textarea.lmt__target_textarea.lmt__textarea_base_style"
+                        output_text: str = driver.find_element_by_css_selector(output_selector).get_property("value")
+                        if output_text != "":
+                            break
+                        time.sleep(1)
 
-                driver.close()
+                    driver.close()
+
+                except (NoSuchElementException, TimeoutException):
+                    raise RuntimeError(f"Failed to translate by DeepL. Consider to use google translator mode.")
+    
         else:
             output_text = text
 

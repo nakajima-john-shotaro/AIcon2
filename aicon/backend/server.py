@@ -20,6 +20,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_restful import Api, Resource
+from selenium.common import exceptions
 from tweepy import API, OAuthHandler, TweepyException
 from waitress import serve
 from werkzeug.exceptions import (BadRequest, Forbidden, HTTPException,
@@ -57,7 +58,7 @@ _valid_response: Dict[str, Union[str, bool, int]] = {
 _lock: Lock = Lock()
 _twitter_database: Dict[str, str] = {}
 
-_translator: Translation = Translation("google")
+_translator: Translation = Translation("deepl")
 
 
 def _reset_valid_response() -> None:
@@ -200,27 +201,36 @@ class AIconCore:
         if self.model_name == MODEL_NAME_BIG_SLEEP:
             try:
                 big_sleep.Imagine(self.client_uuid, client_data)()
-            except (AIconOutOfMemoryError, AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
+                logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Finished image generation")
+            except AIconOutOfMemoryError as e:
+                client_data[CORE_C2I_ERROR_EVENT].set()
+                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> {e}")
+            except (AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
                 logger.error(f"[{self.client_uuid}]: <<AIcon Core>> {e}")
 
         elif self.model_name == MODEL_NAME_DEEP_DAZE:
             try:
                 deep_daze.Imagine(self.client_uuid, client_data)()
-            except (AIconOutOfMemoryError, AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
+                logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Finished image generation")
+            except AIconOutOfMemoryError as e:
+                client_data[CORE_C2I_ERROR_EVENT].set()
+                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> {e}")
+            except (AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
                 logger.error(f"[{self.client_uuid}]: <<AIcon Core>> {e}")
 
         elif self.model_name == MODEL_NAME_DALL_E:
             raise NotImplementedError
-
-        logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Finished image generation")
 
 
 class AIconInterface(Resource):
     def _translate(self, input_text: str, client_uuid: int) -> str:
         if input_text != "":
             logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translating input text")
-            output_text: str = _translator.translate(input_text)
-            logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated input text `{input_text}` to `{output_text}`")
+            try:
+                output_text: str = _translator.translate(input_text)
+            except RuntimeError as e:
+                raise e
+            logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated input text `{input_text}` to `{output_text}` by {_translator.translator}")
 
             input_text = output_text
         
@@ -250,7 +260,7 @@ class AIconInterface(Resource):
 
         client_uuid: str = received_data[JSON_HASH]
 
-        res: Dict[str, Optional[Union[str, bool]]] = {
+        res: Dict[str, Optional[Union[str, int, bool]]] = {
             JSON_HASH: None,
             JSON_PRIORITY: None,
             JSON_CURRENT_ITER: None,
@@ -258,6 +268,7 @@ class AIconInterface(Resource):
             JSON_IMG_PATH: None,
             JSON_MP4_PATH: None,
             JSON_MODEL_STATUS: False,
+            JSON_DIAGNOSTICS: 0b0000,
         }
 
         if client_uuid == IF_HASH_INIT:
@@ -265,14 +276,26 @@ class AIconInterface(Resource):
 
             logger.info(f"[{IF_HASH_INIT}]: <<AIcon I/F >> Connection requested from an anonymous client. UUID {client_uuid} is assined.")
 
-            received_data[JSON_TEXT] = self._translate(received_data[JSON_TEXT], client_uuid)
-            received_data[JSON_CARROT] = self._translate(received_data[JSON_CARROT], client_uuid)
-            received_data[JSON_STICK] = self._translate(received_data[JSON_STICK], client_uuid)
+            try:
+                received_data[JSON_TEXT] = self._translate(received_data[JSON_TEXT], client_uuid)
+                received_data[JSON_CARROT] = self._translate(received_data[JSON_CARROT], client_uuid)
+                received_data[JSON_STICK] = self._translate(received_data[JSON_STICK], client_uuid)
+            except RuntimeError:
+                res[JSON_COMPLETE] = True
+                res[JSON_MODEL_STATUS] = True
+                res[JSON_DIAGNOSTICS] = res[JSON_DIAGNOSTICS] | 0b0001
+
+                _lock.acquire()
+                _remove_client_data(client_uuid)
+                _lock.release()
+
+                _reset_valid_response()
 
             c2i_queue: Queue = Queue()
             c2i_brake_queue: Queue = Queue()
             c2i_event: Event_ = Event()
             i2c_event: Event_ = Event()
+            c2i_error_event: Event_ = Event()
 
             _client_data[client_uuid] = {
                 RECEIVED_DATA: received_data,
@@ -280,6 +303,7 @@ class AIconInterface(Resource):
                 CORE_C2I_QUEUE: c2i_queue,
                 CORE_C2I_BREAK_QUEUE: c2i_brake_queue,
                 CORE_C2I_EVENT: c2i_event,
+                CORE_C2I_ERROR_EVENT: c2i_error_event,
                 CORE_I2C_EVENT: i2c_event,
                 CHC_LAST_CONNECTION_TIME: time.time(),
                 IF_QUEUE_EMPTY_COUNTER: 0,
@@ -378,6 +402,17 @@ class AIconInterface(Resource):
 
                         logger.info(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. Removed the client data.")
 
+                        _reset_valid_response()
+                    elif _client_data[client_uuid][CORE_C2I_ERROR_EVENT].is_set():
+                        res[JSON_DIAGNOSTICS] = res[JSON_DIAGNOSTICS] | 0b0010
+                        res[JSON_COMPLETE] = True
+                        res[JSON_MODEL_STATUS] = True
+
+                        _lock.acquire()
+                        _remove_client_data(client_uuid)
+                        _lock.release()
+
+                        logger.error(f"[{client_uuid}]: <<AIcon I/F >> The task couldn't be completed. Removed the client data.")
 
                         _reset_valid_response()
 
@@ -398,6 +433,8 @@ class AIconInterface(Resource):
                         _client_data[client_uuid][CORE_I2C_EVENT].set()
 
                         res[JSON_COMPLETE] = True
+                        res[JSON_MODEL_STATUS] = True
+                        res[JSON_DIAGNOSTICS] = res[JSON_DIAGNOSTICS] | 0b0100
 
                         _lock.acquire()
                         _remove_client_data(client_uuid)
