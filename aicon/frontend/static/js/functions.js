@@ -688,7 +688,7 @@ function communicate(s_data) {
             }
         })
         .fail(function (r_data, textStatus, error) {
-            alert('通信に失敗しました。\n画面を再読み込みしてください。')
+            alert('通信に失敗しました。\nServer IP Addressを確認してください。\n画面を再読み込みしてください。')
         });
 }
 
