@@ -536,6 +536,10 @@ function stop_input() {
 // 中止ボタンを押された際に送信データを変更する
 var abort = false;
 function abort_signal() {
+    console.log(img_path_check)
+    if (!img_path_check){
+        $('#result_img').attr("src", "../static/demo_img/icon/whiteout.png");
+    }
     $('#quit_button').fadeOut(0);
     $('#progress_bar').fadeOut(300);
     abort = true;
@@ -625,6 +629,7 @@ function start() {
 
 // 通信に関しての関数
 var jqxhr;
+var img_path_check = false;
 function communicate(s_data) {
     if (JSON.parse(s_data)["abort"]) {
         jqxhr.abort();
@@ -640,6 +645,7 @@ function communicate(s_data) {
     })
         .done(function (r_data, textStatus, xhr) {
             sort_order(r_data["priority"], r_data["model_status"]);
+            img_path_check = r_data["img_path"];
             tmp_data = JSON.parse(s_data);
             // サーバーサイド側の問題の有無を確認
             if (r_data["diagnostics"] !== 0) {
@@ -720,7 +726,7 @@ function make_error_string(error_value) {
         error_cause = error_cause + '・Deeplエラー\n';
     }
     if ((binary_error_value >>> 1) & 0B0001) {
-        error_cause = error_cause + '・メモリエラー\n';
+        error_cause = error_cause + '・メモリエラー\n(Tips：「仕上がりの選択」をmiddleにしてください。)';
     }
     if ((binary_error_value >>> 2) & 0B0001) {
         error_cause = error_cause + '・予期しないエラー\n';
@@ -770,7 +776,7 @@ $('.twitter').click(function () {
             window.open(r_data["authorization_url"]);
         })
         .fail(function (r_data, textStatus, xhr) {
-            alert('現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。');
+            notify_alert('申し訳ございません。','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
         });
 });
 
