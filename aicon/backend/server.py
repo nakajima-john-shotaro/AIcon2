@@ -464,10 +464,7 @@ def help() -> Response:
 
 @app.route('/test', methods=["POST"])
 def connection_test() -> Response:
-    # received_data: Dict[str, str] = request.get_json(force=True)
-    received_data = {
-        TEST_FRONTEND_VERSION: "1.2.1"
-    }
+    received_data: Dict[str, str] = request.get_json(force=True)
 
     res: Dict[str, Optional[Union[str, int, bool]]] = {
         TEST_DIAGNOSTICS: TEST_DIAGNOSTICS_OK,
