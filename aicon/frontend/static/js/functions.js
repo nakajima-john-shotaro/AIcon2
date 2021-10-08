@@ -1,4 +1,4 @@
-var icon_varsion = '1.2.1';
+var ICON_VARSION = '1.2.1';
 // ウィンドウに関しての関数です
 $(window).on('load resize', function () {
     var windowWidth = window.innerWidth;
@@ -19,8 +19,8 @@ $(window).load(function () {
     }
     $('html,body').animate({ scrollTop: 0 }, '1');
     send_data = {
-        version: icon_varsion
-    }
+        version: ICON_VARSION
+    };
     let check_version_data = JSON.stringify(send_data); 
     $.ajax({
         url: "http://" + $('#communication_partner').val() + ":5050/test",
@@ -551,8 +551,8 @@ function check() {
 var communication_status = false;
 $('#communication_partner').focusout(function(){
     send_data = {
-        version: icon_varsion
-    }
+        version: ICON_VARSION
+    };
     $.ajax({
         url: "http://" + $('#communication_partner').val() + ":5050/test",
         method: "POST",
@@ -567,7 +567,7 @@ $('#communication_partner').focusout(function(){
             check();
             if (r_data['pre_diagnostics'] !== 0){
                 let pre_check_list = test_device_status(r_data['pre_diagnostics']);
-                let notice_sting = "下記の項目に注意してください。\n" + pre_check_list[0];
+                let notice_sting = "Something went wrong.。\n" + pre_check_list[0];
                 notify_alert("Oops!", notice_sting, false, pre_check_list[1]);
             }
         })
@@ -782,7 +782,7 @@ function test_device_status(device_status) {
     let alert_text = "";
     let check_list = [];
     let icon = 'warning';
-    let binary_device_status =device_status.toString(2);
+    let binary_device_status = device_status.toString(2);
     binary_device_status = parseInt(binary_device_status, 2);
     if (binary_device_status & 0B0001) {
         alert_text = alert_text + '・Minor version conflict\n　レイアウト等が乱れる可能性があります。\n';
