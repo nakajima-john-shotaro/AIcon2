@@ -45,12 +45,18 @@ class Translation(object):
                     input_selector = driver.find_element_by_css_selector(".lmt__textarea.lmt__source_textarea.lmt__textarea_base_style")
                     input_selector.send_keys(text)
 
+                    cnt: int = 0
                     while True:
                         output_selector: str = ".lmt__textarea.lmt__target_textarea.lmt__textarea_base_style"
                         output_text: str = driver.find_element_by_css_selector(output_selector).get_property("value")
                         if output_text != "":
                             break
                         time.sleep(1)
+
+                        if cnt > 5:
+                            output_text = self.g_translator.translate(text, src=lang, dest="en").text
+                            break
+                        cnt += 1
 
                     driver.close()
 

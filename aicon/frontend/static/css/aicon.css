@@ -112,6 +112,7 @@ border-bottom:1px solid #ccc;
 .backbone_button {
 	padding: 5px;
 	border: solid 1px #ccc;
+	min-width: 88px;
 	width: 95%;
 	border-radius: 10px;
 	cursor: pointer;
@@ -323,10 +324,12 @@ border-bottom:1px solid #ccc;
 }
 
 #icon, #tweet_icon {
+	padding-top: 10px;
 	width: 55px;
 }
 
 #save_img, #save_mp4 {
+	padding-top: 10px;
 	font-size: 55px;
 	color: #303030;
 }
@@ -389,9 +392,9 @@ border-bottom:1px solid #ccc;
 	height: auto;
 }
 
-/*＝＝＝＝＝＝＝＝＝＝＝768px以下の見え方＝＝＝＝＝＝＝＝＝＝＝＝＝*/
+/*＝＝＝＝＝＝＝＝＝＝＝800px以下の見え方＝＝＝＝＝＝＝＝＝＝＝＝＝*/
 
-@media screen and (max-width:768px) {
+@media screen and (max-width:800px) {
 	#wrapper {
 		display: block;
 		min-width: 720px;

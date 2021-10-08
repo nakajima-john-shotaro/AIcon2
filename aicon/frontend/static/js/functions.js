@@ -1,3 +1,4 @@
+var ICON_VARSION = '1.2.1';
 // ウィンドウに関しての関数です
 $(window).on('load resize', function () {
     var windowWidth = window.innerWidth;
@@ -9,7 +10,7 @@ $(window).on('load resize', function () {
     }
 });
 
-$(window).load(function () {  
+$(window).load(function () { 
     change_advanced_param(model_button_id, param_button_id);
     $('#textarea').focus();
     $('#communication_partner').val($.cookie('url'));
@@ -17,20 +18,35 @@ $(window).load(function () {
         $('#communication_partner').val('localhost');
     }
     $('html,body').animate({ scrollTop: 0 }, '1');
+    send_data = {
+        version: ICON_VARSION
+    };
+    let check_version_data = JSON.stringify(send_data); 
     $.ajax({
         url: "http://" + $('#communication_partner').val() + ":5050/test",
         method: "POST",
+        data: check_version_data,
+        dataType: "json",
         timeout: 10000,
         async: true, // 同期通信  false:同期  true:非同期
         contentType: "application/json; charset=utf-8",
     })
-        .done(function () {
+        .done(function (r_data) {
             communication_status = true;
+            if (!$.cookie('first_login')) {
+                if (r_data['pre_diagnostics'] !== 0){
+                    let pre_check_list = test_device_status(r_data['pre_diagnostics']);
+                    let notice_sting = "Something went wrong.\n" + pre_check_list[0];
+                    notify_alert("Oops!", notice_sting, false, pre_check_list[1]);
+                }
+                $.cookie('first_login', 'no');
+            }
         })
         .fail(function () {
             communication_status = false;
             notify_alert("サーバに接続できません", "Server IP Addressを確認してください。", false);
         });
+
 });
 
 $('#reload').on('click', function () {
@@ -534,17 +550,27 @@ function check() {
 // サーバーIPアドレスとの通信が可能かを確認
 var communication_status = false;
 $('#communication_partner').focusout(function(){
+    send_data = {
+        version: ICON_VARSION
+    };
+    let check_version_data = JSON.stringify(send_data);
     $.ajax({
         url: "http://" + $('#communication_partner').val() + ":5050/test",
         method: "POST",
-        dataType: "json", // データの受信形式
+        data: check_version_data,
+        dataType: "json",
         timeout: 10000,
         async: true, // 同期通信  false:同期  true:非同期
         contentType: "application/json; charset=utf-8",
     })
-        .done(function () {
+        .done(function (r_data) {
             communication_status = true;
             check();
+            if (r_data['pre_diagnostics'] !== 0){
+                let pre_check_list = test_device_status(r_data['pre_diagnostics']);
+                let notice_sting = "Something went wrong.\n" + pre_check_list[0];
+                notify_alert("Oops!", notice_sting, false, pre_check_list[1]);
+            }
         })
         .fail(function () {
             communication_status = false;
@@ -740,11 +766,11 @@ function communicate(s_data) {
         });
 }
 
-function notify_alert(alart_title, alart_text, reload=true) {
+function notify_alert(alert_title, alert_text, reload=true , show_icon="error") {
     swal({
-        title: alart_title,
-        text: alart_text,
-        icon: "error",
+        title: alert_title,
+        text: alert_text,
+        icon: show_icon,
     });
     $('.swal-button').click(function() {
         if (reload){
@@ -753,18 +779,43 @@ function notify_alert(alart_title, alart_text, reload=true) {
     });
 }
 
+function test_device_status(device_status) {
+    let alert_text = "";
+    let check_list = [];
+    let icon = 'warning';
+    let binary_device_status = device_status.toString(2);
+    binary_device_status = parseInt(binary_device_status, 2);
+    if (binary_device_status & 0B0001) {
+        alert_text = alert_text + '・Minor version conflict (Ver. ' + ICON_VARSION + ')\n　レイアウト等が乱れる可能性があります。\n';
+    }
+    if ((binary_device_status >>> 1) & 0B0001) {
+        alert_text = alert_text + '・Major version conflict (Ver. ' + ICON_VARSION + ')\n　管理者にお問い合わせください。\n';
+        icon = 'error';
+    }
+    if ((binary_device_status >>> 2) & 0B0001) {
+        alert_text = alert_text + '・GPU not found\n　管理者にお問い合わせください。\n';
+        icon = 'error';
+    }
+    if ((binary_device_status >>> 3) & 0B0001) {
+        alert_text = alert_text + '・TensorCore not found\n　画像生成速度が低下する可能性があります。';
+    }
+    check_list.push(alert_text, icon);
+    return check_list;
+}
+
 function make_error_string(error_value) {
     let error_cause = "";
     let binary_error_value = error_value.toString(2);
+    binary_error_value = parseInt(binary_error_value, 2);
 
     if (binary_error_value & 0B0001) {
-        error_cause = error_cause + '・Deeplエラー\n　管理者にお問い合わせください。\n';
+        error_cause = error_cause + '・Translation error\n　管理者にお問い合わせください。\n';
     }
     if ((binary_error_value >>> 1) & 0B0001) {
-        error_cause = error_cause + '・メモリエラー\n　(Tips：「仕上がりの選択」をmiddleにしてください。)\n';
+        error_cause = error_cause + '・Out of memory error\n　(Tips：「仕上がりの選択」をmiddleにしてください。)\n';
     }
     if ((binary_error_value >>> 2) & 0B0001) {
-        error_cause = error_cause + '・予期しないエラー\n　管理者にお問い合わせください。';
+        error_cause = error_cause + '・Unexpected error\n　管理者にお問い合わせください。';
     }
     return error_cause;
 }
@@ -811,11 +862,11 @@ $('.twitter').click(function () {
             if (r_data['is_set_env_var']) {
                 window.open(r_data["authorization_url"]);
             }else {
-                notify_alert('申し訳ございません。','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
+                notify_alert('Oops!','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
             }
         })
         .fail(function (r_data, textStatus, xhr) {
-            notify_alert('申し訳ございません。','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
+            notify_alert('Oops!','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
         });
 });
 
@@ -830,3 +881,6 @@ function PushNotification(img_path) {
         }
     });
 }
+
+// バージョン表示に関する部分です
+$('#copyright_position').text('AIcon ' + ICON_VARSION + '　Copyright © 2021 MagicSpell')

@@ -20,7 +20,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_restful import Api, Resource
-from selenium.common import exceptions
+from torch.cuda import is_available
 from tweepy import API, OAuthHandler, TweepyException
 from waitress import serve
 from werkzeug.exceptions import (BadRequest, Forbidden, HTTPException,
@@ -31,6 +31,7 @@ from models.big_sleep import big_sleep
 from models.deep_daze import deep_daze
 from translation import Translation, install_webdriver
 from twitter import get_secrets
+from __version__ import __version__
 
 app: Flask = Flask(
     import_name=__name__, 
@@ -463,7 +464,31 @@ def help() -> Response:
 
 @app.route('/test', methods=["POST"])
 def connection_test() -> Response:
-    return make_response(jsonify({"Hello": "client"}))
+    received_data: Dict[str, str] = request.get_json(force=True)
+
+    res: Dict[str, Optional[Union[str, int, bool]]] = {
+        TEST_DIAGNOSTICS: TEST_DIAGNOSTICS_OK,
+    }
+
+    frontend_minor_version: str = received_data[TEST_FRONTEND_VERSION].split(".")[-1]
+    backend_minor_version: str = __version__.split(".")[-1]
+
+    frontend_major_version: str = received_data[TEST_FRONTEND_VERSION].split(".")[0] + received_data[TEST_FRONTEND_VERSION].split(".")[1]
+    backend_major_version: str = __version__.split(".")[0] + __version__.split(".")[1]
+
+    if frontend_minor_version != backend_minor_version:
+        res[TEST_DIAGNOSTICS] = res[TEST_DIAGNOSTICS] | TEST_DIAGNOSTICS_MINOR_VERSION_CONFLICT
+
+    if frontend_major_version != backend_major_version:
+        res[TEST_DIAGNOSTICS] = res[TEST_DIAGNOSTICS] | TEST_DIAGNOSTICS_MAJOR_VERSION_CONFLICT
+
+    if not is_available():
+        res[TEST_DIAGNOSTICS] = res[TEST_DIAGNOSTICS] | TEST_DIAGNOSTICS_GPU_AVAILABLE
+
+    if "this_is_intentional" == "":
+        res[TEST_DIAGNOSTICS] = res[TEST_DIAGNOSTICS] | TEST_DIAGNOSTICS_TENSOR_CORE_AVAILABLE
+
+    return make_response(jsonify(res))
 
 
 @app.route('/twitter/callback')
