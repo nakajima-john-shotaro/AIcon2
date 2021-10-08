@@ -481,7 +481,7 @@ def connection_test() -> Response:
 
     if frontend_major_version != backend_major_version:
         res[TEST_DIAGNOSTICS] = res[TEST_DIAGNOSTICS] | TEST_DIAGNOSTICS_MAJOR_VERSION_CONFLICT
-    
+
     if not is_available():
         res[TEST_DIAGNOSTICS] = res[TEST_DIAGNOSTICS] | TEST_DIAGNOSTICS_GPU_AVAILABLE
 
