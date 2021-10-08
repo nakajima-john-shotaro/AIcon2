@@ -564,7 +564,6 @@ $('#communication_partner').focusout(function(){
         contentType: "application/json; charset=utf-8",
     })
         .done(function (r_data) {
-            console.log(r_data);
             communication_status = true;
             check();
             if (r_data['pre_diagnostics'] !== 0){
