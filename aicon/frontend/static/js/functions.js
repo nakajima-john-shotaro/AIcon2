@@ -36,7 +36,7 @@ $(window).load(function () {
             if (!$.cookie('first_login')) {
                 if (r_data['pre_diagnostics'] !== 0){
                     let pre_check_list = test_device_status(r_data['pre_diagnostics']);
-                    let notice_sting = "以下に刮目してください。\n" + pre_check_list[0];
+                    let notice_sting = "Something went wrong.\n" + pre_check_list[0];
                     notify_alert("Oops!", notice_sting, false, pre_check_list[1]);
                 }
                 $.cookie('first_login', 'no');
