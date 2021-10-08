@@ -323,10 +323,12 @@ border-bottom:1px solid #ccc;
 }
 
 #icon, #tweet_icon {
+	padding-top: 10px;
 	width: 55px;
 }
 
 #save_img, #save_mp4 {
+	padding-top: 10px;
 	font-size: 55px;
 	color: #303030;
 }
