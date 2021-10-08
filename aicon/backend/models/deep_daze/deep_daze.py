@@ -1,6 +1,8 @@
 from io import BytesIO
 import os
 import sys
+import warnings
+warnings.simplefilter('ignore', UserWarning)
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import imageio
@@ -589,7 +591,7 @@ class Imagine(nn.Module):
 
                     self.c2i_queue.put_nowait(self.put_data)
 
-                    logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Processing... {sequence_number + 1}/{self.iterations * self.epochs}")
+                    logger.debug(f"[{self.client_uuid}]: <<AIcon Core>> Processing... {sequence_number + 1}/{self.iterations * self.epochs}")
 
                 # Update clip_encoding per epoch if we are creating a story
                 if self.create_story:

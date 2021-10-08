@@ -553,21 +553,22 @@ $('#communication_partner').focusout(function(){
     send_data = {
         version: ICON_VARSION
     };
+    let check_version_data = JSON.stringify(send_data);
     $.ajax({
         url: "http://" + $('#communication_partner').val() + ":5050/test",
         method: "POST",
-        data: send_data,
+        data: check_version_data,
         dataType: "json",
         timeout: 10000,
         async: true, // 同期通信  false:同期  true:非同期
         contentType: "application/json; charset=utf-8",
     })
-        .done(function () {
+        .done(function (r_data) {
             communication_status = true;
             check();
             if (r_data['pre_diagnostics'] !== 0){
                 let pre_check_list = test_device_status(r_data['pre_diagnostics']);
-                let notice_sting = "Something went wrong.。\n" + pre_check_list[0];
+                let notice_sting = "Something went wrong.\n" + pre_check_list[0];
                 notify_alert("Oops!", notice_sting, false, pre_check_list[1]);
             }
         })
@@ -785,10 +786,10 @@ function test_device_status(device_status) {
     let binary_device_status = device_status.toString(2);
     binary_device_status = parseInt(binary_device_status, 2);
     if (binary_device_status & 0B0001) {
-        alert_text = alert_text + '・Minor version conflict\n　レイアウト等が乱れる可能性があります。\n';
+        alert_text = alert_text + '・Minor version conflict (Ver. ' + ICON_VARSION + ')\n　レイアウト等が乱れる可能性があります。\n';
     }
     if ((binary_device_status >>> 1) & 0B0001) {
-        alert_text = alert_text + '・Major version conflict\n　管理者にお問い合わせください。\n';
+        alert_text = alert_text + '・Major version conflict (Ver. ' + ICON_VARSION + ')\n　管理者にお問い合わせください。\n';
         icon = 'error';
     }
     if ((binary_device_status >>> 2) & 0B0001) {
@@ -796,7 +797,7 @@ function test_device_status(device_status) {
         icon = 'error';
     }
     if ((binary_device_status >>> 3) & 0B0001) {
-        alert_text = alert_text + '・TensorCore not found\n　画像生成速度低下の可能性があります。';
+        alert_text = alert_text + '・TensorCore not found\n　画像生成速度が低下する可能性があります。';
     }
     check_list.push(alert_text, icon);
     return check_list;
@@ -861,11 +862,11 @@ $('.twitter').click(function () {
             if (r_data['is_set_env_var']) {
                 window.open(r_data["authorization_url"]);
             }else {
-                notify_alert('申し訳ございません。','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
+                notify_alert('Oops!','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
             }
         })
         .fail(function (r_data, textStatus, xhr) {
-            notify_alert('申し訳ございません。','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
+            notify_alert('Oops!','現在、Twitter関連の機能がご利用頂けません。\n管理者にお問い合わせください。', false);
         });
 });
 
@@ -880,3 +881,6 @@ function PushNotification(img_path) {
         }
     });
 }
+
+// バージョン表示に関する部分です
+$('#copyright_position').text('AIcon ' + ICON_VARSION + '　Copyright © 2021 MagicSpell')

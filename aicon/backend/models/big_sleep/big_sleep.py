@@ -2,7 +2,8 @@ from base64 import b64decode
 from io import BytesIO
 import os
 import sys
-from queue import Empty
+import warnings
+warnings.simplefilter('ignore', UserWarning)
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -29,8 +30,6 @@ from .biggan import BigGAN
 from .clip import CLIP, load, tokenize
 from .ema import EMA
 from .resample import resample
-
-assert torch.cuda.is_available(), 'CUDA must be available in order to use Big Sleep'
 
 logger: Logger = get_logger()
 
@@ -510,7 +509,7 @@ class Imagine(nn.Module):
 
                     self.c2i_queue.put_nowait(self.put_data)
 
-                    logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Processing... {sequence_number + 1}/{self.iterations * self.epochs}")
+                    logger.debug(f"[{self.client_uuid}]: <<AIcon Core>> Processing... {sequence_number + 1}/{self.iterations * self.epochs}")
 
         except KeyboardInterrupt as e:
             raise e
