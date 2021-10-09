@@ -5,6 +5,7 @@ from logging import (
     getLogger, DEBUG, INFO, WARNING, ERROR, CRITICAL
 )
 from typing import List
+from shutil import get_terminal_size
 
 
 RATE_LIMIT: str = "1000 per minute"
@@ -115,7 +116,7 @@ class CustomFormatter(Formatter):
     red_underlined = "\x1b[91;1;4m"
     reset = "\x1b[0m"
 
-    format = "[%(levelname)-8s] [%(asctime)s]: %(message)s (%(filename)s:L%(lineno)d)"
+    format = "[%(levelname)-8s] [%(asctime)s]: %(message)s"
 
     FORMATS = {
         DEBUG: blue + format + reset,
@@ -143,8 +144,15 @@ def get_logger(name: str = "aicon", level: int = INFO):
 
         logger.addHandler(stream_handler)
         logger.setLevel(level)
+        logger.setLevel(DEBUG)
 
     return logger
+
+
+def truncate(string: str, length: int = get_terminal_size().columns - 41, ellipsis: str = "...") -> str:
+    length: int = get_terminal_size().columns - 41
+
+    return string[:length] + (ellipsis if string[length:] else '')
 
 
 class AIconBaseException(Exception):
