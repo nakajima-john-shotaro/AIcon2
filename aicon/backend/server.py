@@ -101,7 +101,7 @@ class GarbageCollector:
 
                         if now - mtime > GC_TIMEOUT:
                             logger.info(
-                                f"[{dir.stem}]: <<Garbage Collector>> Removed outdated directory {dir}"
+                                truncate(f"[{dir.stem[:8]}]: <<Garbage Collector>> Removed outdated directory {dir}")
                             )
                             shutil.rmtree(dir)
             time.sleep(interval)
@@ -136,7 +136,7 @@ class ConnectionHealthChecker:
                             _lock.release()
 
                             logger.error(
-                                f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause the connection has timed out {CHC_TIMEOUT}s"
+                                truncate(f"[{client_uuid[:8]}]: <<Connection Health Checker>> Removed clients data bacause the connection has timed out {CHC_TIMEOUT}s")
                             )
             except Empty:
                 _empty_counter += 1
@@ -151,7 +151,7 @@ class ConnectionHealthChecker:
                             _lock.release()
 
                             logger.error(
-                                f"[{client_uuid}]: <<Connection Health Checker>> Removed clients data bacause there was no connection for a long time."
+                                truncate(f"[{client_uuid[:8]}]: <<Connection Health Checker>> Removed clients data bacause there was no connection for a long time.")
                             )
                     except UnboundLocalError:
                         pass
@@ -197,27 +197,27 @@ class AIconCore:
         p.start()
 
     def run(self, client_data: Any) -> None:
-        logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Start image generation with {self.model_name}")
+        logger.info(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Start image generation with {self.model_name}"))
 
         if self.model_name == MODEL_NAME_BIG_SLEEP:
             try:
                 big_sleep.Imagine(self.client_uuid, client_data)()
-                logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Finished image generation")
+                logger.info(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Finished image generation"))
             except (AIconOutOfMemoryError, RuntimeError) as e:
                 client_data[CORE_C2I_ERROR_EVENT].set()
-                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> {e}")
+                logger.error(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> {e}"))
             except (AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
-                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> {e}")
+                logger.error(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> {e}"))
 
         elif self.model_name == MODEL_NAME_DEEP_DAZE:
             try:
                 deep_daze.Imagine(self.client_uuid, client_data)()
-                logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Finished image generation")
+                logger.info(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Finished image generation"))
             except (AIconOutOfMemoryError, RuntimeError) as e:
                 client_data[CORE_C2I_ERROR_EVENT].set()
-                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> {e}")
+                logger.error(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> {e}"))
             except (AIconAbortedError, AIconRuntimeError, KeyboardInterrupt) as e:
-                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> {e}")
+                logger.error(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> {e}"))
 
         elif self.model_name == MODEL_NAME_DALL_E:
             raise NotImplementedError
@@ -226,12 +226,12 @@ class AIconCore:
 class AIconInterface(Resource):
     def _translate(self, input_text: str, client_uuid: int) -> str:
         if input_text != "":
-            logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translating input text")
+            logger.info(truncate(f"[{client_uuid[:8]}]: <<AIcon I/F >> Translating input text"))
             try:
                 output_text: str = _translator.translate(input_text)
             except RuntimeError as e:
                 raise e
-            logger.info(f"[{client_uuid}]: <<AIcon I/F >> Translated input text `{input_text}` to `{output_text}` by {_translator.translator}")
+            logger.info(truncate(f"[{client_uuid[:8]}]: <<AIcon I/F >> Translated input text `{input_text}` to `{output_text}` by {_translator.translator}"))
 
             input_text = output_text
         
@@ -288,7 +288,7 @@ class AIconInterface(Resource):
         if client_uuid == IF_HASH_INIT:
             client_uuid = str(uuid4())
 
-            logger.info(f"[{IF_HASH_INIT}]: <<AIcon I/F >> Connection requested from an anonymous client. UUID {client_uuid} is assined.")
+            logger.info(truncate(f"[{IF_HASH_INIT[:8]}]: <<AIcon I/F >> Connection requested from an anonymous client. UUID {client_uuid} is assined."))
 
             try:
                 received_data[JSON_TEXT] = self._translate(received_data[JSON_TEXT], client_uuid)
@@ -402,7 +402,7 @@ class AIconInterface(Resource):
 
                         self._finalize_data(res, client_uuid)
 
-                        logger.info(f"[{client_uuid}]: <<AIcon I/F >> The task is successfully completed. Removed the client data.")
+                        logger.info(truncate(f"[{client_uuid[:8]}]: <<AIcon I/F >> The task is successfully completed. Removed the client data."))
 
                         return jsonify(res)
 
@@ -417,21 +417,21 @@ class AIconInterface(Resource):
                     if _client_data[client_uuid][CORE_C2I_ERROR_EVENT].is_set():
                         self._finalize_data(res, client_uuid, diagnostics=IF_DIAGNOSTICS_MEMORY)
 
-                        logger.error(f"[{client_uuid}]: <<AIcon I/F >> The task couldn't be completed. Removed the client data.")
+                        logger.error(truncate(f"[{client_uuid[:8]}]: <<AIcon I/F >> The task couldn't be completed. Removed the client data."))
 
                         return jsonify(res)
 
                     if IF_EMPTY_TOLERANCE >= _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] > 3 * IF_EMPTY_TOLERANCE / 4:
-                        logger.warning(f"[{client_uuid}]: <<AIcon I/F >> No data has been sent from AIcon Core for a long time. AIcon Core may have crashed.")
+                        logger.warning(truncate(f"[{client_uuid[:8]}]: <<AIcon I/F >> No data has been sent from AIcon Core for a long time. AIcon Core may have crashed."))
 
                     elif _client_data[client_uuid][IF_QUEUE_EMPTY_COUNTER] > IF_EMPTY_TOLERANCE:
-                        logger.error(f"[{client_uuid}]: <<AIcon I/F >> AIcon Core crashed. Sending an abort signal.")
+                        logger.error(truncate(f"[{client_uuid[:8]}]: <<AIcon I/F >> AIcon Core crashed. Sending an abort signal."))
 
                         _client_data[client_uuid][CORE_I2C_EVENT].set()
 
                         self._finalize_data(res, client_uuid, diagnostics=IF_DIAGNOSTICS_UNEXPECTED)
         else:
-            logger.fatal(f"[{client_uuid}]: <<AIcon I/F >> Invalid UUID")
+            logger.fatal(truncate(f"[{client_uuid[:8]}]: <<AIcon I/F >> Invalid UUID"))
             abort(403, f"Invalid UUID: {client_uuid}")
 
         return jsonify(res)
@@ -497,10 +497,10 @@ def callback() -> Response:
     oauth_verifier = request.args.get(TWITTER_OAUTH_VERIFIER)
 
     if oauth_token is None:
-        logger.error(f"<<AIcon Twitter Control>> Could not get `oauth_token`")
+        logger.error(truncate(f"<<AIcon Twitter Control>> Could not get `oauth_token`"))
     
     if oauth_verifier is None:
-        logger.error(f"<<AIcon Twitter Control>> Could not get `oauth_verifier`")
+        logger.error(truncate(f"<<AIcon Twitter Control>> Could not get `oauth_verifier`"))
 
     client_uuid: str = request.remote_addr
 
@@ -532,7 +532,7 @@ def callback() -> Response:
             api.update_with_media(status=f"AIconで「{_twitter_database[client_uuid][TWITTER_TEXT]}」という言葉からアイコンを作ったよ！\n\n\n#AIcon\n#新しいプロフィール画像", filename=img_path)
 
     except AIconEnvVarNotFoundError as e:
-        logger.error(f"<<AIcon Twitter Control>> {e}")
+        logger.error(truncate(f"<<AIcon Twitter Control>> {e}"))
 
     return render_template("twitter-send.html", title="Twitter-Send", name="Twitter-Send")
 
@@ -551,7 +551,7 @@ def auth() -> Response:
     try:
         secrets: Dict[str, Optional[str]] = get_secrets()
     except AIconEnvVarNotFoundError as e:
-        logger.error(f"<<AIcon Twitter Control>> {e}")
+        logger.error(truncate(f"<<AIcon Twitter Control>> {e}"))
         res[TWITTER_ENV_VAR] = False
         return make_response(jsonify(res))
 
@@ -571,16 +571,16 @@ def auth() -> Response:
     
     except TweepyException as e:
         res[TWITTER_ENV_VAR] = False
-        logger.error(f"<<AIcon Twitter Control>> {e}")
+        logger.error(truncate(f"<<AIcon Twitter Control>> {e}"))
 
     finally:
         return make_response(jsonify(res))
 
 
 if __name__ == "__main__":
-    logger.info("<<AIcon>> Seesion started")
+    logger.info(truncate("<<AIcon>> Seesion started"))
 
-    logger.info("<<AIcon>> Installing web driver. This may take some time.")
+    logger.info(truncate("<<AIcon>> Installing web driver. This may take some time."))
     install_webdriver()
 
     multiprocessing.set_start_method("spawn")
@@ -599,6 +599,6 @@ if __name__ == "__main__":
     AIconInterface()
     api.add_resource(AIconInterface, '/service')
 
-    logger.info(f"<<AIcon>> Running on http://localhost:{PORT}/")
+    logger.info(truncate(f"<<AIcon>> Running on http://localhost:{PORT}/"))
 
     serve(app, host='0.0.0.0', port=PORT, threads=30)
