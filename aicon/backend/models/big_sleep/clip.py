@@ -32,16 +32,18 @@ def _download(url: str, root: str = os.path.expanduser(PRETRAINED_BACKBONE_MODEL
     download_target = os.path.join(root, filename)
 
     if os.path.exists(download_target) and not os.path.isfile(download_target):
-        logger.error(f"[????????-????-????-????-????????????]: <<AIcon Core>> {download_target} exists and is not a regular file")
+        logger.error(truncate(f"[????????]: <<AIcon Core>> {download_target} exists and is not a regular file"))
         raise RuntimeError(f"{download_target} exists and is not a regular file")
 
     if os.path.isfile(download_target):
         if hashlib.sha256(open(download_target, "rb").read()).hexdigest() == expected_sha256:
             return download_target
         else:
-            logger.warning(f"[????????-????-????-????-????????????]: <<AIcon Core>> {download_target} exists, but the SHA256 checksum does not match; re-downloading the file")
+            logger.warning(
+                truncate(f"[????????]: <<AIcon Core>> {download_target} exists, but the SHA256 checksum does not match; re-downloading the file")
+            )
 
-    logger.info(f"[????????-????-????-????-????????????]: <<AIcon Core>> Downloading pre-trained model. This may take some time.")
+    logger.info(truncate(f"[????????]: <<AIcon Core>> Downloading pre-trained model. This may take some time."))
     with urllib.request.urlopen(url) as source, open(download_target, "wb") as output:
         while True:
             buffer = source.read(524288)
@@ -52,7 +54,7 @@ def _download(url: str, root: str = os.path.expanduser(PRETRAINED_BACKBONE_MODEL
             output.write(buffer)
 
     if hashlib.sha256(open(download_target, "rb").read()).hexdigest() != expected_sha256:
-        logger.error(f"[????????-????-????-????-????????????]: <<AIcon Core>> Model has been downloaded but the SHA256 checksum does not not match")
+        logger.error(truncate(f"[????????]: <<AIcon Core>> Model has been downloaded but the SHA256 checksum does not not match"))
         raise RuntimeError(f"Model has been downloaded but the SHA256 checksum does not not match")
 
     return download_target
