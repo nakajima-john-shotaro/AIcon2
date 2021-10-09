@@ -28,7 +28,6 @@ input[type="search"]::-webkit-search-cancel-button {
 
 body {
 	user-select: none;
-	word-wrap : break-word;
 }
 
 /* 初回ローディング画面 */
@@ -43,8 +42,8 @@ body {
 }
 
 #particle{
-    width:100%;
-	height: 5vh;
+    width:70%;
+	height: 100vh;
 	vertical-align: bottom;
 }
 

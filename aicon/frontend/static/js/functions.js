@@ -13,11 +13,20 @@ $(window).on('load resize', function () {
 $("#particle").particleText({
     text: "Encounter In the Deep",
     colors:["#000000","#000000", "#000000"],
-    speed: "slow"
+    speed: "fast"
 });
 
 $(window).load(function () { 
     change_advanced_param(model_button_id, param_button_id);
+    if (!$.cookie('encounter_or_not')){
+        $('#loading_wrapper').fadeOut(3000, function(){
+            $('#main_unit').fadeIn(10);
+        });
+        $.cookie('encounter_or_not', 'true');
+    } else{
+        $('#loading_wrapper').fadeOut(0);
+        $('#main_unit').fadeIn(0);
+    }
     $('#textarea').focus();
     $('#communication_partner').val($.cookie('url'));
     if ($('#communication_partner').val() == ''){
