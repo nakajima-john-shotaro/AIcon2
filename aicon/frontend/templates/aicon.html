@@ -7,6 +7,8 @@
 
     <!-- css file -->
     <link rel="stylesheet" href="../static/css/aicon.css" type="text/css">
+    <!-- <link rel="stylesheet" type="text/css" href="http://coco-factory.jp/ugokuweb/wp-content/themes/ugokuweb/data/move02/5-17/css/reset.css"> -->
+    <!-- <link rel="stylesheet" type="text/css" href="http://coco-factory.jp/ugokuweb/wp-content/themes/ugokuweb/data/move02/5-17/css/5-17.css"> -->
 
     <!-- MAterialize -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
@@ -20,7 +22,13 @@
   </head>
 
   <body>
-    
+    <!-- 初回ロード画面 -->
+    <div id="loading_wrapper">
+      <div id="first_loading">
+        <canvas id="particle"></canvas>
+      </div><!--first_loading-->
+    </div><!--loading_wrapper-->
+
     <div class="navbar-fixed">
       <nav>
         <div class="nav-wrapper  light-blue darken-1" id='header'>
@@ -656,6 +664,7 @@
         $('.collapsible').collapsible();
       });
     </script>
+      <script src="http://coco-factory.jp/ugokuweb/wp-content/themes/ugokuweb/data/move02/5-17/js/particleText.js"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
       <script type=text/javascript src="{{ url_for('static', filename='../static/js/constant.js') }}"></script>
       <script type=text/javascript src="{{ url_for('static', filename='../static/js/functions.js') }}"></script>
