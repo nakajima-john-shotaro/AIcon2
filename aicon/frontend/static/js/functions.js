@@ -10,6 +10,12 @@ $(window).on('load resize', function () {
     }
 });
 
+$("#particle").particleText({
+    text: "Encounter In the Deep",
+    colors:["#000000","#000000", "#000000"],
+    speed: "slow"
+});
+
 $(window).load(function () { 
     change_advanced_param(model_button_id, param_button_id);
     $('#textarea').focus();
