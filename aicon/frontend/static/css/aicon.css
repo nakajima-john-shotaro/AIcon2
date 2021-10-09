@@ -28,7 +28,26 @@ input[type="search"]::-webkit-search-cancel-button {
 
 body {
 	user-select: none;
+	word-wrap : break-word;
 }
+
+/* 初回ローディング画面 */
+#loading_wrapper {
+	background:#ffffff;
+}
+
+#first_loading{
+	display:flex;
+	justify-content: center;
+	align-items: center;
+}
+
+#particle{
+    width:100%;
+	height: 5vh;
+	vertical-align: bottom;
+}
+
 /* ヘッダー関係 */
 #header {
 	min-width: 640px;
