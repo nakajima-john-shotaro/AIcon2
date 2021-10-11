@@ -519,7 +519,7 @@ def callback() -> Response:
     
         auth_handler.get_access_token(oauth_verifier)
 
-        api: API = API(auth_handler=auth_handler)
+        api: API = API(auth=auth_handler)
 
         if _twitter_database[client_uuid][TWITTER_MODE] == TWITTER_MODE_ICON:
             img_path = unquote(_twitter_database[client_uuid][TWITTER_IMG_PATH])
@@ -529,7 +529,7 @@ def callback() -> Response:
         elif _twitter_database[client_uuid][TWITTER_MODE] == TWITTER_MODE_TWEET:
             img_path = unquote(_twitter_database[client_uuid][TWITTER_IMG_PATH])
             img_path = "../frontend/" + "/".join(img_path.split('/')[3:])
-            api.update_with_media(status=f"AIconで「{_twitter_database[client_uuid][TWITTER_TEXT]}」という言葉からアイコンを作ったよ！\n\n\n#AIcon\n#新しいプロフィール画像", filename=img_path)
+            api.update_status_with_media(status=f"AIconで「{_twitter_database[client_uuid][TWITTER_TEXT]}」という言葉からアイコンを作ったよ！\n\n\n#AIcon\n#新しいプロフィール画像", filename=img_path)
 
     except AIconEnvVarNotFoundError as e:
         logger.error(truncate(f"<<AIcon Twitter Control>> {e}"))
