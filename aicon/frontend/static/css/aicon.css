@@ -32,7 +32,15 @@ body {
 
 /* 初回ローディング画面 */
 #loading_wrapper {
+	position: fixed;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100vw;
+	height: 100vh;
+	top: 0;
 	background:#ffffff;
+	z-index: 2147483640;
 }
 
 #first_loading{
@@ -42,9 +50,11 @@ body {
 }
 
 #particle{
-    width:70%;
+    width:85%;
 	height: 100vh;
 	vertical-align: bottom;
+	z-index: 2147483647;
+
 }
 
 /* ヘッダー関係 */
