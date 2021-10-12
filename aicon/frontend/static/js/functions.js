@@ -1,4 +1,5 @@
-var ICON_VARSION = '1.2.1';
+var ICON_VARSION = '1.2.2';
+
 // ウィンドウに関しての関数です
 $(window).on('load resize', function () {
     var windowWidth = window.innerWidth;
@@ -10,8 +11,26 @@ $(window).on('load resize', function () {
     }
 });
 
+// ロード画面に関しての関数です 
+$('#loading_wrapper').css('display', 'none');
+
 $(window).load(function () { 
     change_advanced_param(model_button_id, param_button_id);
+    if (!$.cookie('encounter_or_not')){
+        $('#loading_wrapper').show();
+        $("#particle").particleText({
+            text: "Encounter in the Deep",
+            colors:["#000000","#000000", "#000000"],
+            speed: "fast"
+        });
+        $('#loading_wrapper').fadeOut(2400, function(){
+            $('#main_unit').fadeIn(10);
+        });
+        $.cookie('encounter_or_not', 'true');
+    } else{
+        $('#loading_wrapper').css('display', 'none');
+        $('#main_unit').fadeIn(0);
+    }
     $('#textarea').focus();
     $('#communication_partner').val($.cookie('url'));
     if ($('#communication_partner').val() == ''){
@@ -36,8 +55,7 @@ $(window).load(function () {
             if (!$.cookie('first_login')) {
                 if (r_data['pre_diagnostics'] !== 0){
                     let pre_check_list = test_device_status(r_data['pre_diagnostics']);
-                    let notice_sting = "Something went wrong.\n" + pre_check_list[0];
-                    notify_alert("Oops!", notice_sting, false, pre_check_list[1]);
+                    notify_alert("Oops!", pre_check_list[0], false, pre_check_list[1]);
                 }
                 $.cookie('first_login', 'no');
             }

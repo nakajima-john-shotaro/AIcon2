@@ -29,6 +29,34 @@ input[type="search"]::-webkit-search-cancel-button {
 body {
 	user-select: none;
 }
+
+/* 初回ローディング画面 */
+#loading_wrapper {
+	position: fixed;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100vw;
+	height: 100vh;
+	top: 0;
+	background:#ffffff;
+	z-index: 2147483640;
+}
+
+#first_loading{
+	display:flex;
+	justify-content: center;
+	align-items: center;
+}
+
+#particle{
+    width:85%;
+	height: 100vh;
+	vertical-align: bottom;
+	z-index: 2147483647;
+
+}
+
 /* ヘッダー関係 */
 #header {
 	min-width: 640px;
