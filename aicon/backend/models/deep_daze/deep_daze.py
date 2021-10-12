@@ -593,6 +593,9 @@ class Imagine(nn.Module):
 
                     logger.debug(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Processing... {sequence_number + 1}/{self.iterations * self.epochs}"))
 
+                    if sequence_number % 50 == 49:
+                        logger.info(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> AIcon is still running... {sequence_number + 1}/{self.iterations * self.epochs}"))
+
                 # Update clip_encoding per epoch if we are creating a story
                 if self.create_story:
                     self.clip_encoding = self.update_story_encoding()
