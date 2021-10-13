@@ -302,14 +302,14 @@ class Imagine(nn.Module):
 
         if exists(seed):
             self.seed: int = seed
-            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Seed is manually set to {self.seed}")
+            logger.info(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Seed is manually set to {self.seed}"))
             torch.manual_seed(seed)
             torch.cuda.manual_seed(seed)
             random.seed(seed)
             torch.backends.cudnn.deterministic = True
         else:
             self.seed = random.randint(-sys.maxsize - 1, sys.maxsize)
-            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> No seed is specified. It will automatically be set to {self.seed}")
+            logger.info(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> No seed is specified. It will automatically be set to {self.seed}"))
             torch.backends.cudnn.benchmark = True
             
         # fields for story creation:
@@ -320,7 +320,7 @@ class Imagine(nn.Module):
         if self.separator is not None and text is not None:
             #exit if text is just the separator
             if str(text).replace(' ','').replace(self.separator,'') == '':
-                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Text only consists of the separator `{self.separator}`")
+                logger.error(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Text only consists of the separator `{self.separator}`"))
                 raise AIconValueError(f"Text only consists of the separator `{self.separator}`")
 
             #adds a space to each separator and removes double spaces that might be generated
@@ -332,7 +332,7 @@ class Imagine(nn.Module):
 
         if create_story:
             if text is None:
-                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> No text is input. Cannot create story.")
+                logger.error(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> No text is input. Cannot create story."))
                 raise AIconValueError(f"No text is input. Cannot create story.")
 
             # overwrite epochs to match story length
@@ -343,19 +343,21 @@ class Imagine(nn.Module):
             self.epochs: int = int(self.epochs) if int(self.epochs) == self.epochs else int(self.epochs) + 1
             if self.separator is not None:
                 if self.separator not in text:
-                    logger.warning(f"[{self.client_uuid}]: <<AIcon Core>> Separator `{self.separator}` will be ignored since not in text")
+                    logger.warning(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Separator `{self.separator}` will be ignored since not in text"))
                     self.separator = None
                 else:
                     self.epochs = len(list(filter(None,text.split(self.separator))))
             if self.separator is not None:
-                logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Running for {self.epochs} epochs (split with `{self.separator}` as the separator)")
+                logger.info(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Running for {self.epochs} epochs (split with `{self.separator}` as the separator)"))
         else: 
             self.epochs = epochs
 
         # jit models only compatible with version CORE_COMPATIBLE_PYTORCH_VERSION
         if CORE_COMPATIBLE_PYTORCH_VERSION not in torch.__version__:
             if jit:
-                logger.warning(f"[{self.client_uuid}]: <<AIcon Core>> Setting jit to False because torch version is not {CORE_COMPATIBLE_PYTORCH_VERSION}")
+                logger.warning(
+                    truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Setting jit to False because torch version is not {CORE_COMPATIBLE_PYTORCH_VERSION}")
+                )
             jit = False
 
         # Load CLIP
@@ -501,7 +503,7 @@ class Imagine(nn.Module):
                     self.words = " ".join(self.words.split(" ")[1:])
 
         # get new encoding
-        logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Now thinking of `{self.words}`")
+        logger.info(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Now thinking of `{self.words}`"))
         encoding: torch.Tensor = self.create_text_encoding(self.words)
 
         return encoding
@@ -552,7 +554,7 @@ class Imagine(nn.Module):
 
     def forward(self):
         if exists(self.start_image):
-            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Preparing with the initial image. This may take tens of seconds")
+            logger.info(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Preparing with the initial image. This may take tens of seconds"))
             optim = DiffGrad(self.model.model.parameters(), lr=self.start_image_lr)
             try:
                 for _ in range(self.start_image_train_iters):
@@ -562,13 +564,11 @@ class Imagine(nn.Module):
                     optim.step()
                     optim.zero_grad(set_to_none=True)
             except KeyboardInterrupt as e:
-                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Keyboard Interrunpted")
+                logger.error(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Keyboard Interrunpted"))
                 raise e
 
             del self.start_image
             del optim
-
-        logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Imagining `{self.textpath}` from the depths of the weights")
 
         with torch.no_grad():
             self.model(self.clip_encoding, dry_run=True) # do one warmup step due to potential issue with CLIP and CUDA
@@ -591,19 +591,22 @@ class Imagine(nn.Module):
 
                     self.c2i_queue.put_nowait(self.put_data)
 
-                    logger.debug(f"[{self.client_uuid}]: <<AIcon Core>> Processing... {sequence_number + 1}/{self.iterations * self.epochs}")
+                    logger.debug(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Processing... {sequence_number + 1}/{self.iterations * self.epochs}"))
+
+                    if sequence_number % 50 == 49:
+                        logger.info(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> AIcon is still running... {sequence_number + 1}/{self.iterations * self.epochs}"))
 
                 # Update clip_encoding per epoch if we are creating a story
                 if self.create_story:
                     self.clip_encoding = self.update_story_encoding()
 
         except KeyboardInterrupt as e:
-            logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Keyboard Interrunpted")
+            logger.error(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Keyboard Interrunpted"))
             raise e
 
         except RuntimeError as e:
             if 'out of memory' in str(e):
-                logger.error(f"[{self.client_uuid}]: <<AIcon Core>> Ran out of gpu memory")
+                logger.error(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Ran out of gpu memory"))
                 raise AIconOutOfMemoryError(str(e))
             else:
                 raise AIconRuntimeError(str(e))

@@ -322,14 +322,14 @@ class Imagine(nn.Module):
 
         if exists(seed):
             self.seed: int = seed
-            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> Seed is manually set to {self.seed}")
+            logger.info(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Seed is manually set to {self.seed}"))
             torch.manual_seed(seed)
             torch.cuda.manual_seed(seed)
             random.seed(seed)
             torch.backends.cudnn.deterministic = True
         else:
             self.seed = random.randint(-sys.maxsize - 1, sys.maxsize)
-            logger.info(f"[{self.client_uuid}]: <<AIcon Core>> No seed is specified. It will automatically be set to {self.seed}")
+            logger.info(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> No seed is specified. It will automatically be set to {self.seed}"))
             torch.backends.cudnn.benchmark = True
 
         self.epochs: int = epochs
@@ -340,7 +340,7 @@ class Imagine(nn.Module):
         # jit models only compatible with version CORE_COMPATIBLE_PYTORCH_VERSION
         if CORE_COMPATIBLE_PYTORCH_VERSION not in torch.__version__:
             if jit:
-                logger.warning(f"[{self.client_uuid}]: <<AIcon Core>> Setting jit to False because torch version is not {CORE_COMPATIBLE_PYTORCH_VERSION}")
+                logger.warning(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Setting jit to False because torch version is not {CORE_COMPATIBLE_PYTORCH_VERSION}"))
             jit = False
 
         clip_model: Tuple[CLIP, Compose] = load(model_name, jit=jit)
@@ -509,7 +509,10 @@ class Imagine(nn.Module):
 
                     self.c2i_queue.put_nowait(self.put_data)
 
-                    logger.debug(f"[{self.client_uuid}]: <<AIcon Core>> Processing... {sequence_number + 1}/{self.iterations * self.epochs}")
+                    logger.debug(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> Processing... {sequence_number + 1}/{self.iterations * self.epochs}"))
+
+                    if sequence_number % 50 == 49:
+                        logger.info(truncate(f"[{self.client_uuid[:8]}]: <<AIcon Core>> AIcon is still running... {sequence_number + 1}/{self.iterations * self.epochs}"))
 
         except KeyboardInterrupt as e:
             raise e
